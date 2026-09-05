@@ -14,7 +14,7 @@ from app.modules.diagnostic_data.resolver import DiagnosticDataResolver,build_ve
 from .analysis_service import AnalysisInProgress,analyze_case
 from .image_service import InvalidImage,cleanup_expired_images,process_image,safe_unlink
 from .providers import AIInvalidResponse,AIProviderUnavailable
-from .schemas import DiagnosticAnalysis,DiagnosticCreate,FaultCodesInput,MeasurementInput,StepResultInput
+from .schemas import DTCPreviewInput,DiagnosticAnalysis,DiagnosticCreate,FaultCodesInput,MeasurementInput,StepResultInput
 
 router=APIRouter(prefix="/api/diagnostics",tags=["diagnostic-ai"]);calls=defaultdict(deque);diagnostic_data_resolver=DiagnosticDataResolver()
 def serialize(o):
@@ -38,6 +38,30 @@ def create_case(data:DiagnosticCreate,db:Session=Depends(get_db),gid:str=Depends
     effective_engine=config.engine_code_confirmed_by_user or config.engine_code if config else vehicle.engine_code
     if not effective_engine or effective_engine=="UNKNOWN" or (config and not config.confirmed_by_user):raise HTTPException(409,"Confirmez une motorisation avant de lancer le diagnostic")
     row=DiagnosticSession(garage_id=gid,technician_id=uid,vehicle_profile_id=data.vehicle_id,status="draft",mileage=data.mileage,customer_complaint=data.symptoms,observed_symptoms=data.symptoms,appearance_circumstances=data.circumstances);db.add(row);db.commit();return serialize(row)
+
+@router.post("/dtc-preview")
+def preview_fault_codes(data:DTCPreviewInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
+    vehicle=db.scalar(select(VehicleProfile).where(VehicleProfile.id==data.vehicle_id,VehicleProfile.garage_id==gid))
+    if not vehicle:raise HTTPException(404,"Véhicule introuvable")
+    items=[]
+    for item in data.fault_codes:
+        context=build_vehicle_context(db,vehicle,item.ecu,item.ecu_identifiers)
+        resolution=diagnostic_data_resolver.resolve(db,item.namespace,item.code,context)
+        items.append({
+            "namespace":item.namespace,
+            "code":resolution["code"],
+            "ecu":item.ecu,
+            "definition_type":resolution["definition_type"],
+            "description":resolution["description"],
+            "documented":resolution["documented"],
+            "resolution_status":resolution["status"],
+            "source":resolution["source"],
+            "missing_information":resolution["missing_information"],
+            "candidate_count":len(resolution["candidates"]),
+            "technician_verification":item.technician_verification,
+            "technician_note":item.technician_note,
+        })
+    return {"items":items,"count":len(items)}
 @router.get("/{case_id}")
 def detail(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
     case=owned_case(db,case_id,gid)
@@ -72,7 +96,7 @@ def fault_codes(case_id:str,data:FaultCodesInput,db:Session=Depends(get_db),gid:
     for item in data.fault_codes:
         context=build_vehicle_context(db,case.vehicle,item.ecu,item.ecu_identifiers)
         resolution=diagnostic_data_resolver.resolve(db,item.namespace,item.code,context)
-        row=DiagnosticObservation(session_id=case.id,observation_type="DTC",key=item.code,value={"raw_code":item.code,"normalized_code":item.code,"namespace":item.namespace,"category":resolution["definition_type"],"ecu":item.ecu,"ecu_identifiers":item.ecu_identifiers,"sub_code":None,"status":item.status,"freeze_frame":item.freeze_frame,"resolution_status":resolution["status"],"description":resolution["description"],"description_source_id":resolution["source"]["source_id"] if resolution["source"] else None,"description_source":resolution["source"],"missing_information":resolution["missing_information"]},source="manual_entry");db.add(row);rows.append(row)
+        row=DiagnosticObservation(session_id=case.id,observation_type="DTC",key=item.code,value={"raw_code":item.code,"normalized_code":item.code,"namespace":item.namespace,"category":resolution["definition_type"],"ecu":item.ecu,"ecu_identifiers":item.ecu_identifiers,"sub_code":None,"status":item.status,"freeze_frame":item.freeze_frame,"resolution_status":resolution["status"],"description":resolution["description"],"description_source_id":resolution["source"]["source_id"] if resolution["source"] else None,"description_source":resolution["source"],"missing_information":resolution["missing_information"],"technician_verification":item.technician_verification,"technician_note":item.technician_note},source="manual_entry");db.add(row);rows.append(row)
     db.commit();return [serialize(x) for x in rows]
 @router.post("/{case_id}/measurements",status_code=201)
 def measurement(case_id:str,data:MeasurementInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):

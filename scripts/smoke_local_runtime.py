@@ -73,7 +73,7 @@ def smoke():
             # Same prefix mapping used by the browser: /api/... -> /backend-api/...
             image_path = images[0]["url"].removeprefix("/api")
             request(client, "GET", image_path)
-            request(client, "POST", path + "/fault-codes", expected=201, json={"fault_codes": [{"code": "P1351"}]})
+            request(client, "POST", path + "/fault-codes", expected=201, json={"fault_codes": [{"code": "P1351", "technician_verification": "confirmed"}]})
             analysis = request(client, "POST", path + "/analyze").json()
             assert analysis["hypotheses"] == []
             assert analysis["safetyAssessment"]["decisionSource"] == "safety_engine"

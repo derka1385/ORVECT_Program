@@ -17,6 +17,10 @@ class DiagnosticEngine:
     def evaluate(self,context:dict) -> DiagnosticGate:
         vehicle=context.get("vehicle",{})
         definitions=context.get("technical_definitions",[])
+        fault_codes=context.get("fault_codes",[])
+        if any(item.get("technician_verification", "confirmed") != "confirmed" for item in fault_codes):
+            reasons=["dtc_interpretation_mismatch" if item.get("technician_verification")=="interpretation_mismatch" else "dtc_confirmation_required" for item in fault_codes if item.get("technician_verification", "confirmed") != "confirmed"]
+            return DiagnosticGate(False,"human_escalation_required",sorted(set(reasons)))
         if not vehicle.get("configuration_confirmed") or not vehicle.get("engine_code"):
             return DiagnosticGate(False,"vehicle_configuration_not_sufficiently_identified",["vehicle_configuration_incomplete"])
         if any(item.get("resolution_status") in {"ambiguous","insufficient_vehicle_configuration"} for item in definitions):

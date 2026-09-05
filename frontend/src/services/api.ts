@@ -7,6 +7,8 @@ import type {
   Vehicle,
   VehicleResolveResult,
   VinResolution,
+  VehicleConfigurationResponse,
+  DTCPreview,
 } from "@/types";
 
 export const API = typeof window === "undefined"
@@ -52,6 +54,8 @@ export const api = {
   logout: () => call<void>("/auth/logout", { method: "POST" }),
   me: () => call<{ id: string; email: string; role: string; garage_id: string }>("/auth/me"),
   vehicles: () => call<Page<Vehicle>>("/vehicles").then((page) => page.items),
+  vehicleConfiguration: (id: string) => call<VehicleConfigurationResponse>(`/vehicles/${id}/configuration`),
+  verifyVehicleConfiguration: (id: string, body: unknown) => call<VehicleConfigurationResponse>(`/vehicles/${id}/configuration`, { method: "PUT", body: JSON.stringify(body) }),
   sessions: () => call<Page<Session>>("/diagnostic-sessions").then((page) => page.items),
   session: (id: string) => call<Session>(`/diagnostic-sessions/${id}`),
   hypotheses: (id: string) => call<Page<Hypothesis>>(`/diagnostic-sessions/${id}/hypotheses`).then((page) => page.items),
@@ -69,6 +73,7 @@ export const api = {
   resolveVinNormalized: (body: unknown) => call("/vehicles/resolve-vin", { method: "POST", body: JSON.stringify(body) }),
   confirmResolution: (id: string, body: unknown) => call<{ vehicle: Vehicle; resolution: VinResolution }>(`/vehicle-resolution/${id}/confirm`, { method: "POST", body: JSON.stringify(body) }),
   createDiagnostic: (body: unknown) => call<Session>("/diagnostics", { method: "POST", body: JSON.stringify(body) }),
+  previewDTCs: (body: unknown) => call<{items:DTCPreview[];count:number}>("/diagnostics/dtc-preview", { method: "POST", body: JSON.stringify(body) }),
   addFaultCodes: (id: string, body: unknown) => call(`/diagnostics/${id}/fault-codes`, { method: "POST", body: JSON.stringify(body) }),
   addMeasurement: (id: string, body: unknown) => call(`/diagnostics/${id}/measurements`, { method: "POST", body: JSON.stringify(body) }),
   uploadImages: (id: string, data: FormData) => call(`/diagnostics/${id}/images`, { method: "POST", body: data }),

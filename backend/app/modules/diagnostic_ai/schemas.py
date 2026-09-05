@@ -39,6 +39,18 @@ class Correlation(Strict):
     relatedCodes: list[str]
     explanation: str
     confidence: float = Field(ge=0, le=1)
+    relationshipType: Literal["shared_root_cause", "dependency", "cascade", "contradiction", "unresolved"] = "unresolved"
+    supportingSymptoms: list[str] = Field(default_factory=list, max_length=30)
+    supportingEvidence: list[str] = Field(default_factory=list, max_length=30)
+    contradictingEvidence: list[str] = Field(default_factory=list, max_length=30)
+    verificationStatus: Literal["verified", "partially_verified", "unverified"] = "unverified"
+    sources: list[SourceReference] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def source_free_correlation_is_unverified(self):
+        if not self.sources and self.verificationStatus != "unverified":
+            raise ValueError("A source-free DTC correlation must be marked unverified")
+        return self
 
 
 class Hypothesis(Strict):
@@ -168,6 +180,8 @@ class FaultCodeInput(Strict):
     ecu_identifiers: list[str] = Field(default_factory=list, max_length=50)
     status: Literal["active", "intermittent", "stored", "unknown"] = "unknown"
     freeze_frame: dict = Field(default_factory=dict)
+    technician_verification: Literal["confirmed", "unconfirmed", "interpretation_mismatch"] = "unconfirmed"
+    technician_note: str = Field(default="", max_length=500)
 
     @field_validator("code")
     @classmethod
@@ -195,6 +209,11 @@ class FaultCodeInput(Strict):
 
 
 class FaultCodesInput(Strict):
+    fault_codes: list[FaultCodeInput] = Field(min_length=1, max_length=30)
+
+
+class DTCPreviewInput(Strict):
+    vehicle_id: str
     fault_codes: list[FaultCodeInput] = Field(min_length=1, max_length=30)
 
 

@@ -83,6 +83,8 @@ def validate_provider_sources(analysis: LLMDiagnosticAnalysis, context: dict) ->
     referenced = []
     for fault in analysis.interpretedFaultCodes:
         referenced.extend(fault.sources)
+    for correlation in analysis.correlations:
+        referenced.extend(correlation.sources)
     for hypothesis in analysis.hypotheses:
         referenced.extend(hypothesis.sources)
     for check in analysis.nextChecks:
@@ -118,6 +120,10 @@ def validate_provider_sources(analysis: LLMDiagnosticAnalysis, context: dict) ->
         required = gate.get("required_status")
         if required and analysis.finalConclusion.status != required:
             raise AIInvalidResponse("The explanation layer altered the Diagnostic Engine stop status")
+    submitted_codes={item.get("code") for item in context.get("fault_codes", [])}
+    for correlation in analysis.correlations:
+        if not set(correlation.relatedCodes).issubset(submitted_codes):
+            raise AIInvalidResponse("A DTC correlation referenced a code outside the submitted case")
 
 
 def _mock_analysis(context: dict) -> LLMDiagnosticAnalysis:

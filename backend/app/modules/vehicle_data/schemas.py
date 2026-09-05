@@ -5,7 +5,7 @@ class VehicleResolveInput(BaseModel):
     vin:str|None=Field(default=None,max_length=32); registration:str|None=Field(default=None,max_length=20); country_code:str="FR"; model_year_hint:int|None=Field(default=None,ge=1886,le=2100); force_refresh:bool=False
     @model_validator(mode="after")
     def one_identifier(self):
-        if not self.vin and not self.registration:raise ValueError("Saisissez une plaque ou un VIN")
+        if bool(self.vin)==bool(self.registration):raise ValueError("Identifiez le véhicule avec un VIN OU une plaque, jamais les deux")
         if self.registration:
             value=re.sub(r"[\s-]","",self.registration).upper()
             if not re.fullmatch(r"[A-Z0-9]{4,12}",value):raise ValueError("Plaque invalide")

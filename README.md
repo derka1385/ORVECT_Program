@@ -16,7 +16,7 @@ La page [derka1385.github.io/ORVECT_Program](https://derka1385.github.io/ORVECT_
 - parcours générique sûr pour tout code DTC syntaxiquement valide, y compris les codes constructeur non définis comme P1351 ;
 - hypothèses éventuellement vides, états d’insuffisance explicites, preuves/contradictions, étape courante, événements immuables et rapport ;
 - mock LLM strictement validé et désactivable sans casser le moteur ;
-- interface ORVECT responsive en quatre étapes — entrée, identification, problème/preuves et diagnostic assisté — plus rapport Next.js ;
+- interface ORVECT responsive et pleine largeur en quatre étapes — identification VIN ou plaque, vérification technique éditable, DTC multiples/symptômes et résultats — plus rapport Next.js ;
 - authentification par session opaque, rôles `admin`/`technician` et isolation du garage dérivée côté serveur ;
 - résolution VIN avec mock hors ligne, adaptateur NHTSA vPIC optionnel, cache HMAC, confirmation technicien et rapprochement ECU/DTC.
 - diagnostic multimodal avec codes multiples, mesures, photos privées, sortie JSON stricte et provider Gemini interchangeable ;
@@ -102,7 +102,7 @@ Pour activer Gemini, renseigner `GEMINI_API_KEY` dans `.env` et passer `LLM_PROV
 
 ## Identification du véhicule
 
-`/` ouvre l’entrée atelier : création d’un dossier, reprise d’un diagnostic récent, sélection d’un véhicule existant ou identification par plaque/VIN. `DEMO123` reste disponible pour les tests hors ligne. Pour une plaque réelle, utilisez un fournisseur professionnel autorisé qui retourne au minimum un VIN :
+`/diagnostics/new` ouvre l’identification : le technicien choisit strictement un VIN ou une plaque, puis relit et corrige la configuration détectée avant de saisir les DTC. Chaque DTC peut être ajouté, édité, supprimé, confirmé ou signalé comme discordant ; l’analyse reste bloquée tant que tous les codes ne sont pas confirmés. `DEMO123` reste disponible pour les tests hors ligne. Pour une plaque réelle, utilisez un fournisseur professionnel autorisé qui retourne au minimum un VIN :
 
 ```env
 REGISTRATION_PROVIDER=http

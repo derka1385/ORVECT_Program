@@ -4,7 +4,7 @@ import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {api} from "@/services/api";
 
-export const FLOW_STEPS = ["Entrée", "Véhicule", "Preuves", "Diagnostic"] as const;
+export const FLOW_STEPS = ["Identification", "Vérification", "DTC & symptômes", "Résultats"] as const;
 
 export function OrvectLogo({compact=false}:{compact?:boolean}){
  return <Link href="/diagnostics/new" className="inline-flex min-h-11 items-center gap-2" aria-label="ORVECT — accueil produit">
@@ -17,7 +17,7 @@ export function ProductTopBar({identity="Session atelier"}:{identity?:string}){
  const router=useRouter();
  async function logout(){await api.logout().catch(()=>undefined);router.replace("/login")}
  return <header className="border-b border-white/10 bg-orvect-graphite text-orvect-mineral">
-  <div className="mx-auto flex min-h-[68px] max-w-[1440px] items-center gap-6 px-5 sm:px-8">
+  <div className="flex min-h-[68px] w-full items-center gap-6 px-5 sm:px-8 xl:px-10 2xl:px-12">
    <div className="w-[190px] shrink-0 text-orvect-orange"><OrvectLogo/></div>
    <p className="hidden flex-1 text-xs font-medium tracking-[.08em] sm:block">ATELIER ORVECT / PROTOTYPE TECHNIQUE</p>
    <div className="ml-auto flex items-center gap-3 text-right text-xs text-orvect-alloy">
@@ -43,18 +43,18 @@ export function ProductSidebar({active}:{active:number}){
   <p className="orvect-label text-orvect-alloy">DIAGNOSTIC ASSISTÉ</p>
   <ol className="mt-5 space-y-1">
    {FLOW_STEPS.map((label,index)=><li key={label} className={`px-3 py-3 text-sm ${index+1===active?"bg-orvect-orange text-orvect-graphite":"text-orvect-mineral"}`}>
-    {String(index+1).padStart(2,"0")} / {index===2?"Problème & preuves":label}
+    {String(index+1).padStart(2,"0")} / {label}
    </li>)}
   </ol>
-  <p className="mt-8 border-t border-white/15 pt-5 text-xs leading-5 text-orvect-alloy">Garage actif dérivé de la session utilisateur.</p>
+  <p className="mt-8 border-t border-white/15 pt-5 text-xs leading-5 text-orvect-alloy">VIN ou plaque pour identifier. Confirmation technicien avant toute analyse.</p>
  </aside>
 }
 
 export function ProductLayout({active,identity,children}:{active:number;identity?:string;children:React.ReactNode}){
  return <div className="min-h-dvh bg-orvect-mineral text-orvect-graphite">
   <ProductTopBar identity={identity}/>
-  <div className="mx-auto flex max-w-[1440px] items-start gap-6 px-5 py-6 sm:px-8 sm:py-8">
-   {active>1&&<ProductSidebar active={active}/>} 
+  <div className="flex w-full items-start gap-5 px-5 py-6 sm:px-8 sm:py-8 xl:gap-8 xl:px-10 2xl:px-12">
+   <ProductSidebar active={active}/>
    <main className="min-w-0 flex-1">{children}</main>
   </div>
  </div>
@@ -78,4 +78,3 @@ export function SourceLabel({title,children,dark=false}:{title:string;children:R
   <div className={`mt-2 ${dark?"text-orvect-alloy":"text-orvect-graphite"}`}>{children}</div>
  </div>
 }
-

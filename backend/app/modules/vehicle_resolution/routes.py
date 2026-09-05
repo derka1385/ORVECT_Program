@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.auth import active_garage_id,authenticated_user_id
 from app.database.models import EcuConfiguration,VehicleConfiguration,VehicleConfigurationCandidate,VehicleProfile,VehicleResolutionEvent,VinResolutionRequest,now
 from app.database.session import get_db
-from app.modules.vehicle_resolution.schemas import CompatibilityInput,ConfirmResolution,EcuInput,ResolveVin,ValidateVin
+from app.modules.vehicle_resolution.schemas import CompatibilityInput,ConfirmResolution,EcuInput,ResolveVin,ValidateVin,VehicleVerificationInput
 from app.modules.vehicle_resolution.services.compatibility_service import compatibility
 from app.modules.vehicle_resolution.services.precision_service import PrecisionService
 from app.modules.vehicle_resolution.services.security import protector
@@ -125,3 +125,48 @@ def check_compatibility(vehicle_id:str,data:CompatibilityInput,db:Session=Depend
     owned_vehicle(db,vehicle_id,gid);config=db.scalar(select(VehicleConfiguration).where(VehicleConfiguration.vehicle_id==vehicle_id))
     if not config:raise HTTPException(409,"Configuration du véhicule non confirmée")
     result=compatibility(db,config,data.dtcs);result["supported"]=bool(result["matched_definitions"]);result["missing_information"]=[];return result
+
+@router.get("/vehicles/{vehicle_id}/configuration")
+def get_vehicle_configuration(vehicle_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
+    vehicle=owned_vehicle(db,vehicle_id,gid)
+    config=db.scalar(select(VehicleConfiguration).where(VehicleConfiguration.vehicle_id==vehicle.id))
+    return {
+        "vehicle":serialize(vehicle),
+        "configuration":serialize(config) if config else None,
+        "technical_inspection_history":{
+            "status":"provider_not_configured",
+            "records":[],
+            "message":"No technical-inspection data source is configured.",
+        },
+    }
+
+@router.put("/vehicles/{vehicle_id}/configuration")
+def verify_vehicle_configuration(vehicle_id:str,data:VehicleVerificationInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
+    vehicle=owned_vehicle(db,vehicle_id,gid)
+    config=db.scalar(select(VehicleConfiguration).where(VehicleConfiguration.vehicle_id==vehicle.id)) or VehicleConfiguration(vehicle_id=vehicle.id)
+    payload=data.model_dump(exclude={"technician_note"})
+    payload["platform"]=payload.pop("vehicle_platform")
+    for key,value in payload.items():
+        if value is not None:setattr(config,key,value)
+    provenance=dict(config.field_provenance or {})
+    for key,value in payload.items():
+        if value is not None:provenance[key]={"value":value,"origin":"technician_verification","provider":None,"confidence":1.0}
+    config.field_provenance=provenance
+    config.confirmed_by_user=True;config.confirmed_by_user_id=uid;config.confirmed_at=now()
+    config.precision_level=precision.calculate(serialize(config)).value
+    config.confidence_score=max(config.confidence_score or 0,1.0)
+    vehicle.make=data.make;vehicle.model=data.model;vehicle.year=data.model_year;vehicle.engine_code=data.engine_code
+    vehicle.engine_name=data.engine_name or data.engine_code
+    if data.fuel_type:vehicle.fuel_type=data.fuel_type
+    if data.transmission_type:vehicle.transmission=data.transmission_type
+    if data.technician_note:vehicle.notes=data.technician_note
+    db.add(config);db.commit()
+    return {
+        "vehicle":serialize(vehicle),
+        "configuration":serialize(config),
+        "technical_inspection_history":{
+            "status":"provider_not_configured",
+            "records":[],
+            "message":"No technical-inspection data source is configured.",
+        },
+    }

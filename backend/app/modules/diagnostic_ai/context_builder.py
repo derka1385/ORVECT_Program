@@ -172,6 +172,8 @@ class DiagnosticContextBuilder:
                     "ecu_identifiers": (item.value or {}).get("ecu_identifiers", []),
                     "status": (item.value or {}).get("status", "unknown"),
                     "freeze_frame": (item.value or {}).get("freeze_frame", {}),
+                    "technician_verification": (item.value or {}).get("technician_verification", "unconfirmed"),
+                    "technician_note": _text((item.value or {}).get("technician_note"), 500),
                 }
                 for item in dtcs
             ],
@@ -204,6 +206,17 @@ class DiagnosticContextBuilder:
             "untrusted_user_data": {
                 "symptoms": _text(case.observed_symptoms, 5000),
                 "circumstances": _text(case.appearance_circumstances, 3000),
+            },
+            "cross_correlation_request": {
+                "analyze_as_one_case": True,
+                "dimensions": [
+                    "shared_root_cause",
+                    "dependency",
+                    "cascade",
+                    "contradiction",
+                    "vehicle_compatibility",
+                ],
+                "instruction": "Correlate all confirmed DTCs, symptoms, measurements and technician observations together; never concatenate independent code explanations.",
             },
             "technical_excerpts": self.retriever.search(
                 db, normalized, codes, case.observed_symptoms, "diagnostic controls"

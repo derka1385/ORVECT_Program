@@ -16,7 +16,7 @@ def create_case(client,codes=("P1351",),headers=None):
     response=client.post("/api/diagnostics",json={"vehicle_id":VEHICLE_ID,"mileage":120000,"symptoms":"Voyant moteur et démarrage difficile","circumstances":"Moteur froid"},headers=headers or {})
     assert response.status_code==201
     case_id=response.json()["id"]
-    payload={"fault_codes":[{"code":code,"ecu":"ECU moteur","status":"active","freeze_frame":{}} for code in codes]}
+    payload={"fault_codes":[{"code":code,"ecu":"ECU moteur","status":"active","freeze_frame":{},"technician_verification":"confirmed"} for code in codes]}
     assert client.post(f"/api/diagnostics/{case_id}/fault-codes",json=payload,headers=headers or {}).status_code==201
     return case_id
 
@@ -45,6 +45,7 @@ def test_gemini_response_normalizes_equivalent_schema_revision():
 
 def test_registration_resolution_validation_and_encrypted_persistence(client):
     assert client.post("/api/vehicles/resolve",json={"registration":"?"}).status_code==422
+    assert client.post("/api/vehicles/resolve",json={"registration":"DEMO123","vin":"ZZZTESTA0DEMA0001"}).status_code==422
     result=client.post("/api/vehicles/resolve",json={"registration":"DEMO123","country_code":"FR"})
     assert result.status_code==200 and result.json()["candidates"]
     body=result.json();confirmed=client.post(f"/api/vehicle-resolution/{body['resolution_id']}/confirm",json={"candidate_id":body["candidates"][0]["id"],"registration":"DEMO123","registration_country":"FR"})
@@ -57,6 +58,47 @@ def test_registration_resolution_validation_and_encrypted_persistence(client):
     finally:db.close()
     public=client.get(f"/api/vehicles/{confirmed.json()['vehicle']['id']}").json()
     assert "vin" not in public and "registration_encrypted" not in public and "registration_fingerprint" not in public
+
+def test_vehicle_configuration_can_be_reviewed_and_corrected_without_inventing_history(client):
+    before=client.get(f"/api/vehicles/{VEHICLE_ID}/configuration")
+    assert before.status_code==200
+    assert before.json()["technical_inspection_history"]=={
+        "status":"provider_not_configured",
+        "records":[],
+        "message":"No technical-inspection data source is configured.",
+    }
+    payload={"make":"Demo Motors","model":"DM-1 verified","model_year":2021,"engine_code":"DEMO-ENG-01","engine_name":"Verified engine","engine_family":"DEMO","fuel_type":"gasoline","transmission_type":"manual","transmission_code":"M6-DEMO","generation":"I","vehicle_platform":"DEMO-P","type_variant_version":"verified","drivetrain":"FWD","emission_standard":"demo","engine_ecu_manufacturer":"Demo ECU","engine_ecu_model":"ECU-1","technician_note":"Verified in test"}
+    response=client.put(f"/api/vehicles/{VEHICLE_ID}/configuration",json=payload)
+    assert response.status_code==200,response.text
+    body=response.json();assert body["vehicle"]["model"]=="DM-1 verified"
+    assert body["configuration"]["transmission_code"]=="M6-DEMO"
+    assert body["configuration"]["platform"]=="DEMO-P"
+    assert body["configuration"]["confirmed_by_user"] is True
+    assert body["technical_inspection_history"]["records"]==[]
+
+def test_dtc_preview_supports_multiple_codes_and_preserves_unavailable_definition(client):
+    response=client.post("/api/diagnostics/dtc-preview",json={"vehicle_id":VEHICLE_ID,"fault_codes":[{"code":"P0301","technician_verification":"unconfirmed"},{"code":"P1351","technician_verification":"interpretation_mismatch"}]})
+    assert response.status_code==200,response.text
+    body=response.json();assert body["count"]==2
+    by_code={item["code"]:item for item in body["items"]}
+    assert by_code["P0301"]["source"] and by_code["P0301"]["documented"] is True
+    assert by_code["P1351"]["description"]=="Definition unavailable for this vehicle configuration."
+    assert by_code["P1351"]["technician_verification"]=="interpretation_mismatch"
+
+def test_unconfirmed_or_mismatched_dtc_blocks_hypotheses(client):
+    case=client.post("/api/diagnostics",json={"vehicle_id":VEHICLE_ID,"symptoms":"Voyant moteur"}).json()
+    assert client.post(f"/api/diagnostics/{case['id']}/fault-codes",json={"fault_codes":[{"code":"P0301","technician_verification":"interpretation_mismatch"}]}).status_code==201
+    response=client.post(f"/api/diagnostics/{case['id']}/analyze")
+    assert response.status_code==200,response.text
+    assert response.json()["hypotheses"]==[]
+    assert response.json()["finalConclusion"]["status"]=="human_escalation_required"
+    db=SessionLocal()
+    try:
+        from app.database.models import DiagnosticSession
+        context,_=DiagnosticContextBuilder().build(db,db.get(DiagnosticSession,case["id"]))
+        assert context["fault_codes"][0]["technician_verification"]=="interpretation_mismatch"
+        assert context["cross_correlation_request"]["analyze_as_one_case"] is True
+    finally:db.close()
 
 def test_confirmed_manual_engine_is_used_to_authorize_diagnostic(client):
     result=client.post("/api/vehicle-resolution/vin",json={"vin":"ZZZTESTB0DEMB0002","country_code":"FR"}).json()

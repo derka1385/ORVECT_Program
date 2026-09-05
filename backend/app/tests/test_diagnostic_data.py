@@ -489,7 +489,7 @@ def test_oem_namespace_flows_through_diagnostic_engine_and_llm_explanation(clien
     case = client.post("/api/diagnostics", json={"vehicle_id": VEHICLE_ID}).json()
     added = client.post(
         f"/api/diagnostics/{case['id']}/fault-codes",
-        json={"fault_codes": [{"namespace": "vag_uds", "code": "VAG-TEST-PIPELINE"}]},
+        json={"fault_codes": [{"namespace": "vag_uds", "code": "VAG-TEST-PIPELINE", "technician_verification": "confirmed"}]},
     )
     assert added.status_code == 201
     assert added.json()[0]["value"]["resolution_status"] == "resolved"
@@ -539,8 +539,8 @@ def test_same_identifier_from_two_ecus_is_not_collapsed_in_explanation_layer(cli
         f"/api/diagnostics/{case['id']}/fault-codes",
         json={
             "fault_codes": [
-                {"namespace": "vag_uds", "code": "VAG-TEST-TWO-ECUS", "ecu": "engine"},
-                {"namespace": "vag_uds", "code": "VAG-TEST-TWO-ECUS", "ecu": "gearbox"},
+                {"namespace": "vag_uds", "code": "VAG-TEST-TWO-ECUS", "ecu": "engine", "technician_verification": "confirmed"},
+                {"namespace": "vag_uds", "code": "VAG-TEST-TWO-ECUS", "ecu": "gearbox", "technician_verification": "confirmed"},
             ]
         },
     )
