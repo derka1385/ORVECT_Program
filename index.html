@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101214">
+  <meta name="description" content="ORVECT — démonstration publique du parcours de diagnostic automobile assisté.">
+  <title>ORVECT — Démonstration du programme</title>
+  <style>
+    @font-face{font-family:"Space Grotesk";src:url("./frontend/public/fonts/SpaceGrotesk.ttf") format("truetype");font-display:swap;font-weight:300 700}
+    :root{--graphite:#101214;--mineral:#f2f1ed;--orange:#ff5c28;--alloy:#b8babd;--muted:#62676c;--line:#c9cac7;--white:#fff;--danger:#b42318;--max:1440px}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--mineral);color:var(--graphite);font-family:"Space Grotesk",Arial,sans-serif}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    button:disabled{cursor:not-allowed;opacity:.55}
+    a{color:inherit}
+    :focus-visible{outline:3px solid var(--orange);outline-offset:3px}
+    .topbar{position:sticky;top:0;z-index:20;background:var(--graphite);color:var(--mineral);border-bottom:1px solid #ffffff1a}
+    .topbar-inner{max-width:var(--max);min-height:70px;margin:auto;padding:0 28px;display:flex;align-items:center;gap:28px}
+    .logo{display:inline-flex;align-items:center;gap:10px;color:var(--orange);text-decoration:none}
+    .logo svg{width:36px;height:30px}.logo strong{color:var(--mineral);font-size:22px;letter-spacing:-.04em}
+    .topbar-title{font-size:12px;letter-spacing:.08em;font-weight:600}.topbar-meta{margin-left:auto;color:var(--alloy);font-size:12px;text-align:right}
+    .demo-strip{background:var(--orange);color:var(--graphite);padding:10px 24px;text-align:center;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    .shell{display:flex;max-width:var(--max);margin:auto;align-items:stretch;min-height:calc(100vh - 108px)}
+    .sidebar{width:220px;flex:0 0 220px;background:var(--graphite);color:var(--mineral);padding:28px 20px}
+    .eyebrow{margin:0;font-size:11px;line-height:1.35;font-weight:650;letter-spacing:.08em;text-transform:uppercase}
+    .sidebar .eyebrow{color:var(--alloy)}
+    .steps-side{list-style:none;margin:22px 0 0;padding:0}.steps-side li{padding:14px 12px;font-size:13px}.steps-side li.active{background:var(--orange);color:var(--graphite)}
+    .sidebar-note{margin-top:36px;padding-top:20px;border-top:1px solid #ffffff29;color:var(--alloy);font-size:12px;line-height:1.6}
+    main{min-width:0;flex:1;padding:38px 34px 72px}
+    .screen{display:none}.screen.active{display:block;animation:appear .28s ease-out}
+    @keyframes appear{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+    .headline{max-width:940px;margin:20px 0 0;font-size:clamp(42px,5vw,68px);line-height:1;letter-spacing:-.05em}
+    .lead{max-width:900px;margin:22px 0 0;font-size:16px;line-height:1.65}
+    .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;list-style:none;margin:28px 0;padding:0}
+    .flow button{width:100%;min-height:48px;padding:12px;border:1px solid var(--alloy);background:transparent;text-align:left;font-size:12px}.flow button.active{background:var(--orange);border-color:var(--orange);font-weight:650}
+    .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start}
+    .panel{border:1px solid var(--alloy);background:rgba(255,255,255,.22);padding:26px}.panel.dark{background:var(--graphite);color:var(--mineral);border-color:var(--graphite)}
+    .panel h2{margin:0;font-size:27px;line-height:1.12;letter-spacing:-.035em}.panel h3{margin:0;font-size:18px}.panel p{line-height:1.55}
+    .hero-card{min-height:310px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between}.hero-card h2{font-size:42px}.hero-card p{color:var(--alloy);max-width:560px}
+    .button{display:inline-flex;align-items:center;justify-content:center;min-height:46px;border:1px solid var(--graphite);padding:12px 18px;background:transparent;color:var(--graphite);font-size:13px;font-weight:650;text-decoration:none}
+    .button.primary{background:var(--orange);border-color:var(--orange)}.button.dark{background:var(--graphite);color:var(--mineral)}.dark .button.secondary{border-color:#ffffff55;color:var(--mineral)}
+    .button-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+    label{display:block}.field-label{display:block;margin:18px 0 7px;font-size:10px;font-weight:650;letter-spacing:.08em;text-transform:uppercase}
+    input,select,textarea{width:100%;min-height:46px;border:1px solid var(--alloy);border-radius:0;background:transparent;color:var(--graphite);padding:11px 12px}
+    textarea{min-height:92px;resize:vertical}.dark input,.dark select,.dark textarea{border-color:#ffffff55;color:var(--mineral);background:var(--graphite)}
+    .context{display:grid;grid-template-columns:1fr auto;gap:12px;padding:15px 0;border-top:1px solid var(--line);font-size:13px}.context span:first-child{color:var(--muted)}
+    .recent{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 0;border-top:1px solid var(--line)}.recent:first-of-type{margin-top:18px}.recent strong{display:block}.recent small{color:var(--muted)}
+    .status{border:1px solid var(--alloy);padding:16px;font-size:13px;font-weight:650;letter-spacing:.02em;text-transform:uppercase}.status.signal{background:var(--orange);border-color:var(--orange)}.status.dark{background:var(--graphite);color:var(--mineral)}
+    .source{margin-top:18px;border:1px solid var(--alloy);padding:14px;font-size:11px;line-height:1.6}.source strong{display:block;text-transform:uppercase}.source span{display:block;color:var(--muted)}
+    .dtc-card{margin-top:16px;border:1px solid var(--alloy);padding:17px}.dtc-head{display:flex;justify-content:space-between;gap:12px}.dtc-code{font:700 21px ui-monospace,SFMono-Regular,Menlo,monospace}.dtc-type{font-size:10px;text-transform:uppercase}.dtc-card p{font-size:13px}
+    .check-card{background:var(--orange);color:var(--graphite);padding:18px}.check-card h3{margin-top:7px;font-size:20px}.instructions{list-style:none;padding:0;margin:14px 0}.instructions li{border:1px solid #ffffff44;padding:12px;font-size:13px;margin-top:8px}.instructions b{color:var(--orange);margin-right:9px}
+    .missing{margin:14px 0 0;padding:0;list-style:none}.missing li{border-top:1px solid var(--line);padding:12px 0;font-size:13px}.missing span{display:block;color:var(--muted);margin-top:3px}
+    .notice{display:none;margin:18px 0;border:1px solid var(--orange);padding:14px;font-size:13px}.notice.show{display:block}.notice.error{border-color:var(--danger);color:var(--danger)}
+    .tag{display:inline-flex;border:1px solid var(--alloy);padding:7px 10px;margin:5px 5px 0 0;font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace}
+    .metric{font-size:45px;font-weight:650;letter-spacing:-.05em;margin:12px 0}.muted{color:var(--muted)}
+    .measurement{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}.measurement .button{min-height:46px}
+    .measurement-list{margin-top:12px}.measurement-row{display:flex;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--alloy);font-size:13px;margin-top:8px}
+    .footer-note{margin-top:28px;color:var(--muted);font-size:12px;line-height:1.6}
+    .mobile-only{display:none}
+    @media(max-width:980px){.sidebar{display:none}.grid-3{grid-template-columns:1fr}.mobile-only{display:block}.shell{min-height:auto}}
+    @media(max-width:720px){.topbar-inner{padding:0 18px}.topbar-title{display:none}.topbar-meta{max-width:150px}.logo strong{font-size:19px}main{padding:28px 18px 60px}.grid-2{grid-template-columns:1fr}.flow{grid-template-columns:repeat(2,1fr)}.headline{font-size:42px}.hero-card h2{font-size:34px}.panel{padding:20px}.measurement{grid-template-columns:1fr}.button-row .button{width:100%}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <button class="logo" type="button" data-go="1" aria-label="Retour à l’entrée ORVECT">
+        <svg aria-hidden="true" viewBox="0 0 120 100" fill="currentColor"><path d="M8 76 29 24h19L27 76Z M41 76 70 4h19L60 76Z M74 76 95 24h19L93 76Z"/></svg>
+        <strong>ORVECT</strong>
+      </button>
+      <span class="topbar-title">ATELIER ORVECT / PROTOTYPE TECHNIQUE</span>
+      <span class="topbar-meta">demo@orvect.fr · technician</span>
+    </div>
+  </header>
+  <div class="demo-strip">Démonstration publique · données synthétiques · aucune persistance serveur</div>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Étapes du diagnostic">
+      <p class="eyebrow">Diagnostic assisté</p>
+      <ol class="steps-side">
+        <li data-side="1">01 / Entrée</li><li data-side="2">02 / Véhicule</li><li data-side="3">03 / Problème &amp; preuves</li><li data-side="4">04 / Diagnostic</li>
+      </ol>
+      <p class="sidebar-note">Cette version permet d’explorer l’interface. Le runtime sécurisé FastAPI/PostgreSQL n’est pas exécuté par GitHub Pages.</p>
+    </aside>
+    <main>
+      <section class="screen" data-screen="1">
+        <p class="eyebrow">01 / Entrée atelier</p>
+        <h1 class="headline">Que voulez-vous<br>diagnostiquer&nbsp;?</h1>
+        <p class="lead">Démarrez un nouveau dossier ou explorez un diagnostic synthétique. Les données affichées servent uniquement à présenter le parcours ORVECT.</p>
+        <ol class="flow" aria-label="Progression"><li><button class="active" data-go="1">01 / Entrée</button></li><li><button data-go="2">02 / Véhicule</button></li><li><button disabled>03 / Preuves</button></li><li><button disabled>04 / Diagnostic</button></li></ol>
+        <div class="grid-2">
+          <article class="panel dark hero-card"><div><p class="eyebrow">Nouveau dossier</p><h2>Commencer par<br>le véhicule.</h2><p>Contexte vérifié, preuves distinguées des hypothèses et aucune définition constructeur inventée.</p></div><button class="button primary" data-go="2">Identifier un véhicule</button></article>
+          <article class="panel"><p class="eyebrow muted">Dossier de démonstration</p><div class="recent"><div><strong>Volkswagen Golf VII · 2.0 TDI</strong><small>P0301 · ratés intermittents</small></div><button class="button" data-demo-case>Ouvrir</button></div><div class="recent"><div><strong>Configuration non confirmée</strong><small>Définition constructeur indisponible</small></div><button class="button" data-unknown-case>Examiner</button></div><p class="footer-note">A code is the beginning. Not the answer.</p></article>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="2">
+        <p class="eyebrow">02 / Identification du véhicule</p>
+        <h1 class="headline">Établir le contexte<br>avant d’interpréter.</h1>
+        <p class="lead">Le moteur, le calculateur et la configuration déterminent si une définition est applicable.</p>
+        <ol class="flow"><li><button data-go="1">01 / Entrée</button></li><li><button class="active" data-go="2">02 / Véhicule</button></li><li><button data-go="3">03 / Preuves</button></li><li><button disabled>04 / Diagnostic</button></li></ol>
+        <div id="vehicleNotice" class="notice" role="status"></div>
+        <div class="grid-2">
+          <form class="panel" id="vehicleForm"><h2>Véhicule de démonstration</h2><label class="field-label" for="vehicle">Véhicule</label><select id="vehicle"><option value="golf">Volkswagen Golf VII · 2017</option><option value="unknown">Configuration non suffisamment identifiée</option></select><label class="field-label" for="registration">Immatriculation synthétique</label><input id="registration" value="OR-VEC-01" maxlength="12"><label class="field-label" for="engine">Code moteur vérifié</label><input id="engine" value="CRBC" maxlength="20"><div class="button-row"><button class="button primary" type="submit">Confirmer ce véhicule</button></div></form>
+          <article class="panel"><p class="eyebrow muted">Contexte retenu</p><h2 id="vehicleTitle">Volkswagen Golf VII</h2><div class="context"><span>Année</span><strong id="vehicleYear">2017</strong></div><div class="context"><span>Motorisation</span><strong id="vehicleEngine">2.0 TDI · CRBC</strong></div><div class="context"><span>Calculateur</span><strong>ECM · à confirmer</strong></div><div class="context"><span>VIN</span><strong>WVW••••••••4821</strong></div><div class="source"><strong>Source / démonstration synthétique</strong><span>source_id: DEMO-VEHICLE-001</span><span>compatibilité: non certifiée · revue humaine requise</span></div></article>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="3">
+        <p class="eyebrow">03 / Problème &amp; preuves</p>
+        <h1 class="headline">Décrire ce qui se passe.<br>Conserver ce qui le prouve.</h1>
+        <p class="lead">Une observation reste distincte d’une hypothèse. Un test indisponible ou non concluant ne devient jamais un résultat négatif.</p>
+        <ol class="flow"><li><button data-go="1">01 / Entrée</button></li><li><button data-go="2">02 / Véhicule</button></li><li><button class="active" data-go="3">03 / Preuves</button></li><li><button data-go="4">04 / Diagnostic</button></li></ol>
+        <div id="evidenceNotice" class="notice" role="status"></div>
+        <div class="grid-2">
+          <section class="panel"><h2>Problème observé</h2><label class="field-label" for="symptoms">Motif client / symptômes</label><textarea id="symptoms">Ratés intermittents et voyant moteur sous charge.</textarea><label class="field-label" for="conditions">Conditions d’apparition</label><textarea id="conditions">Moteur chaud, accélération entre 1 800 et 2 500 tr/min.</textarea><div class="grid-2"><label><span class="field-label">Namespace</span><select id="namespace"><option value="sae_obd2">SAE / OBD-II</option><option value="vag_uds">VAG / UDS</option></select></label><label><span class="field-label">Kilométrage</span><input id="mileage" type="number" value="148320" min="0"></label></div><div class="panel dark" style="margin-top:18px"><label class="field-label" for="dtc">Code défaut</label><input id="dtc" value="P0301" maxlength="80"><p class="muted">Aucune définition n’est déduite d’un motif numérique.</p></div></section>
+          <section class="panel"><h2>Preuves techniques</h2><div class="measurement"><label><span class="field-label">Mesure</span><input id="measureName" placeholder="Ex. compression cylindre 1"></label><label><span class="field-label">Valeur</span><input id="measureValue" placeholder="Ex. 25 bar"></label><button class="button" id="addMeasurement" type="button">Ajouter</button></div><div id="measurementList" class="measurement-list"></div><label class="field-label" for="fileDemo">Document / photo</label><input id="fileDemo" type="file" accept="image/jpeg,image/png,image/webp"><div class="source"><strong>Source / saisie technicien</strong><span>source_id généré par le serveur dans le runtime complet</span><span>timestamp et compatibilité liés au dossier</span></div><label class="field-label" for="testState">État d’un résultat</label><select id="testState"><option>positive</option><option>negative</option><option selected>inconclusive</option><option>unavailable</option><option>invalid</option><option>refused</option></select><div class="status" style="margin-top:12px">UNAVAILABLE / N’ALTÈRE PAS L’ÉTAT DIAGNOSTIQUE</div></section>
+        </div>
+        <div class="button-row"><button class="button dark" id="saveEvidence">Enregistrer dans cette démo</button><button class="button primary" id="launchDiagnosis">Passer au diagnostic assisté</button></div>
+      </section>
+
+      <section class="screen" data-screen="4">
+        <p class="eyebrow">04 / Diagnostic assisté · dossier DEMO-0001</p>
+        <h1 class="headline">Avancer contrôle par contrôle.<br>Expliquer chaque limite.</h1>
+        <p class="lead">Le moteur diagnostic structure l’état. Le moteur de sécurité applique uniquement ses règles. Le LLM ne décide ni du danger, ni d’un remplacement.</p>
+        <ol class="flow"><li><button data-go="1">01 / Entrée</button></li><li><button data-go="2">02 / Véhicule</button></li><li><button data-go="3">03 / Preuves</button></li><li><button class="active" data-go="4">04 / Diagnostic</button></li></ol>
+        <div class="status signal">UNKNOWN / HUMAN REVIEW REQUIRED</div>
+        <div id="diagnosticNotice" class="notice" role="status"></div>
+        <div class="grid-3" style="margin-top:18px">
+          <section class="panel"><p class="eyebrow muted">Contexte du dossier</p><h2 id="diagVehicle">Volkswagen Golf VII<br><span class="muted">Moteur CRBC</span></h2><p class="eyebrow" style="margin-top:24px">Observé</p><p id="diagSymptoms">Ratés intermittents et voyant moteur sous charge.</p><article class="dtc-card"><div class="dtc-head"><strong class="dtc-code" id="diagCode">P0301</strong><span class="dtc-type" id="diagType">generic standardized</span></div><p id="diagMeaning">Cylinder 1 Misfire Detected.</p><p class="eyebrow muted" id="diagSourceState">Définition générique sourcée</p><div class="source"><strong>Source admise</strong><span id="diagSourceId">source_id: DEMO-SAE-P0301</span><span id="diagSourceMeta">source_type: community_reference · version: demo-2026-09</span><span id="diagCompatibility">compatibilité: générique OBD-II · vérification constructeur non établie</span></div></article><p class="eyebrow muted" style="margin-top:22px">Informations manquantes</p><ul class="missing"><li>État du défaut<span>Actif, intermittent ou mémorisé à confirmer.</span></li><li>Freeze frame<span>Régime, charge et température non importés.</span></li></ul></section>
+          <section class="panel dark"><p class="eyebrow muted">Processus guidé</p><h2>Prochain contrôle</h2><div class="check-card" style="margin-top:16px"><p class="eyebrow">Étape 01 · courante</p><h3 id="checkTitle">Confirmer le caractère reproductible</h3><p id="checkObjective">Observer si le défaut réapparaît dans les mêmes conditions, sans conclure sur une pièce.</p></div><ol class="instructions"><li><b>01</b>Relever l’état du DTC et le freeze frame.</li><li><b>02</b>Documenter régime, charge et température.</li><li><b>03</b>Ne pas remplacer de pièce sur le seul code.</li></ol><label class="field-label" for="diagResult">État du résultat</label><select id="diagResult"><option value="positive">Positive — informatif</option><option value="negative">Negative — informatif</option><option value="inconclusive" selected>Inconclusive</option><option value="unavailable">Unavailable</option><option value="invalid">Invalid</option><option value="refused">Refused</option></select><label class="field-label" for="resultText">Résultat constaté</label><textarea id="resultText" placeholder="Relevé ou observation"></textarea><button class="button primary" style="width:100%;margin-top:14px" id="recordResult">Enregistrer et réévaluer</button></section>
+          <section class="panel"><p class="eyebrow muted">État diagnostique</p><div class="metric" id="hypothesisCount">1 hypothèse</div><div id="hypothesisContent"><article class="dtc-card"><p class="eyebrow">Hypothèse 01 · partiellement vérifiée</p><h3>Raté de combustion cylindre 1 — cause non confirmée</h3><p class="muted">Cohérence indicative de démonstration : 45 %. Ce chiffre ne remplace pas une mesure.</p></article></div><div class="status" style="margin-top:16px">GENERAL LLM KNOWLEDGE / NON VÉRIFIÉE</div><p>Aucune décision de roulage par le LLM.<br>Aucun niveau de danger par le LLM.<br>Aucune pièce remplacée automatiquement.<br>Aucune cause définitivement confirmée.</p><div class="panel dark" style="margin-top:18px"><h3>Escalade humaine requise</h3><p class="muted">Aucune règle de sécurité suffisamment spécifique ne permet une décision automatique.</p><p class="eyebrow muted">Source de décision : Safety Engine</p></div></section>
+        </div>
+        <div class="button-row"><button class="button" data-go="3">Modifier les preuves</button><button class="button primary" id="reanalyze">Réévaluer le dossier</button></div>
+        <p class="footer-note">Prototype public de présentation. Pour les sessions sécurisées, la persistance PostgreSQL, les uploads privés et l’isolation des garages, utiliser le déploiement complet.</p>
+      </section>
+    </main>
+  </div>
+  <script>
+    (()=>{
+      const state={screen:1,vehicle:"golf",measurements:[]};
+      const $=(selector)=>document.querySelector(selector);const $$=(selector)=>[...document.querySelectorAll(selector)];
+      function show(screen){state.screen=Number(screen);$$('.screen').forEach(node=>node.classList.toggle('active',Number(node.dataset.screen)===state.screen));$$('[data-side]').forEach(node=>node.classList.toggle('active',Number(node.dataset.side)===state.screen));window.scrollTo({top:0,behavior:'smooth'})}
+      function notice(id,message,error=false){const node=$(id);node.textContent=message;node.classList.toggle('error',error);node.classList.add('show');setTimeout(()=>node.classList.remove('show'),4200)}
+      function setVehicle(value){state.vehicle=value;const unknown=value==='unknown';$('#vehicleTitle').textContent=unknown?'Configuration à confirmer':'Volkswagen Golf VII';$('#vehicleYear').textContent=unknown?'Non établie':'2017';$('#vehicleEngine').textContent=unknown?'Non suffisamment identifié':'2.0 TDI · CRBC';$('#engine').value=unknown?'':'CRBC';$('#diagVehicle').innerHTML=unknown?'Configuration non confirmée<br><span class="muted">Moteur non identifié</span>':'Volkswagen Golf VII<br><span class="muted">Moteur CRBC</span>'}
+      function updateDiagnostic(){const code=$('#dtc').value.trim().toUpperCase()||'NON RENSEIGNÉ';const known=code==='P0301'&&$('#namespace').value==='sae_obd2';$('#diagCode').textContent=code;$('#diagSymptoms').textContent=$('#symptoms').value||'Aucun symptôme documenté.';$('#diagType').textContent=known?'generic standardized':code==='NON RENSEIGNÉ'?'unknown':'manufacturer specific / unknown';$('#diagMeaning').textContent=known?'Cylinder 1 Misfire Detected.':'Definition unavailable for this vehicle configuration.';$('#diagSourceState').textContent=known?'Définition générique sourcée':'Définition indisponible — aucune invention';$('#diagSourceId').textContent=known?'source_id: DEMO-SAE-P0301':'source_id: unavailable';$('#diagSourceMeta').textContent=known?'source_type: community_reference · version: demo-2026-09':'source_type: unavailable · version: unavailable';$('#diagCompatibility').textContent=known?'compatibilité: générique OBD-II · vérification constructeur non établie':'compatibilité: non établie · timestamp: unavailable';$('#hypothesisCount').textContent=known?'1 hypothèse':'0 hypothèse';$('#hypothesisContent').innerHTML=known?'<article class="dtc-card"><p class="eyebrow">Hypothèse 01 · partiellement vérifiée</p><h3>Raté de combustion cylindre 1 — cause non confirmée</h3><p class="muted">Cohérence indicative de démonstration : 45 %. Ce chiffre ne remplace pas une mesure.</p></article>':'<div class="dtc-card"><p class="eyebrow">INSUFFICIENT EVIDENCE</p><p>Vehicle configuration not sufficiently identified.</p><p>Manufacturer-specific definition unavailable.</p></div>'}
+      $$('[data-go]').forEach(node=>node.addEventListener('click',()=>show(node.dataset.go)));
+      $('[data-demo-case]').addEventListener('click',()=>{setVehicle('golf');$('#vehicle').value='golf';$('#dtc').value='P0301';updateDiagnostic();show(4)});
+      $('[data-unknown-case]').addEventListener('click',()=>{setVehicle('unknown');$('#vehicle').value='unknown';$('#dtc').value='P1351';updateDiagnostic();show(4)});
+      $('#vehicle').addEventListener('change',event=>setVehicle(event.target.value));
+      $('#vehicleForm').addEventListener('submit',event=>{event.preventDefault();const unknown=$('#vehicle').value==='unknown';notice('#vehicleNotice',unknown?'Configuration incomplète conservée comme telle. Revue humaine requise.':'Véhicule synthétique confirmé pour la démonstration.');setTimeout(()=>show(3),500)});
+      $('#addMeasurement').addEventListener('click',()=>{const name=$('#measureName').value.trim(),value=$('#measureValue').value.trim();if(!name||!value)return notice('#evidenceNotice','Indiquez le nom et la valeur de la mesure.',true);state.measurements.push({name,value});$('#measurementList').insertAdjacentHTML('beforeend',`<div class="measurement-row"><strong>${name.replace(/[<>]/g,'')}</strong><span>${value.replace(/[<>]/g,'')}</span></div>`);$('#measureName').value='';$('#measureValue').value=''});
+      $('#saveEvidence').addEventListener('click',()=>notice('#evidenceNotice','Preuves conservées dans cette session de navigateur uniquement.'));
+      $('#launchDiagnosis').addEventListener('click',()=>{updateDiagnostic();show(4)});
+      $('#recordResult').addEventListener('click',()=>{const value=$('#diagResult').value;const informative=value==='positive'||value==='negative';if(informative&&!$('#resultText').value.trim())return notice('#diagnosticNotice','Un résultat informatif doit décrire une observation réelle.',true);notice('#diagnosticNotice',informative?'Résultat informatif enregistré dans la démo. La cause reste non confirmée.':`${value.toUpperCase()} enregistré : l’état diagnostique n’est pas modifié.`)});
+      $('#reanalyze').addEventListener('click',()=>{updateDiagnostic();notice('#diagnosticNotice','Réévaluation terminée. Aucune conclusion supplémentaire n’a été inventée.')});
+      show(1);
+    })();
+  </script>
+</body>
+</html>

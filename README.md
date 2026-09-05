@@ -2,6 +2,10 @@
 
 ORVECT aide un mécanicien à transformer un DTC en parcours de contrôle guidé, sourcé et traçable. Ce dépôt est une fondation fonctionnelle et un **prototype technique à ne pas utiliser sur un véhicule réel**. Un DTC n’est jamais présenté comme la preuve d’une pièce défectueuse.
 
+## Démonstration publique
+
+La page [derka1385.github.io/ORVECT_Program](https://derka1385.github.io/ORVECT_Program/) présente un parcours interactif avec des données exclusivement synthétiques. GitHub Pages étant un hébergement statique, cette démonstration n’exécute ni FastAPI, ni PostgreSQL, ni l’authentification serveur et ne conserve aucune donnée. Le runtime complet et sécurisé se lance avec Docker selon la procédure ci-dessous.
+
 ## Ce qui fonctionne
 
 - utilisateurs administrateur/technicien, garage et véhicule de démonstration ;
