@@ -1,0 +1,3412 @@
+{
+  "schema_version": "1.0",
+  "retrieved_at": "2026-09-04T15:55:24.925354+00:00",
+  "policy": "METADATA_ONLY_NO_DIAGNOSTIC_IMPORT",
+  "repositories_discovered": 95,
+  "method": "All primary-brand repository archives; inspect signalset JSON code+description records and DTC-like paths. Counts are candidates, not verified concepts. Generation years are metadata, not DTC applicability.",
+  "repositories": [
+    {
+      "repository": "OBDb/Audi-A1",
+      "url": "https://github.com/OBDb/Audi-A1",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-06-04T13:08:46Z",
+      "imported": false,
+      "archive_sha256": "12dad3fe491f59948fac2ae3f5687a5b999b5223c49f5ebf7912e6b3c2577ad5",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-A1/tar.gz/refs/heads/main",
+      "commit": "7489f9093d758594f52c36900cf2ef96aaa1ef85",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "3aad9124f2a4a9d5144723767b598601496b877e7791dbfdf06030f0a489c4ee",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 1
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2010",
+        "2011",
+        "2018"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-A3",
+      "url": "https://github.com/OBDb/Audi-A3",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-04T14:57:37Z",
+      "imported": false,
+      "archive_sha256": "795237e4dc3c466e649c4c932aa816964fab9f6ccac596b30bfb43d64703ef28",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-A3/tar.gz/refs/heads/main",
+      "commit": "7907b909b2fbb1e13b610863bae4722f2b13ba70",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1996",
+        "2003",
+        "2004",
+        "2006",
+        "2008",
+        "2012",
+        "2013",
+        "2016",
+        "2020",
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-A3-e-tron",
+      "url": "https://github.com/OBDb/Audi-A3-e-tron",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-05-19T03:00:47Z",
+      "imported": false,
+      "archive_sha256": "79be1eef21514b6bda05d7f0c4ea733c46c45da49e4e6bb982226594ade125a8",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-A3-e-tron/tar.gz/refs/heads/main",
+      "commit": "76050dbd52571f04c37094f4229d660f223adaed",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2014",
+        "2018",
+        "2019",
+        "2020",
+        "2021"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-A4",
+      "url": "https://github.com/OBDb/Audi-A4",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-04T13:56:06Z",
+      "imported": false,
+      "archive_sha256": "1d73eb513f67d90cba933d1b0c244daeaaacbc00e0690a529445e48a02faada5",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-A4/tar.gz/refs/heads/main",
+      "commit": "5cfe3c208c2093bcbbd9502772aa26d1a51cb2e2",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/2017-2017.json",
+          "sha256": "6881e78ff434ffc09058327027f96cc0b7329ea54951e3d92ebf6c931ed0364a",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 10
+        },
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "d4b0a3b4e8a7d3746d1920e8ce465d18d644bcc6c1b64f94034199f65bd73e76",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 31
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1994",
+        "1997",
+        "1998",
+        "1999",
+        "2000",
+        "2001",
+        "2002",
+        "2003",
+        "2004",
+        "2005",
+        "2006",
+        "2007",
+        "2008",
+        "2009",
+        "2012",
+        "2013",
+        "2015",
+        "2016",
+        "2017",
+        "2019",
+        "2020",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-A5",
+      "url": "https://github.com/OBDb/Audi-A5",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-04T09:59:07Z",
+      "imported": false,
+      "archive_sha256": "0a0908fa1ec2ce6d93465aec991ec54efcf74a9cfc81b3299b586077d1217ddb",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-A5/tar.gz/refs/heads/main",
+      "commit": "4a92fc4a0160b1e6fc3cfb9da70bf2cb95670eb9",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2007",
+        "2008",
+        "2010",
+        "2012",
+        "2016",
+        "2019",
+        "2024",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-A6",
+      "url": "https://github.com/OBDb/Audi-A6",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-31T19:56:27Z",
+      "imported": false,
+      "archive_sha256": "7def71782458f51e2a4091c2b92d8c18c6f7efe7ea8cf85ec30d49e7e630cb6e",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-A6/tar.gz/refs/heads/main",
+      "commit": "e83ecbab10fa012c95447d9029c1fe5cc5ada628",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "725ff592ff80b07176afb162aefad1b1654012fd4c6d259367d15a7d1884c382",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 31
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1994",
+        "1997",
+        "2004",
+        "2011",
+        "2012",
+        "2018",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-A7",
+      "url": "https://github.com/OBDb/Audi-A7",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-17T18:56:34Z",
+      "imported": false,
+      "archive_sha256": "41ab5a479c173a9bbe8599e72699aba3473d9d1bb7eec549607f44ee745859ad",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-A7/tar.gz/refs/heads/main",
+      "commit": "ea52a4408a0a8fb58801938290bf5338c638c3ee",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2010",
+        "2014",
+        "2015",
+        "2017",
+        "2018",
+        "2021"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-e-tron",
+      "url": "https://github.com/OBDb/Audi-e-tron",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-02T17:59:01Z",
+      "imported": false,
+      "archive_sha256": "992a49ca920e5be03d2e769877b1800b14a57efef426f576ffe27708f9a6acf5",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-e-tron/tar.gz/refs/heads/main",
+      "commit": "efc5089b9dcd502ccaed5056f3feacc538cfbc22",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2018",
+        "2019",
+        "2020",
+        "2022",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-Q2",
+      "url": "https://github.com/OBDb/Audi-Q2",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-05-16T12:56:41Z",
+      "imported": false,
+      "archive_sha256": "2175ef38f5cd50af4dbc6d4d458a81359ac60599b3f2d4b31d4c86a078cb5ee8",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-Q2/tar.gz/refs/heads/main",
+      "commit": "035ad70117fbb6c1eefb5d9bb34b62e3ba6fb912",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2016",
+        "2019",
+        "2020",
+        "2022"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-Q3",
+      "url": "https://github.com/OBDb/Audi-Q3",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-29T23:00:23Z",
+      "imported": false,
+      "archive_sha256": "9ee736b8bf57f05f23295aed2854e65607cc8dbb0bf93182620902c98214d30e",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-Q3/tar.gz/refs/heads/main",
+      "commit": "72d9c6c6338771803231bac59bd055e4f47deea7",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "b7a94d8cd8bc3b2abb1451bf3a031d6d12282bc7ee34c40748872e02a186fce0",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 448
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2011",
+        "2013",
+        "2014",
+        "2018",
+        "2019",
+        "2025",
+        "2026"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-Q4-e-tron",
+      "url": "https://github.com/OBDb/Audi-Q4-e-tron",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-03-10T07:56:14Z",
+      "imported": false,
+      "archive_sha256": "24cdf8dd5cde7ba3f286e79f8ca92b52ed13a9d8fec0c6c8b970afb936f9c3d6",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-Q4-e-tron/tar.gz/refs/heads/main",
+      "commit": "2fb6995d49baafb66d861bcb7eb666902341abc3",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "09df7aefd97213aa653e52104a547182edc7aa69448b298b60284781a2574c33",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 1
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2021"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-Q5",
+      "url": "https://github.com/OBDb/Audi-Q5",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-03T09:56:49Z",
+      "imported": false,
+      "archive_sha256": "4e848ecc9bdb2c3f44a9edb8e513bf3e3438e4253d75ed3536ef4b3d75a16344",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-Q5/tar.gz/refs/heads/main",
+      "commit": "8b411ca458cbe738e46b87ff7fcb3e7f91d8be7c",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2008",
+        "2011",
+        "2012",
+        "2016",
+        "2017",
+        "2018",
+        "2020",
+        "2021",
+        "2024",
+        "2025",
+        "2026"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-Q7",
+      "url": "https://github.com/OBDb/Audi-Q7",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-04T13:57:36Z",
+      "imported": false,
+      "archive_sha256": "971c5b33891aa425bb3ddf10276f633d5c903c93025c0e917198e1b1a48c9af9",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-Q7/tar.gz/refs/heads/main",
+      "commit": "25ed799435ffd49b42196b3176e7e0fc2fff3015",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2006",
+        "2015",
+        "2016",
+        "2019",
+        "2020",
+        "2024",
+        "2025",
+        "2026"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-Q8",
+      "url": "https://github.com/OBDb/Audi-Q8",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-07-18T12:56:44Z",
+      "imported": false,
+      "archive_sha256": "94720ac5476de6cab9f9d2122ed1bbe6cd0665d47f15f3149b816fea833f4f56",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-Q8/tar.gz/refs/heads/main",
+      "commit": "820dd736487c4766cb42f5d768a8b09aefe6b93b",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2018",
+        "2019",
+        "2023",
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-Q8-e-tron",
+      "url": "https://github.com/OBDb/Audi-Q8-e-tron",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-24T17:57:38Z",
+      "imported": false,
+      "archive_sha256": "f32b00ea9b1c0e2e2124ab5a961884bceb8180848601d1c7962b222de5857dc3",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-Q8-e-tron/tar.gz/refs/heads/main",
+      "commit": "85b747ecf1877364f77ba54d7dc31730103ff624",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2015",
+        "2018",
+        "2019",
+        "2020",
+        "2021",
+        "2022",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-RS-3",
+      "url": "https://github.com/OBDb/Audi-RS-3",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-12T17:37:06Z",
+      "imported": false,
+      "archive_sha256": "184d1cfb5297b347dbbccd62c7015b31166078793f4d4ce6af5b0a63b9d7144f",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-RS-3/tar.gz/refs/heads/main",
+      "commit": "9a4d1de277f8e98435e827765f392e8bd3f13d8e",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "b4f8a37a741ba37c4aaf47b4406b33e52b44b74f4593c43245405bb9ae810b39",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 31
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2011",
+        "2012",
+        "2015",
+        "2016",
+        "2017",
+        "2018",
+        "2019",
+        "2020",
+        "2021",
+        "2022"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-RS-5",
+      "url": "https://github.com/OBDb/Audi-RS-5",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-24T22:02:59Z",
+      "imported": false,
+      "archive_sha256": "5a7a357a3d0756204bd029a0decd1c36e7b6050470e4a9f5ddb0be261c690695",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-RS-5/tar.gz/refs/heads/main",
+      "commit": "acbbc2f1829f01c824b82092d0786d256936fb99",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2010",
+        "2011",
+        "2012",
+        "2015",
+        "2016",
+        "2017",
+        "2018",
+        "2019",
+        "2020"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-RS-e-tron",
+      "url": "https://github.com/OBDb/Audi-RS-e-tron",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-21T15:57:35Z",
+      "imported": false,
+      "archive_sha256": "957edf6843c85f5275f86291c60cddd6e4d6302cbf4a08c99a161701fcd9fb90",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-RS-e-tron/tar.gz/refs/heads/main",
+      "commit": "58a4aa2b83e04070bfa46355c09ef2662ef74c78",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2021"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-S3",
+      "url": "https://github.com/OBDb/Audi-S3",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-06-06T23:56:51Z",
+      "imported": false,
+      "archive_sha256": "551efa441813f57154908ca2932f567b08cfcb52541420cc3e96c071f58f14a8",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-S3/tar.gz/refs/heads/main",
+      "commit": "1307112fe809226ea96025b8197a9ebfda9c700c",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1999",
+        "2000",
+        "2001",
+        "2003",
+        "2006",
+        "2008",
+        "2012",
+        "2013",
+        "2014",
+        "2016",
+        "2020"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-S4",
+      "url": "https://github.com/OBDb/Audi-S4",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-12T02:46:02Z",
+      "imported": false,
+      "archive_sha256": "5218b77e2b661d4c8da03f4401bb002a88a688239dc0ef4bbdab3749a8ae59c1",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-S4/tar.gz/refs/heads/main",
+      "commit": "78da2dd5d56447a8363c2e2789cc8f39e2a6d801",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1991",
+        "1992",
+        "1994",
+        "1997",
+        "1998",
+        "2001",
+        "2002",
+        "2003",
+        "2004",
+        "2005",
+        "2008",
+        "2009",
+        "2012",
+        "2013",
+        "2016",
+        "2017",
+        "2019",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-S5",
+      "url": "https://github.com/OBDb/Audi-S5",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-12T02:46:10Z",
+      "imported": false,
+      "archive_sha256": "38b96eb9b7dafab3e460e8195fc85284dadb274a2336ac77a7cc6c6df078f680",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-S5/tar.gz/refs/heads/main",
+      "commit": "b14b2bcaaed25e3cd02cc245394945a4cc68f9e1",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2007",
+        "2009",
+        "2012",
+        "2017",
+        "2019",
+        "2020",
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-S6",
+      "url": "https://github.com/OBDb/Audi-S6",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-12T02:46:32Z",
+      "imported": false,
+      "archive_sha256": "bcc091163bd594575cff742e6fc5753b234ab39d3a21ec9530a0b8271837b556",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-S6/tar.gz/refs/heads/main",
+      "commit": "1a31e07bf17ef90bd027c8be820937e3499d3383",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1994",
+        "1997",
+        "1999",
+        "2003",
+        "2005",
+        "2008",
+        "2009",
+        "2010",
+        "2011",
+        "2012",
+        "2013",
+        "2014",
+        "2015",
+        "2018",
+        "2019"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-SQ2",
+      "url": "https://github.com/OBDb/Audi-SQ2",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-06-16T02:57:35Z",
+      "imported": false,
+      "archive_sha256": "7dc7945356ec0d9a41e7c0659f48843111735b422a8db4f1c24f816f993bc1e6",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-SQ2/tar.gz/refs/heads/main",
+      "commit": "2534d22312cabda29b30a97d5f682d07571ad8b7",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2019",
+        "2020",
+        "2021"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-SQ5",
+      "url": "https://github.com/OBDb/Audi-SQ5",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-02T05:56:03Z",
+      "imported": false,
+      "archive_sha256": "dd5e7d191ebd18f8a3eb37fcfe4e8281e26362473576183ccc35684d69c6c8e1",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-SQ5/tar.gz/refs/heads/main",
+      "commit": "7155ba08a098214e090beeac7f9f7e5055d1a4b4",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "288766771d23740aacfda4c296e740025a008f4147c3a187ecd995a572491b6e",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 31
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2013",
+        "2016",
+        "2017",
+        "2021",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-SQ7",
+      "url": "https://github.com/OBDb/Audi-SQ7",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-04-15T17:56:21Z",
+      "imported": false,
+      "archive_sha256": "aa11a7e94eac89573222d08f3270eeee6e7459580fb5f30405a66b369ba00b6c",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-SQ7/tar.gz/refs/heads/main",
+      "commit": "c11be7a2410aca3355aa60be3d95e60493c57999",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "dae90005d2e23f718d994a4e9c7a857e5ce08c9c236a1773133f70e9b35311c6",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 59
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2016",
+        "2020",
+        "2024",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Audi-TT",
+      "url": "https://github.com/OBDb/Audi-TT",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-03-30T12:57:13Z",
+      "imported": false,
+      "archive_sha256": "2f297e66e2ccf815bf5d3cfa8cbc27116e057054821cd2dd25e634954b66b78a",
+      "archive_url": "https://codeload.github.com/OBDb/Audi-TT/tar.gz/refs/heads/main",
+      "commit": "8c48df537d367dc094fdb071713daa50c30cc57e",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "675074802525f13ea1e08e99bfaaa3b8ffcf0dc97f826d50a4e56eaa5875641e",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 15
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1998",
+        "2006",
+        "2014",
+        "2018",
+        "2019",
+        "2021",
+        "2023"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Bentley-Bentayga",
+      "url": "https://github.com/OBDb/Bentley-Bentayga",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-24T13:46:16Z",
+      "imported": false,
+      "audit_status": "metadata_only",
+      "reason": "Shared VAG ECU provenance not established; outside primary content audit"
+    },
+    {
+      "repository": "OBDb/Cupra-Born",
+      "url": "https://github.com/OBDb/Cupra-Born",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-31T17:03:50Z",
+      "imported": false,
+      "archive_sha256": "65462ee7290a1bbf20234a08f89464160f8126194bbda1d93683c4ab572c34f7",
+      "archive_url": "https://codeload.github.com/OBDb/Cupra-Born/tar.gz/refs/heads/main",
+      "commit": "a96f37cfe0d4de5bb94a8d823e90e893a5938548",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2021",
+        "2023",
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Cupra-Formentor",
+      "url": "https://github.com/OBDb/Cupra-Formentor",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-12T17:42:43Z",
+      "imported": false,
+      "archive_sha256": "11794d5b143f3969e4e44bd519275b0b2d3bd7a01694128b6079ab0e271f63a0",
+      "archive_url": "https://codeload.github.com/OBDb/Cupra-Formentor/tar.gz/refs/heads/main",
+      "commit": "a8a1838a59124240913077621118e07ddc04a0f2",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2020",
+        "2023",
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Cupra-Leon",
+      "url": "https://github.com/OBDb/Cupra-Leon",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-29T17:56:47Z",
+      "imported": false,
+      "archive_sha256": "725e88080184a1e5bd0737a48914f1288e9c2caca1b0d12dd4b85aeca62c21d8",
+      "archive_url": "https://codeload.github.com/OBDb/Cupra-Leon/tar.gz/refs/heads/main",
+      "commit": "8a55b842552db918201334f9af292d97337ebd72",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2018",
+        "2020",
+        "2021",
+        "2023",
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Cupra-Leon-Sportstourer",
+      "url": "https://github.com/OBDb/Cupra-Leon-Sportstourer",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-25T00:09:36Z",
+      "imported": false,
+      "archive_sha256": "72f943e38f9991efe7d680d4ee854bb88cc778644ef996b419db84543e282b2e",
+      "archive_url": "https://codeload.github.com/OBDb/Cupra-Leon-Sportstourer/tar.gz/refs/heads/main",
+      "commit": "907ee0f89fbe82ee3975d5c9a3b0ab5a1fd8a79b",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2020",
+        "2023",
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Lamborghini-Huracan-evo",
+      "url": "https://github.com/OBDb/Lamborghini-Huracan-evo",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-27T14:19:58Z",
+      "imported": false,
+      "audit_status": "metadata_only",
+      "reason": "Shared VAG ECU provenance not established; outside primary content audit"
+    },
+    {
+      "repository": "OBDb/Porsche-718",
+      "url": "https://github.com/OBDb/Porsche-718",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-07-09T05:59:37Z",
+      "imported": false,
+      "audit_status": "metadata_only",
+      "reason": "Shared VAG ECU provenance not established; outside primary content audit"
+    },
+    {
+      "repository": "OBDb/Porsche-911",
+      "url": "https://github.com/OBDb/Porsche-911",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-30T17:13:38Z",
+      "imported": false,
+      "audit_status": "metadata_only",
+      "reason": "Shared VAG ECU provenance not established; outside primary content audit"
+    },
+    {
+      "repository": "OBDb/Porsche-981-Cayman",
+      "url": "https://github.com/OBDb/Porsche-981-Cayman",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-29T16:06:24Z",
+      "imported": false,
+      "audit_status": "metadata_only",
+      "reason": "Shared VAG ECU provenance not established; outside primary content audit"
+    },
+    {
+      "repository": "OBDb/Porsche-Boxster",
+      "url": "https://github.com/OBDb/Porsche-Boxster",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-29T16:18:26Z",
+      "imported": false,
+      "audit_status": "metadata_only",
+      "reason": "Shared VAG ECU provenance not established; outside primary content audit"
+    },
+    {
+      "repository": "OBDb/Porsche-Cayenne",
+      "url": "https://github.com/OBDb/Porsche-Cayenne",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-03T22:07:13Z",
+      "imported": false,
+      "audit_status": "metadata_only",
+      "reason": "Shared VAG ECU provenance not established; outside primary content audit"
+    },
+    {
+      "repository": "OBDb/Porsche-Cayman",
+      "url": "https://github.com/OBDb/Porsche-Cayman",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-05-08T15:51:54Z",
+      "imported": false,
+      "audit_status": "metadata_only",
+      "reason": "Shared VAG ECU provenance not established; outside primary content audit"
+    },
+    {
+      "repository": "OBDb/Porsche-Macan",
+      "url": "https://github.com/OBDb/Porsche-Macan",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-30T15:07:34Z",
+      "imported": false,
+      "audit_status": "metadata_only",
+      "reason": "Shared VAG ECU provenance not established; outside primary content audit"
+    },
+    {
+      "repository": "OBDb/Porsche-Macan-Electric",
+      "url": "https://github.com/OBDb/Porsche-Macan-Electric",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-29T17:33:01Z",
+      "imported": false,
+      "audit_status": "metadata_only",
+      "reason": "Shared VAG ECU provenance not established; outside primary content audit"
+    },
+    {
+      "repository": "OBDb/Porsche-Panamera",
+      "url": "https://github.com/OBDb/Porsche-Panamera",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-06-19T18:03:18Z",
+      "imported": false,
+      "audit_status": "metadata_only",
+      "reason": "Shared VAG ECU provenance not established; outside primary content audit"
+    },
+    {
+      "repository": "OBDb/Porsche-Taycan",
+      "url": "https://github.com/OBDb/Porsche-Taycan",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-04T13:11:16Z",
+      "imported": false,
+      "audit_status": "metadata_only",
+      "reason": "Shared VAG ECU provenance not established; outside primary content audit"
+    },
+    {
+      "repository": "OBDb/Seat-Alhambra",
+      "url": "https://github.com/OBDb/Seat-Alhambra",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T00:43:37Z",
+      "imported": false,
+      "archive_sha256": "b7ef360b23237599010f734bf0d0b02598fd541ca354c3e1ec158a464119ff23",
+      "archive_url": "https://codeload.github.com/OBDb/Seat-Alhambra/tar.gz/refs/heads/main",
+      "commit": "124af88136ac305bfd7bbdc049aa68e28b55e664",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1996",
+        "2000",
+        "2010",
+        "2015",
+        "2020"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Seat-Altea",
+      "url": "https://github.com/OBDb/Seat-Altea",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T00:49:43Z",
+      "imported": false,
+      "archive_sha256": "24a8196d4da2e8953ca49d5285d6837641eb97a4f0cf64b6342a03f693340118",
+      "archive_url": "https://codeload.github.com/OBDb/Seat-Altea/tar.gz/refs/heads/main",
+      "commit": "12e87a7a3873d3d2578d3bb167a575737433f83d",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2004",
+        "2008",
+        "2009",
+        "2015"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Seat-Arona",
+      "url": "https://github.com/OBDb/Seat-Arona",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T00:58:37Z",
+      "imported": false,
+      "archive_sha256": "926d5fda248e67eea83290d0a5fe23d40224e9e6cf6d1f4e30ff556708b4c88e",
+      "archive_url": "https://codeload.github.com/OBDb/Seat-Arona/tar.gz/refs/heads/main",
+      "commit": "6a2875bd16638b555342e97c3311188700ae061e",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2017",
+        "2021"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Seat-Ateca",
+      "url": "https://github.com/OBDb/Seat-Ateca",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-08-30T17:16:17Z",
+      "imported": false,
+      "archive_sha256": "689941a382dce1cb3d86c82e4be889023c8a4d0f6fa52a656adb6c72fb6071e6",
+      "archive_url": "https://codeload.github.com/OBDb/Seat-Ateca/tar.gz/refs/heads/main",
+      "commit": "da259846fc6c21abc5f3d897d28ca788008efb8c",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2016",
+        "2020"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Seat-Ibiza",
+      "url": "https://github.com/OBDb/Seat-Ibiza",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-04T10:59:36Z",
+      "imported": false,
+      "archive_sha256": "3572fee8ff4c757332dee315cf73b6b09361920e5137118dc69bda01f7936af5",
+      "archive_url": "https://codeload.github.com/OBDb/Seat-Ibiza/tar.gz/refs/heads/main",
+      "commit": "de06c2081031f94c62867f926737debd65ded8ae",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "40ad9e5c2a074d14e5315638068808c048723f79ff6f298c39b0f23f68735f99",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 3
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1984",
+        "1989",
+        "1991",
+        "1993",
+        "1994",
+        "1996",
+        "1999",
+        "2002",
+        "2003",
+        "2006",
+        "2008",
+        "2009",
+        "2010",
+        "2011",
+        "2012",
+        "2015",
+        "2017",
+        "2021",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Seat-Leon",
+      "url": "https://github.com/OBDb/Seat-Leon",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-04T15:05:52Z",
+      "imported": false,
+      "archive_sha256": "cfe8125054211c6c54e53a869549707afd559124e95cc73f85c5d1d79f28e6d4",
+      "archive_url": "https://codeload.github.com/OBDb/Seat-Leon/tar.gz/refs/heads/main",
+      "commit": "6dfb5c83bef060936a46aa48272c097c8ab6a18f",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "b6d211a32baba62d72793b92f738f22b8b26026440e9ae6c0fc7c3172747c016",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 10
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1999",
+        "2004",
+        "2005",
+        "2009",
+        "2012",
+        "2017",
+        "2018",
+        "2020"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Seat-Mii-Electric",
+      "url": "https://github.com/OBDb/Seat-Mii-Electric",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T01:51:33Z",
+      "imported": false,
+      "archive_sha256": "86c0405f2af5a26ca2a52e5896b97b5bdcdecef229e294b73177b49df205232f",
+      "archive_url": "https://codeload.github.com/OBDb/Seat-Mii-Electric/tar.gz/refs/heads/main",
+      "commit": "e4c752108201b3a72d1ea80d73292e94e81e7d8f",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2011",
+        "2019",
+        "2021"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Seat-Tarraco",
+      "url": "https://github.com/OBDb/Seat-Tarraco",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-07-28T19:08:47Z",
+      "imported": false,
+      "archive_sha256": "e22baf34c6280b057571d98123d606bfe87bce385afcb65b2aaae7ee0a34af74",
+      "archive_url": "https://codeload.github.com/OBDb/Seat-Tarraco/tar.gz/refs/heads/main",
+      "commit": "8cae3ab64a60f16113897ba06ca871d115f767b9",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2018",
+        "2021"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Skoda-Elroq",
+      "url": "https://github.com/OBDb/Skoda-Elroq",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T02:19:18Z",
+      "imported": false,
+      "archive_sha256": "e7f9ff5aa95b85af30aaafe4fcae7780faed944052909bd7e17a15850bd20800",
+      "archive_url": "https://codeload.github.com/OBDb/Skoda-Elroq/tar.gz/refs/heads/main",
+      "commit": "4f245c6cba1c14e0fcde3f2665524654856dca4e",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Skoda-Enyaq",
+      "url": "https://github.com/OBDb/Skoda-Enyaq",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T02:30:45Z",
+      "imported": false,
+      "archive_sha256": "f6be295d1af2a80f0768605fdda14e89d952e70d74168dfacf51fb8bc938e2e3",
+      "archive_url": "https://codeload.github.com/OBDb/Skoda-Enyaq/tar.gz/refs/heads/main",
+      "commit": "1140e345dedde8a34515b3b4c1b28830df6ddd74",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2020",
+        "2024",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Skoda-Fabia",
+      "url": "https://github.com/OBDb/Skoda-Fabia",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T02:46:45Z",
+      "imported": false,
+      "archive_sha256": "367ebd55106763c7c162144376309a7199d8c6dfc75ced0fe0d4b19543996bab",
+      "archive_url": "https://codeload.github.com/OBDb/Skoda-Fabia/tar.gz/refs/heads/main",
+      "commit": "44c05e4483fe85f72a07b7e552fc09d8b6a91abb",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1999",
+        "2004",
+        "2007",
+        "2010",
+        "2014",
+        "2018",
+        "2021",
+        "2022",
+        "2023"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Skoda-Kamiq",
+      "url": "https://github.com/OBDb/Skoda-Kamiq",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T02:57:26Z",
+      "imported": false,
+      "archive_sha256": "74ac6d253678988b0f79d7d1a1ede884bb21490422619c1d0cd3380347bcbf08",
+      "archive_url": "https://codeload.github.com/OBDb/Skoda-Kamiq/tar.gz/refs/heads/main",
+      "commit": "6613036bc0c87f14f9aa8fd97c5fc81171500d01",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2019",
+        "2023"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Skoda-Kodiaq",
+      "url": "https://github.com/OBDb/Skoda-Kodiaq",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T03:07:14Z",
+      "imported": false,
+      "archive_sha256": "82e148528db9c880cb3576561168f46e079eab9623fea0a7c7efe3db2490f073",
+      "archive_url": "https://codeload.github.com/OBDb/Skoda-Kodiaq/tar.gz/refs/heads/main",
+      "commit": "550052ee68aae389b3d768fa557303a7b76b793c",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2016",
+        "2020",
+        "2021",
+        "2023",
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Skoda-Octavia",
+      "url": "https://github.com/OBDb/Skoda-Octavia",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T05:26:56Z",
+      "imported": false,
+      "archive_sha256": "81942243a7a490f525321093e753df9f7ebd64c795d88b273d3d61c91383d2af",
+      "archive_url": "https://codeload.github.com/OBDb/Skoda-Octavia/tar.gz/refs/heads/main",
+      "commit": "b5003082cf8d27e34157538d3bde256a47a3dbe3",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1996",
+        "2000",
+        "2004",
+        "2008",
+        "2010",
+        "2013",
+        "2017",
+        "2019",
+        "2020"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Skoda-Rapid",
+      "url": "https://github.com/OBDb/Skoda-Rapid",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T05:39:02Z",
+      "imported": false,
+      "archive_sha256": "3c9f24edf2a680560ab5f998d96bc1e9164ab4ff88c1d832f4afada8f7923c76",
+      "archive_url": "https://codeload.github.com/OBDb/Skoda-Rapid/tar.gz/refs/heads/main",
+      "commit": "6b8dd94d55b28ac06be0c7ca7b3d3fecb34ebbb0",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2012",
+        "2016",
+        "2017",
+        "2019",
+        "2023"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Skoda-Scala",
+      "url": "https://github.com/OBDb/Skoda-Scala",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T05:59:42Z",
+      "imported": false,
+      "archive_sha256": "046e69fa178e877399f02bd053f4306be790d336f28d38616c8828c71cb7d306",
+      "archive_url": "https://codeload.github.com/OBDb/Skoda-Scala/tar.gz/refs/heads/main",
+      "commit": "ebf1963a947cad04e3a94bf74d738c925eb510a5",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2019",
+        "2023"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Skoda-Superb",
+      "url": "https://github.com/OBDb/Skoda-Superb",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-30T06:09:46Z",
+      "imported": false,
+      "archive_sha256": "b3d740ae5e95d21716bef12bfa6e38bbb432d0792067184990ccf7c42c4a2ce8",
+      "archive_url": "https://codeload.github.com/OBDb/Skoda-Superb/tar.gz/refs/heads/main",
+      "commit": "d064782d7d7657a315c0d3402836245318b6b7bc",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2001",
+        "2006",
+        "2008",
+        "2009",
+        "2013",
+        "2015",
+        "2019",
+        "2023",
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Amarok",
+      "url": "https://github.com/OBDb/Volkswagen-Amarok",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-06-27T13:01:47Z",
+      "imported": false,
+      "archive_sha256": "d98b5acc890d4713d9aaedc6c3c6296545eca7b2d1564402e5e1a97e93210d14",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Amarok/tar.gz/refs/heads/main",
+      "commit": "2cdafd4f531f3a03a769970faf15cb86408660f7",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "a041c81d6e4ae33df7aa0e9b7ae39483ae1e9ebf5c56673c50804c2dd8bde4d7",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 29
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2010",
+        "2016",
+        "2022"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Arteon",
+      "url": "https://github.com/OBDb/Volkswagen-Arteon",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-03-11T15:10:42Z",
+      "imported": false,
+      "archive_sha256": "f4738cd6567a30f8a747686eca12346347fd4925b283717f6f7c3a95db3d3361",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Arteon/tar.gz/refs/heads/main",
+      "commit": "009fbdff2ee57a4f1f7df91233f131bb8404ecb9",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2017",
+        "2020",
+        "2023",
+        "2026"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Atlas",
+      "url": "https://github.com/OBDb/Volkswagen-Atlas",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-02T23:13:18Z",
+      "imported": false,
+      "archive_sha256": "029477f75ad9323483af2780c0d5bdacc1f75e90bddb6e7df5adb85dfb595183",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Atlas/tar.gz/refs/heads/main",
+      "commit": "beef55b067b18b813aeca923301cca01fbfca63c",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2016",
+        "2017",
+        "2018",
+        "2020",
+        "2021",
+        "2023",
+        "2024",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Beetle",
+      "url": "https://github.com/OBDb/Volkswagen-Beetle",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-02-01T03:49:37Z",
+      "imported": false,
+      "archive_sha256": "190e83e697491158998203f1185c373de8d262317e697b450b2b6b341f01e86b",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Beetle/tar.gz/refs/heads/main",
+      "commit": "f7e08184662abe6ba28163886ea12d539990fe95",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1938",
+        "1945",
+        "1998",
+        "2003",
+        "2011",
+        "2012",
+        "2019"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-CC",
+      "url": "https://github.com/OBDb/Volkswagen-CC",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-05-23T23:10:47Z",
+      "imported": false,
+      "archive_sha256": "4b5a58a9a9a0d49acc09b050b2850c9b39a4cf2cf554e2d90a216bb8943fb17b",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-CC/tar.gz/refs/heads/main",
+      "commit": "45381fbe29be1d69885110e554f786ff6c22a845",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2008",
+        "2011",
+        "2012",
+        "2016",
+        "2017"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Crafter",
+      "url": "https://github.com/OBDb/Volkswagen-Crafter",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-07-06T17:06:03Z",
+      "imported": false,
+      "archive_sha256": "4455ebeaeeb4ecbc667079bc182b5c5d605a8406d48091c96a2fa9234954cd95",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Crafter/tar.gz/refs/heads/main",
+      "commit": "df356a08a64e410d6673f85c6157f4f7d59097e0",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2006",
+        "2011",
+        "2016",
+        "2017",
+        "2018"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-e-Golf",
+      "url": "https://github.com/OBDb/Volkswagen-e-Golf",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-03T15:14:01Z",
+      "imported": false,
+      "archive_sha256": "b37723ad13134a30f8cedda0b7c8dac1000d3eb090c77b606845894ce777b43f",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-e-Golf/tar.gz/refs/heads/main",
+      "commit": "d26dd327da80390bc668b7d32ec4a3d976727122",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "492e639b63ecd35fd38699aa7b8e73ff00c57635beee4ea71423ebeb7222ddea",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 9
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2014",
+        "2015",
+        "2016",
+        "2017",
+        "2019",
+        "2020",
+        "2021"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Golf",
+      "url": "https://github.com/OBDb/Volkswagen-Golf",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-03T19:19:35Z",
+      "imported": false,
+      "archive_sha256": "596530d525f53edac0e4c11034b0c4e2341eeb7e002251fe942c8fe22ee7ed1e",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Golf/tar.gz/refs/heads/main",
+      "commit": "546ceee5e36fb463fccaaf9ec5f56013f892fde6",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "80b9ed1063f885bc3c00f00b7b21e2a61c4693b142d0f2e33153c0133ea35bb3",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 57
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1974",
+        "1983",
+        "1991",
+        "1992",
+        "1993",
+        "1997",
+        "1999",
+        "2003",
+        "2004",
+        "2008",
+        "2009",
+        "2012",
+        "2013",
+        "2017",
+        "2020"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-GTE",
+      "url": "https://github.com/OBDb/Volkswagen-GTE",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-02-01T05:05:31Z",
+      "imported": false,
+      "archive_sha256": "f42b2ba2c601612ac864f38c9d1aeafd4c6d8ee3c8ac0951657ef9acffce423a",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-GTE/tar.gz/refs/heads/main",
+      "commit": "6affc05b0e668a83738223794b04b9d11fef6b2e",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2014",
+        "2017",
+        "2020"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-ID-Buzz",
+      "url": "https://github.com/OBDb/Volkswagen-ID-Buzz",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-02-01T05:14:29Z",
+      "imported": false,
+      "archive_sha256": "d1d6b50ff26d7551515d7e1bf983ebae9ca0503b9d0331bd59639e5accc2f4fc",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-ID-Buzz/tar.gz/refs/heads/main",
+      "commit": "de3a35350d301831d4184073ade5ca2030cffafa",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2022"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-ID.4",
+      "url": "https://github.com/OBDb/Volkswagen-ID.4",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-04T13:12:59Z",
+      "imported": false,
+      "archive_sha256": "9c8b41b98d4bb1397fdee286b478913c2f18629401568862df5a00ebf26985b8",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-ID.4/tar.gz/refs/heads/main",
+      "commit": "91314a8b0972f83fd99585bc8f1d7ec7fc5555b2",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "447f46870b83ddb20ee0b3dade385a2e9405b3c97762426773c583c171cdb294",
+          "root_keys": [
+            "commands",
+            "signalGroups"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 251
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2020"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-ID3",
+      "url": "https://github.com/OBDb/Volkswagen-ID3",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-02-01T05:38:23Z",
+      "imported": false,
+      "archive_sha256": "3efa71687cd0621bd168fdc8f049db12ae2edb08851c4ac7e9744afa589a268a",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-ID3/tar.gz/refs/heads/main",
+      "commit": "9f4ab84569b303346e8b2024c48c4d9680767d87",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2020",
+        "2023",
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-ID5",
+      "url": "https://github.com/OBDb/Volkswagen-ID5",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-02-01T05:51:20Z",
+      "imported": false,
+      "archive_sha256": "fb841bac303220ea61e26676b6bcb707c1fe840e83f1c9f5051881c11766a353",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-ID5/tar.gz/refs/heads/main",
+      "commit": "d491a99161debd459c9bee8de29370a46c3b092e",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2021",
+        "2022",
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-ID7-Tourer",
+      "url": "https://github.com/OBDb/Volkswagen-ID7-Tourer",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-02-01T06:02:00Z",
+      "imported": false,
+      "archive_sha256": "2c7e8239cfa393eca85f9f18f1f1b00ff1b2bdaf7c332378aa3c9a616948bcc6",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-ID7-Tourer/tar.gz/refs/heads/main",
+      "commit": "6402e644cbbdf6240a4a19f16efcc3845ed76d04",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Jetta",
+      "url": "https://github.com/OBDb/Volkswagen-Jetta",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-03T23:11:54Z",
+      "imported": false,
+      "archive_sha256": "90696276a23e03c2c1e1121119e121356bfb677649255f2f6b26403135008a3d",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Jetta/tar.gz/refs/heads/main",
+      "commit": "d94d6eaaf03fd84d2e35bf4ffb7d736fb8118bfe",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "e7b1a23e02900c240f192e8275b6467c3998847dcd3f09201b5569a2027d9ceb",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 89
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1979",
+        "1984",
+        "1992",
+        "1999",
+        "2005",
+        "2010",
+        "2015",
+        "2018",
+        "2021",
+        "2022"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Jetta-GLI",
+      "url": "https://github.com/OBDb/Volkswagen-Jetta-GLI",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-03T00:16:15Z",
+      "imported": false,
+      "archive_sha256": "49421c2211a6de07faea1cac59117e30df759da42ab6dc977adb8a073c8e74f4",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Jetta-GLI/tar.gz/refs/heads/main",
+      "commit": "4ec2c3b2114545bb5bfd1a2abb9dc2e7a8f57ad6",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1984",
+        "1992",
+        "1993",
+        "1998",
+        "1999",
+        "2004",
+        "2005",
+        "2006",
+        "2010",
+        "2011",
+        "2018",
+        "2019",
+        "2022"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Nivus",
+      "url": "https://github.com/OBDb/Volkswagen-Nivus",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-24T14:23:11Z",
+      "imported": false,
+      "archive_sha256": "409fc43d508a3df4198f8742796b0771dc3b3b05cba1d992255c748fc6eb1d9b",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Nivus/tar.gz/refs/heads/main",
+      "commit": "c523d68183bda9c764142393143a9de7b1131888",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2020",
+        "2021"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Passat",
+      "url": "https://github.com/OBDb/Volkswagen-Passat",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-04T13:14:47Z",
+      "imported": false,
+      "archive_sha256": "62a10b635e91c3f72aa45d986c84ea2d1a8f3c4b5fce52d7fef8d3ad2137b3c4",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Passat/tar.gz/refs/heads/main",
+      "commit": "cd33d6cfaf63f358bc98e052abd0ce11630be10a",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1973",
+        "1977",
+        "1981",
+        "1984",
+        "1988",
+        "1993",
+        "1996",
+        "2001",
+        "2005",
+        "2010",
+        "2014",
+        "2015",
+        "2019",
+        "2023"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Passat-B8",
+      "url": "https://github.com/OBDb/Volkswagen-Passat-B8",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-24T14:23:03Z",
+      "imported": false,
+      "archive_sha256": "f2dfb0ddec9722b91734fe3382ca17441f2ea0c0643ac0a3eccbfdaf22d89555",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Passat-B8/tar.gz/refs/heads/main",
+      "commit": "e4bfcba9202423d702eacd40e60cf294c1c3aee1",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2014",
+        "2015",
+        "2019",
+        "2022"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Passat-Variant",
+      "url": "https://github.com/OBDb/Volkswagen-Passat-Variant",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-02-01T06:57:11Z",
+      "imported": false,
+      "archive_sha256": "cadb8e1671aa7e972b21ba30c18a143fc1700bc62e20eb857addcdf276e89615",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Passat-Variant/tar.gz/refs/heads/main",
+      "commit": "b1b6f0d2282fb21461eda65c672f63efd0956e43",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1996",
+        "2000",
+        "2005",
+        "2010",
+        "2014",
+        "2015",
+        "2019",
+        "2023"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Polo",
+      "url": "https://github.com/OBDb/Volkswagen-Polo",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-04T07:00:53Z",
+      "imported": false,
+      "archive_sha256": "1af646a6ea58af3156df9d6e89b4c7fce0d90be6409f16b23e5da6be13ee0b3c",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Polo/tar.gz/refs/heads/main",
+      "commit": "9381fec64ed49334caa2d47c771092ac24ab3c7a",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/2017-2017.json",
+          "sha256": "bbe513df91d1f4194f3622d5c3d5b5709ce5a77a2e23a2305196feff1852263f",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 1
+        },
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "c0dc7c2a68df52941cb52b4c0caded3c1821be84548a1fb0350631eec30a0843",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 29
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1973",
+        "1975",
+        "1977",
+        "1978",
+        "1981",
+        "1990",
+        "1994",
+        "1999",
+        "2002",
+        "2005",
+        "2009",
+        "2014",
+        "2017",
+        "2021",
+        "2026"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Polo-V",
+      "url": "https://github.com/OBDb/Volkswagen-Polo-V",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-01-24T14:23:01Z",
+      "imported": false,
+      "archive_sha256": "90ec612347e58b0618eeb151b491a1babeb150632c600dac506823bc1c62fdb3",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Polo-V/tar.gz/refs/heads/main",
+      "commit": "9dea2e26b0f7e8413788a8ab019dd8ab6acf5850",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2009",
+        "2014",
+        "2017"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-R32",
+      "url": "https://github.com/OBDb/Volkswagen-R32",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-02-01T07:26:33Z",
+      "imported": false,
+      "archive_sha256": "c25ec215bec3590db9b4b03e59d7aec9cede430be1576b9a04f3c3fcf9b3eafb",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-R32/tar.gz/refs/heads/main",
+      "commit": "108563f146a70c6b007ab5d7383d96929929c9ea",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2002",
+        "2004",
+        "2005",
+        "2008"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Rabbit",
+      "url": "https://github.com/OBDb/Volkswagen-Rabbit",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-02-01T07:38:03Z",
+      "imported": false,
+      "archive_sha256": "8c0df054edc3c867103a39d3ba8dd35738dce97f9a365d0ffaa793b726db9c0f",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Rabbit/tar.gz/refs/heads/main",
+      "commit": "efe3ceea043f023f5df5db2b512bdc01a9b70a5c",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1975",
+        "1978",
+        "1984",
+        "2006",
+        "2009"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Scirocco",
+      "url": "https://github.com/OBDb/Volkswagen-Scirocco",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-02T12:09:20Z",
+      "imported": false,
+      "archive_sha256": "437dacbb2a47cb62449aba2bdc29930cda40ce8df930f95c85094a0d0ebb2513",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Scirocco/tar.gz/refs/heads/main",
+      "commit": "3b55e28ea8944e20d2d0b6325045747952dfb871",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1974",
+        "1981",
+        "1988",
+        "1992",
+        "2008",
+        "2011",
+        "2014",
+        "2015",
+        "2018"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Sharan",
+      "url": "https://github.com/OBDb/Volkswagen-Sharan",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-02-01T08:00:30Z",
+      "imported": false,
+      "archive_sha256": "d95d84d3cebeb2619e682d43b2fdf4c531741d51d89d9f8057ccf7e52a44fef0",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Sharan/tar.gz/refs/heads/main",
+      "commit": "049df8e9715c77ba9bbc69a717d01e931fc64df6",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "1995",
+        "1998",
+        "1999",
+        "2000",
+        "2003",
+        "2004",
+        "2006",
+        "2008",
+        "2010",
+        "2015",
+        "2016",
+        "2021",
+        "2022"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-T-Cross",
+      "url": "https://github.com/OBDb/Volkswagen-T-Cross",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-03-01T13:59:37Z",
+      "imported": false,
+      "archive_sha256": "a6ac413b1154367b13b1b4ace3764f93fc0095c9094556bde71605a0aa5efcf9",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-T-Cross/tar.gz/refs/heads/main",
+      "commit": "3275498145ea362d2284f1e7ac24c02b70130841",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2018"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-T-Roc",
+      "url": "https://github.com/OBDb/Volkswagen-T-Roc",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-07-28T05:59:23Z",
+      "imported": false,
+      "archive_sha256": "ca9046c580aab49efda3baac6db031caa50aea95a44a1ad273ae64894c82a85c",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-T-Roc/tar.gz/refs/heads/main",
+      "commit": "f04ffc3169b2c50a934c35686129e8a1119d964f",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2017",
+        "2019",
+        "2020",
+        "2021",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-T5",
+      "url": "https://github.com/OBDb/Volkswagen-T5",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-02-01T08:39:06Z",
+      "imported": false,
+      "archive_sha256": "6d1bf42d17e73cc51ee4b811e1187b33d12fdd7e2dd5213b17e73dbee33ad349",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-T5/tar.gz/refs/heads/main",
+      "commit": "015581971108b2bc62d2b77cc03c93c248f2e784",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2002",
+        "2003",
+        "2009",
+        "2010",
+        "2015"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Taigo",
+      "url": "https://github.com/OBDb/Volkswagen-Taigo",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-06-05T17:07:12Z",
+      "imported": false,
+      "archive_sha256": "dddd22a31539d55cded1a46bb57fd9a68cfa5a78e4593b81d9dd04074ecc4a08",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Taigo/tar.gz/refs/heads/main",
+      "commit": "d22f0d7e9e090423837bbaa6685a33b13486f326",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2020",
+        "2021"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Taos",
+      "url": "https://github.com/OBDb/Volkswagen-Taos",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-07-08T19:07:44Z",
+      "imported": false,
+      "archive_sha256": "a74aa45cb6e8b21a8a307bba41d89d839b063356ceb4c2e838dbdb31392cf65f",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Taos/tar.gz/refs/heads/main",
+      "commit": "0d863a3944cee6be4723e533ba8f4670a5180a0e",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2020",
+        "2022",
+        "2024",
+        "2025"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Tiguan",
+      "url": "https://github.com/OBDb/Volkswagen-Tiguan",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-09-04T01:29:01Z",
+      "imported": false,
+      "archive_sha256": "55574e039c455aeef90173fdfd21498cf466f1e04f4ed50c64f06b2e299b1f7f",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Tiguan/tar.gz/refs/heads/main",
+      "commit": "6df7da63f9f99c877eb1ee2207b3d509445656fd",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "d2a604573d2f0d7a7d0dab24cacb3154fec5d495155cc808face47af6216d133",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 116
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2007",
+        "2012",
+        "2016",
+        "2018",
+        "2020",
+        "2023",
+        "2024"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Touareg",
+      "url": "https://github.com/OBDb/Volkswagen-Touareg",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-05-22T15:06:13Z",
+      "imported": false,
+      "archive_sha256": "4e6759b42c5782723ac6cc660c1c0c02855d58fcfd6b66d47632a317b22b15ab",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Touareg/tar.gz/refs/heads/main",
+      "commit": "2d1d94681d8dfc3fb31bd5b3704fb91789987394",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2002",
+        "2007",
+        "2010",
+        "2011",
+        "2014",
+        "2018",
+        "2019"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Touran",
+      "url": "https://github.com/OBDb/Volkswagen-Touran",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-07-07T20:06:32Z",
+      "imported": false,
+      "archive_sha256": "fa7883f78cc578c0c11ba7d172d40f4b14ce1e52a62e121e6818dc7671901ff1",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Touran/tar.gz/refs/heads/main",
+      "commit": "4dcb3ae0e857f16b85f5091041a828d5b4e28762",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2003",
+        "2006",
+        "2010",
+        "2015"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Up",
+      "url": "https://github.com/OBDb/Volkswagen-Up",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-07-20T09:02:33Z",
+      "imported": false,
+      "archive_sha256": "035e5b8e13a3911cc86fa8198d2bd717c1f5907034b28ce1a453c09a78dd4cb7",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Up/tar.gz/refs/heads/main",
+      "commit": "4af5fa20a76f562f50ea91e8a390656edf9fa00f",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2011",
+        "2012",
+        "2013",
+        "2014",
+        "2016",
+        "2018",
+        "2021",
+        "2023"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    },
+    {
+      "repository": "OBDb/Volkswagen-Virtus",
+      "url": "https://github.com/OBDb/Volkswagen-Virtus",
+      "owner": "OBDb",
+      "declared_licence": "CC-BY-SA-4.0",
+      "branch": "main",
+      "pushed_at": "2026-02-01T14:14:55Z",
+      "imported": false,
+      "archive_sha256": "ed95ef0f7fa9111d4bff630ae7c4eb4a5286c0b40242b981d3afafeecd26926b",
+      "archive_url": "https://codeload.github.com/OBDb/Volkswagen-Virtus/tar.gz/refs/heads/main",
+      "commit": "f2a851f5c86ff08f26aec842d237f35bc0be4c71",
+      "audit_status": "inspected",
+      "signal_files": [
+        {
+          "path": "signalsets/v3/default.json",
+          "sha256": "238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515",
+          "root_keys": [
+            "commands"
+          ],
+          "candidate_dtc_records": 0,
+          "commands": 0
+        }
+      ],
+      "licence_hashes": {
+        "LICENSE": "8cb7fbf0c30ba8728f4d6d276238b43554f41f8b435e23141a54f58560f5844c"
+      },
+      "generation_metadata_years": [
+        "2018",
+        "2022"
+      ],
+      "candidate_dtc_paths": [],
+      "candidate_dtc_records": 0,
+      "verified_production_dtc_records": 0,
+      "reason": "Signal configurations are not DTC definitions; no rights/semantic admission inferred"
+    }
+  ]
+}

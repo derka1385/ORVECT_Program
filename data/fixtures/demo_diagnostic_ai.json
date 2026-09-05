@@ -1,0 +1,20 @@
+{
+  "demo_only": true,
+  "description": "Scénario amovible pour le parcours multimodal, sans donnée de véhicule réel.",
+  "vehicle": {"registration": "DEMO123", "vin": "ZZZTESTA0DEMA0001"},
+  "case": {
+    "mileage": 120000,
+    "symptoms": "Ratés à froid, ralenti instable et légère perte de puissance",
+    "circumstances": "Après une nuit de stationnement, défaut plus marqué au ralenti",
+    "fault_codes": [
+      {"code": "P0301", "ecu": "ECU moteur", "status": "active"},
+      {"code": "P0171", "ecu": "ECU moteur", "status": "stored"}
+    ],
+    "measurements": [
+      {"name": "Régime au ralenti", "value": 820, "unit": "tr/min"},
+      {"name": "Température liquide", "value": 82, "unit": "°C"},
+      {"name": "Correction carburant court terme", "value": 14, "unit": "%"}
+    ],
+    "suggested_images": ["compartiment moteur", "bougie cylindre 1", "écran de la valise"]
+  }
+}

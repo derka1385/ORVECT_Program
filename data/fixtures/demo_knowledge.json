@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "source": {"title":"Demo ignition diagnostic knowledge","source_type":"internal_demo","license_type":"internal_demo","trust_level":"demo","review_status":"reviewed","version":"1.0","demo_only":true},
+  "vehicle_scope": {"make":"Demo Motors","model":"DM-1","year_from":2020,"year_to":2020,"engine_code":"DEMO-ENG-01","demo_only":true},
+  "dtcs": [
+    {"code":"P0301","system":"engine_ignition","demo_only":true,"possible_causes":["ignition_coil_1","spark_plug_1","injector_1","cylinder_1_sealing"],"test_procedures":[{"id":"swap_coils_1_2","title":"Permutation contrôlée des bobines 1 et 2","results":["fault_moved_to_cylinder_2","fault_stayed_on_cylinder_1"],"demo_only":true}]},
+    {"code":"P0351","system":"engine_ignition","possible_causes":[],"test_procedures":[],"demo_only":true},
+    {"code":"P0171","system":"fuel_air_metering","possible_causes":[],"test_procedures":[],"demo_only":true},
+    {"code":"P0101","system":"fuel_air_metering","possible_causes":[],"test_procedures":[],"demo_only":true}
+  ]
+}

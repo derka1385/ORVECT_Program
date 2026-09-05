@@ -1,0 +1,90 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: diagnostic
+      POSTGRES_USER: diagnostic
+      POSTGRES_PASSWORD: diagnostic
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U diagnostic"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      APP_ENVIRONMENT: development
+      DEVELOPMENT_SECRET: ${DEVELOPMENT_SECRET:-diagpilot-local-development-only}
+      DATABASE_URL: postgresql+psycopg://diagnostic:diagnostic@db:5432/diagnostic
+      CORS_ORIGINS: http://localhost:3000
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL_FAST: ${GEMINI_MODEL_FAST:-gemini-3.1-flash-lite}
+      GEMINI_MODEL_REASONING: ${GEMINI_MODEL_REASONING:-gemini-3.5-flash}
+      GEMINI_TIMEOUT_SECONDS: ${GEMINI_TIMEOUT_SECONDS:-45}
+      REGISTRATION_PROVIDER: ${REGISTRATION_PROVIDER:-mock}
+      REGISTRATION_API_URL: ${REGISTRATION_API_URL:-}
+      REGISTRATION_API_KEY: ${REGISTRATION_API_KEY:-}
+      REGISTRATION_API_TIMEOUT_SECONDS: ${REGISTRATION_API_TIMEOUT_SECONDS:-12}
+      VEHICLE_PROVIDER_PRIMARY: ${VEHICLE_PROVIDER_PRIMARY:-mock}
+      VEHICLE_PROVIDER_FALLBACKS: ${VEHICLE_PROVIDER_FALLBACKS:-}
+      AAA_DATA_API_URL: ${AAA_DATA_API_URL:-}
+      AAA_DATA_API_KEY: ${AAA_DATA_API_KEY:-}
+      TECALLIANCE_API_URL: ${TECALLIANCE_API_URL:-}
+      TECALLIANCE_API_KEY: ${TECALLIANCE_API_KEY:-}
+      AUTO_WAYS_API_URL: ${AUTO_WAYS_API_URL:-}
+      AUTO_WAYS_API_KEY: ${AUTO_WAYS_API_KEY:-}
+      VEHICLE_LOOKUP_TIMEOUT_MS: ${VEHICLE_LOOKUP_TIMEOUT_MS:-8000}
+      VEHICLE_LOOKUP_CACHE_TTL_SECONDS: ${VEHICLE_LOOKUP_CACHE_TTL_SECONDS:-86400}
+      VEHICLE_LOOKUP_ENABLE_MOCK: ${VEHICLE_LOOKUP_ENABLE_MOCK:-false}
+      DIAGNOSTIC_IMAGE_DIR: /app/private_images
+      VIN_PROVIDER: ${VIN_PROVIDER:-mock}
+      NHTSA_VPIC_ENABLED: ${NHTSA_VPIC_ENABLED:-false}
+      VIN_PROVIDER_TIMEOUT_SECONDS: ${VIN_PROVIDER_TIMEOUT_SECONDS:-10}
+      VIN_CACHE_TTL_DAYS: ${VIN_CACHE_TTL_DAYS:-30}
+      VIN_ENCRYPTION_KEY: ${VIN_ENCRYPTION_KEY:-}
+      VIN_FINGERPRINT_SECRET: ${VIN_FINGERPRINT_SECRET:-}
+      DEMO_ADMIN_EMAIL: ${DEMO_ADMIN_EMAIL:-admin@example.com}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-demo-change-me}
+      DEMO_TECHNICIAN_EMAIL: ${DEMO_TECHNICIAN_EMAIL:-technician@example.com}
+      DEMO_TECHNICIAN_PASSWORD: ${DEMO_TECHNICIAN_PASSWORD:-demo-tech-change-me}
+    volumes:
+      - ./data:/app/data:ro
+      - diagnostic_images:/app/private_images
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 5
+      start_period: 120s
+  frontend:
+    restart: unless-stopped
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api
+        API_INTERNAL_URL: http://backend:8000/api
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+      API_INTERNAL_URL: http://backend:8000/api
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "Promise.all(['/login','/backend-api/health'].map(p=>fetch('http://127.0.0.1:3000'+p,{signal:AbortSignal.timeout(5000)}).then(r=>{if(!r.ok)throw Error(String(r.status))}))).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 6s
+      retries: 5
+      start_period: 30s
+volumes:
+  postgres_data:
+  diagnostic_images:

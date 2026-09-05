@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+html { background: #f2f1ed; }
+body {
+  margin: 0;
+  background: #f2f1ed;
+  color: #101214;
+  font-family: "Space Grotesk", Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+a { color: inherit; text-decoration: none; }
+button, input, textarea, select { font: inherit; }
+button, a, input, textarea, select { touch-action: manipulation; }
+
+.focusable:focus-visible,
+button:focus-visible, a:focus-visible,
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid #ff5c28;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+
+@layer components {
+  .orvect-label { @apply text-[11px] font-medium uppercase tracking-[.06em]; }
+  .orvect-panel { @apply border border-orvect-alloy bg-orvect-mineral p-5 sm:p-6; }
+  .orvect-panel-dark { @apply bg-orvect-graphite p-5 text-orvect-mineral sm:p-6; }
+  .orvect-field { @apply min-h-12 w-full border border-orvect-alloy bg-orvect-mineral px-3.5 py-3 text-sm text-orvect-graphite placeholder:text-orvect-alloy focus:border-orvect-orange focus:outline-none; }
+  .orvect-field-label { @apply mb-1.5 block text-[10px] font-medium uppercase tracking-[.04em] text-slate-500; }
+  .orvect-button { @apply inline-flex min-h-12 cursor-pointer items-center justify-center border px-5 py-3 text-left text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40; }
+  .orvect-button-primary { @apply orvect-button border-orvect-orange bg-orvect-orange text-orvect-graphite hover:bg-[#ff7145]; }
+  .orvect-button-secondary { @apply orvect-button border-orvect-alloy bg-orvect-mineral text-orvect-graphite hover:border-orvect-graphite; }
+  .orvect-link-button { @apply min-h-10 border border-white/25 px-3 py-2 text-xs text-orvect-mineral hover:border-orvect-orange hover:text-orvect-orange; }
+
+  /* Panneau logiciel : blanc, bordure fine, angles carrés */
+  .card {
+    @apply rounded-[2px] border border-line bg-surface p-5 shadow-panel;
+  }
+
+  /* Boutons type application de bureau : carrés, compacts */
+  .btn {
+    @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[2px] px-4 py-2.5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary { @apply btn bg-primary text-white hover:bg-[#164e91]; }
+  .btn-secondary { @apply btn border border-line bg-surface text-ink hover:bg-panel hover:border-slate-400; }
+
+  /* Champs : cadre net, léger effet enfoncé (input classique) */
+  .field {
+    @apply min-h-11 w-full rounded-[2px] border border-line bg-white px-3 py-2.5 text-ink placeholder:text-slate-400;
+    box-shadow: inset 0 1px 2px rgba(16,24,40,.08);
+  }
+  .field:focus { @apply border-primary; box-shadow: inset 0 1px 2px rgba(16,24,40,.08), 0 0 0 2px rgba(28,95,176,.18); }
+
+  /* Libellés sobres */
+  .label { @apply mb-1.5 block text-[13px] font-semibold text-slate-700; }
+  .eyebrow { @apply text-[11px] font-bold uppercase tracking-wider text-primary; }
+  .badge { @apply inline-flex items-center gap-1.5 rounded-[2px] border border-line bg-panel px-2 py-0.5 text-[11px] font-medium text-slate-700; }
+
+  /* Voyants d'état discrets */
+  .led { @apply inline-block h-2 w-2 shrink-0 rounded-full; background: #1a7f37; }
+  .led-amber { background: #d97706; }
+  .led-red { background: #c0392b; }
+  .led-muted { background: #9aa5b1; }
+}

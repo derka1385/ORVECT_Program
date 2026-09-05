@@ -1,0 +1,15 @@
+.git
+.local
+.github
+.env
+**/.DS_Store
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+backend/.venv
+backend/*.db
+frontend/node_modules
+frontend/.next
+frontend/*.tsbuildinfo
+garage_diagnostic_form.pdf
+quarantine

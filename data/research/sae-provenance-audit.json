@@ -1,0 +1,22 @@
+{
+  "source_url": "https://github.com/Wal33D/dtc-database",
+  "source_commit": "04c43d72e7db7197658b6f72fe582c5076d9eee8",
+  "source_sha256": "099a4ffd60398112a0540b0bbc93a5929e05e7f4e6d4988ca2a50858af01b743",
+  "declared_licence": "MIT",
+  "standard_edition": null,
+  "underlying_rights": "uncertain",
+  "authoritative_sae_validation": false,
+  "before_active": 9316,
+  "before_exact_upstream_generic_matches": 8933,
+  "before_not_matching_upstream_generic": 383,
+  "mismatch_ranges": {
+    "B2": 357,
+    "U2": 26
+  },
+  "mismatches_exactly_in_other_codes": 383,
+  "additional_manufacturer_range_quarantined": 396,
+  "after_active": 8920,
+  "after_exact_upstream_generic_matches": 8920,
+  "normalization": "Active descriptions are exact compilation matches; compilation generic flags do not establish SAE authority.",
+  "production_admitted": 0
+}

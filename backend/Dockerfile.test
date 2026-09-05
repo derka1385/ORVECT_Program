@@ -1,0 +1,14 @@
+FROM python:3.12-slim
+WORKDIR /workspace/backend
+COPY backend/requirements-test.lock ./
+RUN pip install --no-cache-dir -r requirements-test.lock
+COPY backend/pyproject.toml backend/alembic.ini ./
+COPY backend/alembic ./alembic
+COPY backend/app ./app
+COPY data /workspace/data
+COPY scripts /workspace/scripts
+COPY frontend/src /workspace/frontend/src
+RUN pip install --no-cache-dir --no-deps .
+ENV DATABASE_URL=sqlite:///./test.db
+ENV APP_ENVIRONMENT=test
+CMD ["python", "-m", "pytest", "-q"]

@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "archive_sha256": "7fa7dedd0eb961c8bd2e9a95c9e44203e6df5d482d4121df7f697dc23c42dbfc",
+  "entries_sha256": "9b06007b35a290d8723f3852b837436858317fa12ba2ba88f0562ad9916b57bb",
+  "total": 56220,
+  "exclusive_categories": {
+    "obviously_generated": 53407,
+    "generic_sae_candidate": 0,
+    "vag_numeric_candidate": 0,
+    "vag_pbcu_candidate": 0,
+    "other_oem_candidate": 1,
+    "malformed": 0,
+    "duplicate_alias_candidate": 0,
+    "unknown": 2812
+  },
+  "confidence_tiers": {
+    "approximation_family": 53407,
+    "manufacturer_exact_internet": 1,
+    "manufacturer_indicative": 2812
+  },
+  "shape_counts": {
+    "pbcu": 56220,
+    "numeric": 0
+  },
+  "nonempty_descriptions": 2813,
+  "unique_code_values": 56220,
+  "duplicate_code_rows": 0,
+  "explicit_vag_brand_hints": 0,
+  "unattributed_manufacturer_candidates": 2812,
+  "independently_rights_cleared_vag_matching_sources": 0,
+  "promoted": 0,
+  "restored": 0,
+  "limitations": [
+    "Generic/brand flags are historical claims, not validation.",
+    "P/B/C/U syntax does not identify a VAG manufacturer; no numeric VAG catalogue was found in this archive.",
+    "No source with independently established reusable VAG semantics was acquired; semantic matching is not claimed.",
+    "Duplicate wording is not alias evidence. Generated records remain permanently blocked even when a code is independently documented."
+  ]
+}

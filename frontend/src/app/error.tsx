@@ -1,0 +1,1 @@
+"use client";export default function ErrorPage({error,reset}:{error:Error;reset:()=>void}){return <div role="alert" className="card border-danger"><h1 className="text-2xl font-bold">Impossible de charger l’écran</h1><p className="my-4 text-muted">{error.message}</p><button className="btn-primary" onClick={reset}>Réessayer</button></div>}

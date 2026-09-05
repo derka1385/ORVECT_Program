@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "notice": "VIN et véhicules entièrement fictifs, réservés aux tests.",
+  "scenarios": {
+    "A": {"vin": "ZZZTESTA0DEMA0001", "expected": "one_complete_candidate"},
+    "B": {"vin": "ZZZTESTB0DEMB0002", "expected": "missing_engine"},
+    "C": {"vin": "ZZZTESTC0DEMC0003", "expected": "multiple_candidates"},
+    "D": {"vin": "ZZZTESTD0DEMD0004", "expected": "ecu_conflict_when_reported_engine_differs"},
+    "E": {"vin": "ZZZTESTE0DEME0005", "expected": "provider_unavailable"}
+  }
+}

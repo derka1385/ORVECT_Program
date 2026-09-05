@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "vehicle": {"vin": null, "make": "Demo Motors", "model": "DM-1", "year": 2020, "engine_code": "DEMO-ENG-01"},
+  "scan": {
+    "timestamp": "2026-01-01T10:00:00Z",
+    "tool": "manual-demo-import",
+    "dtcs": [{"code": "P0301", "status": "confirmed"}],
+    "freeze_frame": {"engine_rpm": 850, "coolant_temperature_c": 88, "engine_load_percent": 24},
+    "live_data": []
+  }
+}
