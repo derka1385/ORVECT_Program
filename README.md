@@ -6,6 +6,8 @@ ORVECT aide un mécanicien à transformer un DTC en parcours de contrôle guidé
 
 La page [derka1385.github.io/ORVECT_Program](https://derka1385.github.io/ORVECT_Program/) présente un parcours interactif avec des données exclusivement synthétiques. GitHub Pages étant un hébergement statique, cette démonstration n’exécute ni FastAPI, ni PostgreSQL, ni l’authentification serveur et ne conserve aucune donnée. Le runtime complet et sécurisé se lance avec Docker selon la procédure ci-dessous.
 
+La vérification DTC de la page statique charge localement les 8 920 définitions génériques du catalogue communautaire filtré. Elles sont affichées avec leur provenance et comme non revues contre la version SAE sous licence. Les codes constructeur non documentés restent volontairement sans définition. Après une mise à jour du JSON source, régénérer l’index utilisable hors ligne avec `node scripts/build_static_dtc_lookup.mjs`.
+
 ## Ce qui fonctionne
 
 - utilisateurs administrateur/technicien, garage et véhicule de démonstration ;
