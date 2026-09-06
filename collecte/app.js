@@ -5,6 +5,19 @@
   let lastPayload = null;
   let saveTimer;
 
+  const messages = {
+    fr: {
+      meaningMissing: 'Signification non renseignée', invalidCode: 'Saisissez un code OBD valide, par exemple P0299.', duplicateCode: 'Ce code est déjà présent dans le dossier.', draftSaved: 'Brouillon sauvegardé', draftLocal: 'Brouillon local', requiredField: 'Champ obligatoire', atLeastOneCode: 'Au moins un code d’erreur', addOneCode: 'Ajoutez au moins un code d’erreur.', missing: count => `Il manque ${count} information${count > 1 ? 's' : ''} :`, iphoneDelivery: 'Choisissez Mail ou AirDrop dans le partage iPhone pour envoyer les fichiers TXT et JSON vers votre Mac.', downloadedDelivery: 'Les fichiers TXT et JSON ont été téléchargés. Joignez-les au message ORVECT qui vient de s’ouvrir.', mailHello: 'Bonjour ORVECT,', mailFiles: id => `Veuillez trouver les fichiers TXT et JSON anonymes du cas ${id}, téléchargés à l’instant, à joindre à ce message.`, vehicleUnknown: 'véhicule non précisé', shareTitle: id => `Cas atelier ${id}`, shareText: 'Cas atelier anonyme ORVECT — TXT + JSON'
+    },
+    en: {
+      meaningMissing: 'Meaning not provided', invalidCode: 'Enter a valid OBD code, for example P0299.', duplicateCode: 'This code is already in the case.', draftSaved: 'Draft saved', draftLocal: 'Local draft', requiredField: 'Required field', atLeastOneCode: 'At least one fault code', addOneCode: 'Add at least one fault code.', missing: count => `${count} required item${count > 1 ? 's are' : ' is'} missing:`, iphoneDelivery: 'Choose Mail or AirDrop in the iPhone share sheet to send the TXT and JSON files to your Mac.', downloadedDelivery: 'The TXT and JSON files were downloaded. Attach them to the ORVECT message that just opened.', mailHello: 'Hello ORVECT,', mailFiles: id => `Please find the anonymous TXT and JSON files for case ${id}, just downloaded and ready to attach to this message.`, vehicleUnknown: 'vehicle not specified', shareTitle: id => `Workshop case ${id}`, shareText: 'Anonymous ORVECT workshop case — TXT + JSON'
+    },
+    sv: {
+      meaningMissing: 'Betydelse ej angiven', invalidCode: 'Ange en giltig OBD-kod, till exempel P0299.', duplicateCode: 'Koden finns redan i ärendet.', draftSaved: 'Utkast sparat', draftLocal: 'Lokalt utkast', requiredField: 'Obligatoriskt fält', atLeastOneCode: 'Minst en felkod', addOneCode: 'Lägg till minst en felkod.', missing: count => `${count} obligatorisk${count > 1 ? 'a uppgifter' : ' uppgift'} saknas:`, iphoneDelivery: 'Välj Mail eller AirDrop i iPhones delningsmeny för att skicka TXT- och JSON-filerna till din Mac.', downloadedDelivery: 'TXT- och JSON-filerna har hämtats. Bifoga dem till ORVECT-meddelandet som nyss öppnades.', mailHello: 'Hej ORVECT,', mailFiles: id => `Här är de anonyma TXT- och JSON-filerna för ärende ${id}, nyss hämtade och redo att bifogas till meddelandet.`, vehicleUnknown: 'fordon ej angivet', shareTitle: id => `Verkstadsärende ${id}`, shareText: 'Anonymt ORVECT-verkstadsärende — TXT + JSON'
+    }
+  };
+  const copy = key => messages[document.documentElement.lang]?.[key] ?? messages.fr[key];
+
   const clean = value => String(value ?? '').trim();
   const field = name => form.elements.namedItem(name);
   const optionalNumber = name => clean(field(name).value) ? Number(field(name).value) : null;
@@ -19,7 +32,7 @@
     list.innerHTML = dtcs.length ? dtcs.map((item, index) => `
       <article class="dtc-item">
         <code>${item.code}</code>
-        <p>${item.meaning || 'Signification non renseignée'}</p>
+        <p>${item.meaning || copy('meaningMissing')}</p>
         <button class="remove-dtc" type="button" data-remove-dtc="${index}" aria-label="Supprimer ${item.code}">×</button>
       </article>`).join('') : '<p class="empty">Aucun code ajouté.</p>';
   }
@@ -31,12 +44,12 @@
     const code = clean(codeInput.value).toUpperCase().replace(/\s+/g, '');
     error.textContent = '';
     if (!/^[PBCU][0-9A-F]{4}$/.test(code)) {
-      error.textContent = 'Saisissez un code OBD valide, par exemple P0299.';
+      error.textContent = copy('invalidCode');
       codeInput.focus();
       return;
     }
     if (dtcs.some(item => item.code === code)) {
-      error.textContent = 'Ce code est déjà présent dans le dossier.';
+      error.textContent = copy('duplicateCode');
       codeInput.focus();
       return;
     }
@@ -57,9 +70,9 @@
     saveTimer = setTimeout(() => {
       localStorage.setItem(draftKey, JSON.stringify({ fields: formValues(), dtcs }));
       const state = document.querySelector('#saveState');
-      state.textContent = 'Brouillon sauvegardé';
+      state.textContent = copy('draftSaved');
       state.classList.add('saved');
-      setTimeout(() => { state.textContent = 'Brouillon local'; state.classList.remove('saved'); }, 1800);
+      setTimeout(() => { state.textContent = copy('draftLocal'); state.classList.remove('saved'); }, 1800);
     }, 250);
   }
 
@@ -79,7 +92,7 @@
       schemaVersion: 2,
       caseId: `ORV-${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
       submittedAt: new Date().toISOString(),
-      language: 'fr',
+      language: document.documentElement.lang || 'fr',
       anonymous: true,
       vehicle: {
         make: clean(field('make').value) || null,
@@ -117,14 +130,14 @@
     const errors = [];
     invalid.forEach(input => {
       input.classList.add('invalid');
-      const label = input.closest('label')?.querySelector(':scope > span')?.textContent.replace('*', '').trim() || 'Champ obligatoire';
+      const label = input.closest('label')?.querySelector(':scope > span')?.textContent.replace('*', '').trim() || copy('requiredField');
       errors.push(label);
     });
-    if (!dtcs.length) { errors.push('Au moins un code d’erreur'); document.querySelector('#dtcError').textContent = 'Ajoutez au moins un code d’erreur.'; }
+    if (!dtcs.length) { errors.push(copy('atLeastOneCode')); document.querySelector('#dtcError').textContent = copy('addOneCode'); }
     const summary = document.querySelector('#errorSummary');
     if (errors.length) {
       summary.hidden = false;
-      summary.innerHTML = `<strong>Il manque ${errors.length} information${errors.length > 1 ? 's' : ''} :</strong> ${[...new Set(errors)].join(', ')}.`;
+      summary.innerHTML = `<strong>${copy('missing')(errors.length)}</strong> ${[...new Set(errors)].join(', ')}.`;
       summary.focus();
       (invalid[0] || document.querySelector('#dtcCode')).focus({ preventScroll: true });
       summary.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -193,9 +206,9 @@
   }
 
   function openMail(data) {
-    const vehicle = [data.vehicle.make, data.vehicle.model].filter(Boolean).join(' ') || 'véhicule non précisé';
+    const vehicle = [data.vehicle.make, data.vehicle.model].filter(Boolean).join(' ') || copy('vehicleUnknown');
     const subject = `ORVECT — Cas atelier ${data.caseId} — ${vehicle}`;
-    const body = `Bonjour ORVECT,\n\nVeuillez trouver les fichiers TXT et JSON anonymes du cas ${data.caseId}, téléchargés à l’instant, à joindre à ce message.\n\n${caseText(data)}`;
+    const body = `${copy('mailHello')}\n\n${copy('mailFiles')(data.caseId)}\n\n${caseText(data)}`;
     window.location.href = `mailto:derka1385@yahoo.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
@@ -203,7 +216,7 @@
     const files = caseFiles(data);
     if (!navigator.canShare?.({ files })) return false;
     try {
-      await navigator.share({ title: `Cas atelier ${data.caseId}`, text: 'Cas atelier anonyme ORVECT — TXT + JSON', files });
+      await navigator.share({ title: copy('shareTitle')(data.caseId), text: copy('shareText'), files });
       return true;
     } catch (error) {
       return error?.name === 'AbortError';
@@ -236,11 +249,11 @@
     const canShareFiles = Boolean(navigator.canShare?.({ files }));
     document.querySelector('#shareCase').hidden = !canShareFiles;
     if (canShareFiles) {
-      document.querySelector('#deliveryText').textContent = 'Choisissez Mail ou AirDrop dans le partage iPhone pour envoyer les fichiers TXT et JSON vers votre Mac.';
+      document.querySelector('#deliveryText').textContent = copy('iphoneDelivery');
       await shareCase(lastPayload);
     } else {
       files.forEach(downloadFile);
-      document.querySelector('#deliveryText').textContent = 'Les fichiers TXT et JSON ont été téléchargés. Joignez-les au message ORVECT qui vient de s’ouvrir.';
+      document.querySelector('#deliveryText').textContent = copy('downloadedDelivery');
       setTimeout(() => openMail(lastPayload), 350);
     }
   });
@@ -259,5 +272,6 @@
     document.querySelectorAll('[data-progress]').forEach(item => item.classList.toggle('active', item.dataset.progress === visible.target.dataset.section));
   }, { rootMargin: '-25% 0px -55% 0px', threshold: [0, .2, .5] });
   document.querySelectorAll('[data-section]').forEach(section => observer.observe(section));
+  window.addEventListener('orvect:language', renderDtcs);
   restoreDraft();
 })();
