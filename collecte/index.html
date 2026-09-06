@@ -16,20 +16,13 @@
       <svg aria-hidden="true" viewBox="0 0 120 100"><path d="M8 76 29 24h19L27 76Z M41 76 70 4h19L60 76Z M74 76 95 24h19L93 76Z"/></svg>
       <strong>ORVECT</strong>
     </a>
-    <span class="topbar-label">RETOUR D’EXPÉRIENCE ATELIER</span>
+    <span class="topbar-label">CAS ATELIER ANONYME</span>
     <span class="save-state" id="saveState" aria-live="polite">Brouillon local</span>
   </header>
 
   <main>
     <section class="intro" aria-labelledby="pageTitle">
-      <p class="eyebrow">CAS RÉEL / DONNÉES TERRAIN</p>
-      <h1 id="pageTitle">Un problème intéressant.<br><em>Une expérience à transmettre.</em></h1>
-      <p class="lead">Décrivez ce que le véhicule a montré, ce que vous avez contrôlé et ce qui a réellement résolu la panne. Les informations véhicule sont utiles, mais jamais bloquantes.</p>
-      <div class="promise" aria-label="Informations sur le formulaire">
-        <span><b>≈ 3 min</b> pour un cas complet</span>
-        <span><b>Sauvegarde locale</b> pendant la saisie</span>
-        <span><b>100 % anonyme</b> aucune identité demandée</span>
-      </div>
+      <h1 id="pageTitle">Documenter un<br><em>cas atelier.</em></h1>
     </section>
 
     <div class="layout">
@@ -40,14 +33,13 @@
           <li data-progress="fault"><span>02</span> Panne &amp; DTC</li>
           <li data-progress="resolution"><span>03</span> Résolution</li>
         </ol>
-        <p class="aside-note">Les champs marqués <b>*</b> sont nécessaires pour rendre le cas exploitable. Le reste peut rester vide.</p>
       </aside>
 
       <form id="caseForm" novalidate>
         <div id="errorSummary" class="error-summary" role="alert" tabindex="-1" hidden></div>
 
         <section class="form-section" id="vehicle" data-section="vehicle">
-          <div class="section-heading"><span>01</span><div><p class="eyebrow">CONTEXTE</p><h2>Quel véhicule ?</h2><p>Tous ces champs sont facultatifs. Indiquez uniquement ce que vous connaissez.</p></div></div>
+          <div class="section-heading"><span>01</span><div><p class="eyebrow">CONTEXTE</p><h2>Quel véhicule ?</h2></div></div>
           <div class="grid three">
             <label><span>Marque</span><input name="make" autocomplete="off" placeholder="Volkswagen"></label>
             <label><span>Modèle</span><input name="model" autocomplete="off" placeholder="Golf VII"></label>
@@ -64,13 +56,12 @@
         <section class="form-section" id="fault" data-section="fault">
           <div class="section-heading"><span>02</span><div><p class="eyebrow">SIGNAL INITIAL</p><h2>Qu’avez-vous observé ?</h2></div></div>
           <div class="grid two wide-left">
-            <label><span>Symptômes / plainte client <b>*</b></span><textarea name="symptoms" required maxlength="2000" placeholder="Ex. Perte de puissance à chaud, voyant moteur et mode dégradé à 2 500 tr/min."></textarea><small>Décrivez ce qui était réellement visible ou reproductible.</small></label>
+            <label><span>Symptômes / plainte client <b>*</b></span><textarea name="symptoms" required maxlength="2000" placeholder="Ex. Perte de puissance à chaud, voyant moteur et mode dégradé à 2 500 tr/min."></textarea></label>
             <label><span>Conditions d’apparition</span><textarea name="conditions" maxlength="1200" placeholder="À chaud, sous charge, par temps humide…"></textarea></label>
           </div>
 
           <fieldset class="dtc-fieldset">
             <legend>Codes d’erreur <b>*</b></legend>
-            <p class="helper">Ajoutez tous les codes présents dans le même diagnostic. La définition proposée reste modifiable.</p>
             <div class="dtc-composer">
               <label><span>Code</span><input id="dtcCode" autocomplete="off" maxlength="8" placeholder="P0299" aria-describedby="dtcError"></label>
               <label><span>Signification constatée</span><input id="dtcMeaning" autocomplete="off" maxlength="240" placeholder="Sous-pression du turbo"></label>
@@ -80,7 +71,7 @@
             <div class="dtc-list" id="dtcList" aria-live="polite"><p class="empty">Aucun code ajouté.</p></div>
           </fieldset>
 
-          <label class="full"><span>Contrôles et recherches effectués <b>*</b></span><textarea name="diagnosticSteps" required maxlength="3000" placeholder="Ex. Contrôle des durites, test fumigène, mesure de pression demandée/réelle, essai de l’actionneur…"></textarea><small>Indiquez les tests dans l’ordre si possible, y compris ceux qui n’ont rien révélé.</small></label>
+          <label class="full"><span>Contrôles et recherches effectués <b>*</b></span><textarea name="diagnosticSteps" required maxlength="3000" placeholder="Ex. Contrôle des durites, test fumigène, mesure de pression demandée/réelle, essai de l’actionneur…"></textarea></label>
         </section>
 
         <section class="form-section" id="resolution" data-section="resolution">
@@ -97,12 +88,11 @@
 
         <section class="consent-card">
           <label class="check"><input name="consent" type="checkbox" required><span>Je confirme que ce retour anonyme ne contient ni nom, ni e-mail, ni plaque d’immatriculation, ni VIN, et qu’ORVECT peut l’utiliser pour améliorer ses outils de diagnostic. <b>*</b></span></label>
-          <p>Le fichier généré reste lisible avant envoi. Aucune donnée n’est transmise automatiquement à un tiers.</p>
         </section>
 
         <div class="submit-row">
-          <div><p class="eyebrow">PRÊT À TRANSMETTRE</p><p>Un fichier JSON structuré sera téléchargé, puis votre messagerie s’ouvrira pour l’envoyer à ORVECT.</p></div>
-          <button class="button primary" type="submit">Générer &amp; transmettre le cas <span aria-hidden="true">→</span></button>
+          <div><p class="eyebrow">ENVOI ORVECT</p><p>Formats TXT lisible + JSON structuré pour la base IA.</p></div>
+          <button class="button primary" type="submit">Envoyer le cas <span aria-hidden="true">→</span></button>
         </div>
       </form>
     </div>
@@ -113,8 +103,8 @@
     <svg class="success-mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M17 33l10 10 21-24"/></svg>
     <p class="eyebrow">CAS PRÊT</p>
     <h2 id="successTitle">Merci pour le retour terrain.</h2>
-    <p>Le fichier JSON a été téléchargé. Joignez-le au message qui vient de s’ouvrir pour que le cas rejoigne le corpus ORVECT.</p>
-    <div class="dialog-actions"><button class="button secondary" type="button" id="copyJson">Copier le JSON</button><button class="button primary" type="button" id="newCase">Nouveau cas</button></div>
+    <p id="deliveryText">Les fichiers TXT et JSON sont prêts. Envoyez les deux à ORVECT pour conserver une version lisible et une donnée structurée précise.</p>
+    <div class="dialog-actions"><button class="button secondary" type="button" id="downloadText">Télécharger TXT</button><button class="button secondary" type="button" id="downloadJson">Télécharger JSON</button><button class="button primary" type="button" id="shareCase" hidden>Partager les fichiers</button><button class="button primary" type="button" id="newCase">Nouveau cas</button></div>
     <p class="dialog-note" id="copyState" aria-live="polite"></p>
   </dialog>
 

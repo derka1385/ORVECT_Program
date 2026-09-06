@@ -134,12 +134,60 @@
     return true;
   }
 
-  function downloadJson(data) {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  function caseText(data) {
+    const vehicle = [data.vehicle.make, data.vehicle.model].filter(Boolean).join(' ') || 'Non renseigné';
+    const value = item => item ?? 'Non renseigné';
+    return [
+      'ORVECT — CAS ATELIER ANONYME',
+      `ID : ${data.caseId}`,
+      `Date : ${data.submittedAt}`,
+      '',
+      'VÉHICULE',
+      `Marque / modèle : ${vehicle}`,
+      `Année : ${value(data.vehicle.firstRegistrationYear)}`,
+      `Code moteur : ${value(data.vehicle.engineCode)}`,
+      `Code boîte : ${value(data.vehicle.gearboxCode)}`,
+      `Puissance : ${data.vehicle.power ? `${data.vehicle.power} ${data.vehicle.powerUnit}` : 'Non renseignée'}`,
+      `Kilométrage : ${data.vehicle.mileageKm ? `${data.vehicle.mileageKm} km` : 'Non renseigné'}`,
+      `Carburant : ${value(data.vehicle.fuel)}`,
+      `Type de boîte : ${value(data.vehicle.gearboxType)}`,
+      '',
+      'CODES D’ERREUR',
+      ...data.incident.dtcs.map(item => `${item.code} — ${item.meaning || 'Signification non renseignée'}`),
+      '',
+      'SYMPTÔMES', data.incident.symptoms,
+      '',
+      'CONDITIONS D’APPARITION', value(data.incident.occurrenceConditions),
+      '',
+      'CONTRÔLES ET RECHERCHES', data.incident.diagnosticSteps,
+      '',
+      'INTERVENTION', data.resolution.repairAction,
+      '',
+      'CAUSE RÉELLE', data.resolution.rootCause,
+      '',
+      `Pièces remplacées : ${value(data.resolution.partsReplaced)}`,
+      `Résultat : ${data.resolution.outcome}`,
+      `Vérification : ${value(data.resolution.verification)}`,
+      `Information utile : ${value(data.resolution.lessonLearned)}`,
+      '',
+      'Export anonyme — sans nom, e-mail, plaque ni VIN.'
+    ].join('\n');
+  }
+
+  function caseFiles(data) {
+    const basename = `${data.caseId}-cas-anonyme`;
+    return [
+      new File([caseText(data)], `${basename}.txt`, { type: 'text/plain;charset=utf-8' }),
+      new File([JSON.stringify(data, null, 2)], `${basename}.json`, { type: 'application/json' })
+    ];
+  }
+
+  function downloadFile(file) {
+    const blob = new Blob([file], { type: file.type });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${data.caseId}-cas-anonyme.json`;
+    link.download = file.name;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -147,8 +195,19 @@
   function openMail(data) {
     const vehicle = [data.vehicle.make, data.vehicle.model].filter(Boolean).join(' ') || 'véhicule non précisé';
     const subject = `ORVECT — Cas atelier ${data.caseId} — ${vehicle}`;
-    const body = `Bonjour ORVECT,\n\nVeuillez trouver le fichier JSON anonyme du cas ${data.caseId}, téléchargé à l’instant, à joindre à ce message.\n\nVéhicule : ${vehicle}\nDTC : ${data.incident.dtcs.map(item => item.code).join(', ')}\nRésultat : ${data.resolution.outcome}\n\nMerci.`;
+    const body = `Bonjour ORVECT,\n\nVeuillez trouver les fichiers TXT et JSON anonymes du cas ${data.caseId}, téléchargés à l’instant, à joindre à ce message.\n\n${caseText(data)}`;
     window.location.href = `mailto:derka1385@yahoo.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
+  async function shareCase(data) {
+    const files = caseFiles(data);
+    if (!navigator.canShare?.({ files })) return false;
+    try {
+      await navigator.share({ title: `Cas atelier ${data.caseId}`, text: 'Cas atelier anonyme ORVECT — TXT + JSON', files });
+      return true;
+    } catch (error) {
+      return error?.name === 'AbortError';
+    }
   }
 
   document.querySelector('#dtcCode').addEventListener('blur', event => {
@@ -166,22 +225,29 @@
   });
   form.addEventListener('input', saveDraft);
   form.addEventListener('change', saveDraft);
-  form.addEventListener('submit', event => {
+  form.addEventListener('submit', async event => {
     event.preventDefault();
     if (!validate()) return;
     lastPayload = payload();
-    downloadJson(lastPayload);
     localStorage.removeItem(draftKey);
     const dialog = document.querySelector('#successDialog');
     if (dialog.showModal) dialog.showModal();
-    setTimeout(() => openMail(lastPayload), 350);
+    const files = caseFiles(lastPayload);
+    const canShareFiles = Boolean(navigator.canShare?.({ files }));
+    document.querySelector('#shareCase').hidden = !canShareFiles;
+    if (canShareFiles) {
+      document.querySelector('#deliveryText').textContent = 'Choisissez Mail ou AirDrop dans le partage iPhone pour envoyer les fichiers TXT et JSON vers votre Mac.';
+      await shareCase(lastPayload);
+    } else {
+      files.forEach(downloadFile);
+      document.querySelector('#deliveryText').textContent = 'Les fichiers TXT et JSON ont été téléchargés. Joignez-les au message ORVECT qui vient de s’ouvrir.';
+      setTimeout(() => openMail(lastPayload), 350);
+    }
   });
   document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => document.querySelector('#successDialog').close()));
-  document.querySelector('#copyJson').addEventListener('click', async () => {
-    if (!lastPayload) return;
-    await navigator.clipboard.writeText(JSON.stringify(lastPayload, null, 2));
-    document.querySelector('#copyState').textContent = 'JSON copié dans le presse-papiers.';
-  });
+  document.querySelector('#downloadText').addEventListener('click', () => { if (lastPayload) downloadFile(caseFiles(lastPayload)[0]); });
+  document.querySelector('#downloadJson').addEventListener('click', () => { if (lastPayload) downloadFile(caseFiles(lastPayload)[1]); });
+  document.querySelector('#shareCase').addEventListener('click', async () => { if (lastPayload) await shareCase(lastPayload); });
   document.querySelector('#newCase').addEventListener('click', () => {
     form.reset(); dtcs.splice(0); renderDtcs(); lastPayload = null;
     localStorage.removeItem(draftKey); document.querySelector('#successDialog').close(); window.scrollTo({ top: 0, behavior: 'smooth' });
