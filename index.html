@@ -61,7 +61,7 @@
     .measurement{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}.measurement .button{min-height:46px}
     .measurement-list{margin-top:12px}.measurement-row{display:flex;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--alloy);font-size:13px;margin-top:8px}
     .choice-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}.choice-tabs .button.active{background:var(--graphite);color:var(--mineral)}
-    .dtc-workspace{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,.75fr);gap:22px;align-items:start}.dtc-aside{position:sticky;top:98px}
+    .dtc-workspace{display:grid;grid-template-columns:minmax(340px,.72fr) minmax(0,1.45fr);gap:22px;align-items:start}.dtc-workspace>.grid-2{grid-column:2;grid-row:1;grid-template-columns:1fr}.dtc-aside{grid-column:1;grid-row:1;position:sticky;top:98px}
     .dtc-input{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}.dtc-actions{display:flex;gap:7px;flex-wrap:wrap}.dtc-actions .button{min-height:38px;border-color:#ffffff66;padding:8px 10px;color:var(--mineral);font-size:11px}.dtc-actions .button.primary{border-color:var(--orange);color:var(--graphite)}
     .confirm-all{width:100%;min-height:52px;margin-top:14px;font-size:14px;box-shadow:0 0 0 2px var(--graphite),0 0 0 4px var(--orange)}
     .context-ribbon{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.context-ribbon span{border:1px solid var(--alloy);padding:8px 11px;font-size:11px;text-transform:uppercase}
@@ -69,7 +69,7 @@
     .results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;align-items:start}.case-panel{order:1}.hypothesis-panel{order:2}.process-panel{order:3;grid-column:1/-1}.process-panel .instructions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.process-panel .instructions li{margin-top:0}
     .footer-note{margin-top:28px;color:var(--muted);font-size:12px;line-height:1.6}
     .mobile-only{display:none}
-    @media(max-width:1100px){.dtc-workspace{grid-template-columns:1fr}.dtc-aside{position:static}.results-grid{grid-template-columns:1fr}.process-panel{grid-column:auto}.process-panel .instructions{grid-template-columns:1fr}}
+    @media(max-width:1100px){.dtc-workspace{grid-template-columns:1fr}.dtc-workspace>.grid-2{grid-column:1;grid-row:2}.dtc-aside{grid-column:1;grid-row:1;position:static}.results-grid{grid-template-columns:1fr}.process-panel{grid-column:auto}.process-panel .instructions{grid-template-columns:1fr}}
     @media(max-width:980px){.sidebar{display:none}.grid-3{grid-template-columns:1fr}.mobile-only{display:block}.shell{min-height:auto}}
     @media(max-width:720px){.topbar-inner{padding:0 18px}.topbar-title{display:none}.topbar-meta{max-width:150px}.logo strong{font-size:19px}main{padding:28px 18px 60px}.grid-2{grid-template-columns:1fr}.flow{grid-template-columns:repeat(2,1fr)}.headline{font-size:42px}.hero-card h2{font-size:34px}.panel{padding:20px}.measurement{grid-template-columns:1fr}.button-row .button{width:100%}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}
@@ -83,7 +83,7 @@
         <strong>ORVECT</strong>
       </button>
       <span class="topbar-title">ATELIER ORVECT / PROTOTYPE TECHNIQUE</span>
-      <span class="topbar-meta">demo@orvect.fr · technician</span>
+      <span class="topbar-meta">Mode démonstration VAG</span>
     </div>
   </header>
   <div class="demo-strip">Démo hors ligne · catalogue local uniquement · moteur IA non connecté <a href="http://127.0.0.1:3000/diagnostics/new">Ouvrir le moteur IA local →</a></div>

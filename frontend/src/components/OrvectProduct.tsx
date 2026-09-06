@@ -32,23 +32,23 @@ export function FlowProgress({active,onNavigate}:{active:number;onNavigate?:(ste
 }
 
 export function ProductSidebar({active}:{active:number}){
- return <aside className="hidden w-[216px] shrink-0 bg-orvect-graphite p-5 text-orvect-mineral lg:block">
+ return <aside className="hidden w-[260px] shrink-0 self-stretch bg-orvect-graphite px-6 py-8 text-orvect-mineral lg:flex lg:min-h-[calc(100dvh-68px)] lg:flex-col">
   <p className="orvect-label text-orvect-alloy">DIAGNOSTIC ASSISTÉ</p>
   <ol className="mt-5 space-y-1">
    {FLOW_STEPS.map((label,index)=><li key={label} className={`px-3 py-3 text-sm ${index+1===active?"bg-orvect-orange text-orvect-graphite":"text-orvect-mineral"}`}>
     {String(index+1).padStart(2,"0")} / {label}
    </li>)}
   </ol>
-  <p className="mt-8 border-t border-white/15 pt-5 text-xs leading-5 text-orvect-alloy">VIN ou plaque pour identifier. Confirmation technicien avant toute analyse.</p>
+  <p className="mt-auto border-t border-white/15 pt-5 text-xs leading-5 text-orvect-alloy">VIN ou plaque pour identifier. Confirmation technicien avant toute analyse.</p>
  </aside>
 }
 
 export function ProductLayout({active,children}:{active:number;children:React.ReactNode}){
  return <div className="min-h-dvh bg-orvect-mineral text-orvect-graphite">
   <ProductTopBar/>
-  <div className="flex w-full items-start gap-5 px-5 py-6 sm:px-8 sm:py-8 xl:gap-8 xl:px-10 2xl:px-12">
+  <div className="flex min-h-[calc(100dvh-68px)] w-full items-stretch">
    <ProductSidebar active={active}/>
-   <main className="min-w-0 flex-1">{children}</main>
+   <main className="min-w-0 flex-1 px-5 py-6 sm:px-8 sm:py-8 xl:px-10 2xl:px-12">{children}</main>
   </div>
  </div>
 }
