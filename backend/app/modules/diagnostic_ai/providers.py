@@ -122,17 +122,76 @@ def _normalize_provider_payload(payload: dict, context: dict) -> tuple[dict, boo
     for collection in ("interpretedFaultCodes", "correlations", "hypotheses", "nextChecks"):
         for item in normalized.get(collection, []):
             sources = item.get("sources", []) if isinstance(item, dict) else []
-            for index, source in enumerate(sources):
+            canonical_sources = []
+            for source in sources:
                 candidates = available.get(source.get("source_id"), []) if isinstance(source, dict) else []
-                if len(candidates) == 1 and source != candidates[0]:
-                    sources[index] = candidates[0]
+                if len(candidates) == 1:
+                    canonical_sources.append(candidates[0])
+                    if source != candidates[0]:
+                        changed = True
+                else:
                     changed = True
-            if collection in {"correlations", "hypotheses", "nextChecks"} and not sources and item.get("verificationStatus") != "unverified":
+            if sources != canonical_sources:
+                item["sources"] = canonical_sources
+            if collection in {"correlations", "hypotheses", "nextChecks"} and not canonical_sources and item.get("verificationStatus") != "unverified":
                 item["verificationStatus"] = "unverified"
                 changed = True
-            if collection == "nextChecks" and item.get("manufacturerProcedure") and not any(source.get("verified") for source in sources):
+            if collection == "nextChecks" and item.get("manufacturerProcedure") and not any(source.get("verified") for source in canonical_sources):
                 item["manufacturerProcedure"] = False
                 changed = True
+
+    # DTC definitions are catalogue facts, not an explanation-layer decision.
+    # Rebuild every resolvable entry from the exact server-side context so the
+    # model cannot omit a source, alter a definition, or invent coverage.
+    definitions = {
+        (item.get("namespace", "sae_obd2"), item.get("code"), item.get("ecu")): item
+        for item in context.get("technical_definitions", [])
+        if item.get("code")
+    }
+    provider_codes = {
+        (item.get("namespace", "sae_obd2"), item.get("code"), item.get("ecu")): item
+        for item in normalized.get("interpretedFaultCodes", [])
+        if isinstance(item, dict)
+    }
+    canonical_codes = []
+    for index, fault in enumerate(context.get("fault_codes", [])):
+        key = (fault.get("namespace", "sae_obd2"), fault.get("code"), fault.get("ecu"))
+        definition = definitions.get(key)
+        if not definition:
+            continue
+        provider_code = provider_codes.get(key, {})
+        documented = bool(definition.get("documented"))
+        source = definition.get("source") if documented else None
+        canonical_codes.append(
+            {
+                "namespace": key[0],
+                "code": key[1],
+                "ecu": key[2],
+                "meaning": definition.get("description") if documented else UNAVAILABLE_DEFINITION,
+                "definitionType": definition.get("definition_type", "unknown"),
+                "sourceStatus": "provided_by_database" if source else "not_found",
+                "sources": [source] if source else [],
+                "relevance": provider_code.get("relevance")
+                if provider_code.get("relevance") in {"primary", "secondary", "consequence", "unknown"}
+                else ("primary" if index == 0 else "secondary"),
+            }
+        )
+    if canonical_codes and normalized.get("interpretedFaultCodes") != canonical_codes:
+        normalized["interpretedFaultCodes"] = canonical_codes
+        changed = True
+
+    submitted_codes = {item.get("code") for item in context.get("fault_codes", [])}
+    correlations = []
+    for item in normalized.get("correlations", []):
+        related = [code for code in item.get("relatedCodes", []) if code in submitted_codes]
+        if not related:
+            changed = True
+            continue
+        if related != item.get("relatedCodes", []):
+            item["relatedCodes"] = related
+            changed = True
+        correlations.append(item)
+    normalized["correlations"] = correlations
 
     hypotheses = normalized.get("hypotheses", [])
     ranked = sorted(hypotheses, key=lambda item: item.get("confidence", 0), reverse=True)

@@ -62,6 +62,23 @@ def test_provider_payload_restores_canonical_source_and_removes_critical_decisio
     assert normalized["correlations"][0]["verificationStatus"]=="unverified"
     assert normalized["warnings"]==["Décision réservée au moteur déterministe ou à une validation humaine."]
 
+def test_provider_payload_rebuilds_dtc_facts_and_drops_invented_sources_and_codes():
+    source={"source_id":"source-1","source_type":"open_dataset","source_version":"1","vehicle_compatibility":{"scope":"generic_standardized"},"timestamp":"2026-01-01T00:00:00+00:00","verified":False}
+    context={"technical_definitions":[{"namespace":"sae_obd2","code":"P0301","ecu":None,"description":"Cylinder 1 misfire","definition_type":"generic_standardized","documented":True,"source":source}],"technical_excerpts":[],"fault_codes":[{"namespace":"sae_obd2","code":"P0301","ecu":None}]}
+    payload=_mock_analysis({"fault_codes":[],"vehicle":{},"technical_definitions":[]}).model_dump(mode="json")
+    payload["interpretedFaultCodes"]=[{"namespace":"sae_obd2","code":"P0301","ecu":None,"meaning":"Replace a component","definitionType":"unknown","sourceStatus":"not_found","sources":[],"relevance":"primary"}]
+    payload["hypotheses"]=[{"id":"h1","label":"Possibility","component":None,"confidence":.5,"supportingEvidence":[],"contradictingEvidence":[],"requiredConfirmation":[],"status":"possible","verificationStatus":"verified","sources":[{"source_id":"invented","source_type":"oem","source_version":"x","vehicle_compatibility":{},"timestamp":"2026-01-01","verified":True}]}]
+    payload["correlations"]=[{"relatedCodes":["P0301","P9999"],"explanation":"Possible relation","confidence":.5,"relationshipType":"unresolved","supportingSymptoms":[],"supportingEvidence":[],"contradictingEvidence":[],"verificationStatus":"verified","sources":[]}]
+    normalized,changed=_normalize_provider_payload(payload,context)
+    analysis=LLMDiagnosticAnalysis.model_validate(normalized)
+    validate_provider_sources(analysis,context)
+    assert changed is True
+    assert normalized["interpretedFaultCodes"][0]["meaning"]=="Cylinder 1 misfire"
+    assert normalized["interpretedFaultCodes"][0]["sources"]==[source]
+    assert normalized["hypotheses"][0]["sources"]==[]
+    assert normalized["hypotheses"][0]["verificationStatus"]=="unverified"
+    assert normalized["correlations"][0]["relatedCodes"]==["P0301"]
+
 def test_registration_resolution_validation_and_encrypted_persistence(client):
     assert client.post("/api/vehicles/resolve",json={"registration":"?"}).status_code==422
     assert client.post("/api/vehicles/resolve",json={"registration":"DEMO123","vin":"ZZZTESTA0DEMA0001"}).status_code==422
