@@ -18,18 +18,18 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Barre de titre applicative */}
       <header className="sticky top-0 z-30 border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2.5 md:px-8">
-          <Link href="/diagnostics/new" className="flex min-h-11 items-center gap-2.5 rounded-[2px]">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2.5 md:flex-nowrap md:gap-0 md:px-0 md:py-0">
+          <Link href="/diagnostics/new" className="flex min-h-11 items-center gap-2.5 md:h-16 md:w-56 md:shrink-0 md:bg-orvect-graphite md:px-5">
             <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-[2px] bg-primary text-[17px] font-black text-white">
               ◈
             </span>
             <span className="leading-tight">
-              <strong className="block text-[15px] font-bold tracking-tight text-ink">DiagPilot</strong>
-              <span className="text-[11px] text-muted">Assistant diagnostic — atelier</span>
+              <strong className="block text-[15px] font-bold tracking-tight text-ink md:text-orvect-mineral">DiagPilot</strong>
+              <span className="text-[11px] text-muted md:text-orvect-alloy">Assistant diagnostic — atelier</span>
             </span>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 md:px-8">
             <span className="hidden items-center gap-2 rounded-[2px] border border-line bg-panel px-2.5 py-1.5 font-mono text-[11px] text-slate-600 sm:inline-flex">
               <span className="led" aria-hidden="true" />
               Système prêt
@@ -40,14 +40,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
         {/* Bandeau mode démonstration */}
         <div className="border-t border-amber-200 bg-amber-50">
-          <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-1.5 font-mono text-[11px] text-amber-800 md:px-8">
-            <span className="led led-amber" aria-hidden="true" />
-            Mode démonstration — données non contractuelles, aucune commande de calculateur
+          <div className="mx-auto max-w-7xl md:grid md:grid-cols-[14rem_minmax(0,1fr)]">
+            <span aria-hidden="true" className="hidden bg-orvect-graphite md:block" />
+            <div className="flex items-center gap-2 px-4 py-1.5 font-mono text-[11px] text-amber-800 md:px-8">
+              <span className="led led-amber" aria-hidden="true" />
+              Mode démonstration — données non contractuelles, aucune commande de calculateur
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-7xl flex-1">
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col md:flex-row">
         <SideNav />
         <main id="main" className="min-w-0 flex-1 px-4 py-7 md:px-8">
           {children}
