@@ -1,12 +1,11 @@
 (() => {
   const form = document.querySelector('#caseForm');
-  const draftKey = 'orvect-workshop-case-draft-v1';
+  const draftKey = 'orvect-workshop-case-draft-v2';
   const dtcs = [];
   let lastPayload = null;
   let saveTimer;
 
   const clean = value => String(value ?? '').trim();
-  const safeFilename = value => clean(value).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'atelier';
   const field = name => form.elements.namedItem(name);
   const optionalNumber = name => clean(field(name).value) ? Number(field(name).value) : null;
 
@@ -77,16 +76,11 @@
   function payload() {
     return {
       schema: 'orvect.workshop_case',
-      schemaVersion: 1,
+      schemaVersion: 2,
       caseId: `ORV-${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
       submittedAt: new Date().toISOString(),
       language: 'fr',
-      contributor: {
-        workshopName: clean(field('workshopName').value),
-        technicianName: clean(field('technicianName').value) || null,
-        email: clean(field('email').value) || null,
-        internalReference: clean(field('internalReference').value) || null
-      },
+      anonymous: true,
       vehicle: {
         make: clean(field('make').value) || null,
         model: clean(field('model').value) || null,
@@ -145,7 +139,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${data.caseId}-${safeFilename(data.contributor.workshopName)}.json`;
+    link.download = `${data.caseId}-cas-anonyme.json`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -153,7 +147,7 @@
   function openMail(data) {
     const vehicle = [data.vehicle.make, data.vehicle.model].filter(Boolean).join(' ') || 'véhicule non précisé';
     const subject = `ORVECT — Cas atelier ${data.caseId} — ${vehicle}`;
-    const body = `Bonjour ORVECT,\n\nVeuillez trouver le fichier JSON du cas ${data.caseId}, téléchargé à l’instant, à joindre à ce message.\n\nAtelier : ${data.contributor.workshopName}\nVéhicule : ${vehicle}\nDTC : ${data.incident.dtcs.map(item => item.code).join(', ')}\nRésultat : ${data.resolution.outcome}\n\nMerci.`;
+    const body = `Bonjour ORVECT,\n\nVeuillez trouver le fichier JSON anonyme du cas ${data.caseId}, téléchargé à l’instant, à joindre à ce message.\n\nVéhicule : ${vehicle}\nDTC : ${data.incident.dtcs.map(item => item.code).join(', ')}\nRésultat : ${data.resolution.outcome}\n\nMerci.`;
     window.location.href = `mailto:derka1385@yahoo.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 

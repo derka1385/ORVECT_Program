@@ -10,17 +10,12 @@ from pathlib import Path
 
 
 def flatten(case: dict) -> dict:
-    contributor = case.get("contributor", {})
     vehicle = case.get("vehicle", {})
     incident = case.get("incident", {})
     resolution = case.get("resolution", {})
     return {
         "case_id": case.get("caseId"),
         "submitted_at": case.get("submittedAt"),
-        "workshop": contributor.get("workshopName"),
-        "technician": contributor.get("technicianName"),
-        "email": contributor.get("email"),
-        "internal_reference": contributor.get("internalReference"),
         "make": vehicle.get("make"),
         "model": vehicle.get("model"),
         "year": vehicle.get("firstRegistrationYear"),
@@ -54,7 +49,7 @@ def main() -> None:
     cases = []
     for path in sorted(args.input_dir.glob("*.json")):
         case = json.loads(path.read_text(encoding="utf-8"))
-        if case.get("schema") != "orvect.workshop_case" or case.get("schemaVersion") != 1:
+        if case.get("schema") != "orvect.workshop_case" or case.get("schemaVersion") not in (1, 2):
             print(f"Ignoré (schéma incompatible) : {path.name}")
             continue
         cases.append(case)

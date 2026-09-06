@@ -26,9 +26,9 @@
       <h1 id="pageTitle">Un problème intéressant.<br><em>Une expérience à transmettre.</em></h1>
       <p class="lead">Décrivez ce que le véhicule a montré, ce que vous avez contrôlé et ce qui a réellement résolu la panne. Les informations véhicule sont utiles, mais jamais bloquantes.</p>
       <div class="promise" aria-label="Informations sur le formulaire">
-        <span><b>≈ 4 min</b> pour un cas complet</span>
+        <span><b>≈ 3 min</b> pour un cas complet</span>
         <span><b>Sauvegarde locale</b> pendant la saisie</span>
-        <span><b>Pas de donnée client</b> demandée</span>
+        <span><b>100 % anonyme</b> aucune identité demandée</span>
       </div>
     </section>
 
@@ -36,10 +36,9 @@
       <aside class="progress-card" aria-label="Progression du formulaire">
         <p class="eyebrow">DOSSIER ATELIER</p>
         <ol>
-          <li class="active" data-progress="workshop"><span>01</span> Atelier</li>
-          <li data-progress="vehicle"><span>02</span> Véhicule</li>
-          <li data-progress="fault"><span>03</span> Panne &amp; DTC</li>
-          <li data-progress="resolution"><span>04</span> Résolution</li>
+          <li class="active" data-progress="vehicle"><span>01</span> Véhicule</li>
+          <li data-progress="fault"><span>02</span> Panne &amp; DTC</li>
+          <li data-progress="resolution"><span>03</span> Résolution</li>
         </ol>
         <p class="aside-note">Les champs marqués <b>*</b> sont nécessaires pour rendre le cas exploitable. Le reste peut rester vide.</p>
       </aside>
@@ -47,18 +46,8 @@
       <form id="caseForm" novalidate>
         <div id="errorSummary" class="error-summary" role="alert" tabindex="-1" hidden></div>
 
-        <section class="form-section" id="workshop" data-section="workshop">
-          <div class="section-heading"><span>01</span><div><p class="eyebrow">CONTRIBUTEUR</p><h2>Qui partage ce cas ?</h2></div></div>
-          <div class="grid two">
-            <label><span>Nom de l’atelier <b>*</b></span><input name="workshopName" autocomplete="organization" required placeholder="Ex. Garage Martin"></label>
-            <label><span>Nom du technicien</span><input name="technicianName" autocomplete="name" placeholder="Ex. Alex"></label>
-            <label><span>E-mail professionnel</span><input name="email" type="email" autocomplete="email" placeholder="atelier@exemple.fr"></label>
-            <label><span>Référence interne</span><input name="internalReference" autocomplete="off" placeholder="Ex. OT-2026-184"></label>
-          </div>
-        </section>
-
         <section class="form-section" id="vehicle" data-section="vehicle">
-          <div class="section-heading"><span>02</span><div><p class="eyebrow">CONTEXTE</p><h2>Quel véhicule ?</h2><p>Tous ces champs sont facultatifs. Indiquez uniquement ce que vous connaissez.</p></div></div>
+          <div class="section-heading"><span>01</span><div><p class="eyebrow">CONTEXTE</p><h2>Quel véhicule ?</h2><p>Tous ces champs sont facultatifs. Indiquez uniquement ce que vous connaissez.</p></div></div>
           <div class="grid three">
             <label><span>Marque</span><input name="make" autocomplete="off" placeholder="Volkswagen"></label>
             <label><span>Modèle</span><input name="model" autocomplete="off" placeholder="Golf VII"></label>
@@ -73,7 +62,7 @@
         </section>
 
         <section class="form-section" id="fault" data-section="fault">
-          <div class="section-heading"><span>03</span><div><p class="eyebrow">SIGNAL INITIAL</p><h2>Qu’avez-vous observé ?</h2></div></div>
+          <div class="section-heading"><span>02</span><div><p class="eyebrow">SIGNAL INITIAL</p><h2>Qu’avez-vous observé ?</h2></div></div>
           <div class="grid two wide-left">
             <label><span>Symptômes / plainte client <b>*</b></span><textarea name="symptoms" required maxlength="2000" placeholder="Ex. Perte de puissance à chaud, voyant moteur et mode dégradé à 2 500 tr/min."></textarea><small>Décrivez ce qui était réellement visible ou reproductible.</small></label>
             <label><span>Conditions d’apparition</span><textarea name="conditions" maxlength="1200" placeholder="À chaud, sous charge, par temps humide…"></textarea></label>
@@ -95,7 +84,7 @@
         </section>
 
         <section class="form-section" id="resolution" data-section="resolution">
-          <div class="section-heading"><span>04</span><div><p class="eyebrow">CONCLUSION TERRAIN</p><h2>Qu’est-ce qui a réglé le problème ?</h2></div></div>
+          <div class="section-heading"><span>03</span><div><p class="eyebrow">CONCLUSION TERRAIN</p><h2>Qu’est-ce qui a réglé le problème ?</h2></div></div>
           <div class="grid two">
             <label><span>Intervention réalisée <b>*</b></span><textarea name="repairAction" required maxlength="2000" placeholder="Ex. Remplacement du turbo et de la conduite d’alimentation en huile."></textarea></label>
             <label><span>Cause réelle identifiée <b>*</b></span><textarea name="rootCause" required maxlength="2000" placeholder="Ex. Jeu axial du turbo provoquant une pression de suralimentation insuffisante."></textarea></label>
@@ -107,7 +96,7 @@
         </section>
 
         <section class="consent-card">
-          <label class="check"><input name="consent" type="checkbox" required><span>Je confirme que ce retour ne contient ni nom de client, ni plaque d’immatriculation, ni VIN, et qu’ORVECT peut l’utiliser sous forme anonymisée pour améliorer ses outils de diagnostic. <b>*</b></span></label>
+          <label class="check"><input name="consent" type="checkbox" required><span>Je confirme que ce retour anonyme ne contient ni nom, ni e-mail, ni plaque d’immatriculation, ni VIN, et qu’ORVECT peut l’utiliser pour améliorer ses outils de diagnostic. <b>*</b></span></label>
           <p>Le fichier généré reste lisible avant envoi. Aucune donnée n’est transmise automatiquement à un tiers.</p>
         </section>
 
