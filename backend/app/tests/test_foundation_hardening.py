@@ -59,13 +59,15 @@ def test_llm_schema_has_no_safety_decision_and_allows_zero_hypotheses():
 
 
 def test_diagnostic_engine_forces_zero_hypotheses_until_evidence_is_sufficient():
-    base={"vehicle":{"configuration_confirmed":True,"engine_code":"DEMO"},"technical_definitions":[{"definition_type":"generic_standardized","documented":True}],"fault_codes":[{"code":"P0301","freeze_frame":{}}],"measurements":[],"previous_steps":[]}
+    base={"vehicle":{"configuration_confirmed":True,"engine_code":"DEMO"},"technical_definitions":[{"definition_type":"generic_standardized","documented":True}],"fault_codes":[{"code":"P0301","freeze_frame":{}}],"measurements":[],"previous_steps":[],"untrusted_user_data":{"symptoms":""},"images":[]}
     gate=DiagnosticEngine().evaluate(base)
     assert gate.hypotheses_allowed is False and gate.required_status=="insufficient_evidence"
     manufacturer=DiagnosticEngine().evaluate({**base,"technical_definitions":[{"definition_type":"manufacturer_specific","documented":False}]})
     assert manufacturer.hypotheses_allowed is False and manufacturer.required_status=="manufacturer_specific_definition_unavailable"
     informed=DiagnosticEngine().evaluate({**base,"measurements":[{"name":"voltage","value":12.4}]})
     assert informed.hypotheses_allowed is True and informed.required_status is None
+    symptom_informed=DiagnosticEngine().evaluate({**base,"untrusted_user_data":{"symptoms":"Loss of power under load"}})
+    assert symptom_informed.hypotheses_allowed is True and symptom_informed.reasons==["reported_symptoms_available"]
 
 
 def test_safety_engine_defaults_to_human_review_and_uses_only_its_rules():

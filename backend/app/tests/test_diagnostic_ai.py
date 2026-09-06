@@ -7,8 +7,9 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.database.models import AICall,DiagnosticImage,VehicleProfile
 from app.database.session import SessionLocal
+from app.modules.diagnostic_ai import analysis_service
 from app.modules.diagnostic_ai.context_builder import DiagnosticContextBuilder
-from app.modules.diagnostic_ai.providers import GeminiAutomotiveAIProvider,_gemini_response_schema,_mock_analysis
+from app.modules.diagnostic_ai.providers import GeminiAutomotiveAIProvider,ProviderResult,_gemini_response_schema,_mock_analysis,_normalize_provider_payload,validate_provider_sources
 from app.modules.diagnostic_ai.schemas import DiagnosticAnalysis,LLMDiagnosticAnalysis
 from app.seed import VEHICLE_ID
 
@@ -33,15 +34,33 @@ def test_strict_analysis_schema_rejects_extra_range_and_bad_ranking():
     payload=valid.model_dump(mode="json");payload["hypotheses"]=[{**hypothesis,"id":"low","confidence":.2},{**hypothesis,"id":"high","confidence":.8}]
     with pytest.raises(ValidationError):LLMDiagnosticAnalysis.model_validate(payload)
 
-def test_gemini_transport_schema_omits_unsupported_additional_properties():
+def test_gemini_transport_schema_uses_supported_keyword_subset():
     schema=_gemini_response_schema()
-    assert "additionalProperties" not in json.dumps(schema)
+    serialized=json.dumps(schema)
+    for keyword in ("additionalProperties","const","default","examples","maxItems","maxLength","minLength","pattern"):
+        assert f'"{keyword}"' not in serialized
+    assert schema["properties"]["schemaVersion"]["enum"]==["2.0"]
     assert schema["$defs"]["Hypothesis"]["properties"]["confidence"]["maximum"]==1
 
 def test_gemini_response_normalizes_equivalent_schema_revision():
     from app.modules.diagnostic_ai.providers import _gemini_response_payload
     response=SimpleNamespace(parsed={"schemaVersion":"2.0.0"},text=None)
     assert _gemini_response_payload(response)["schemaVersion"]=="2.0"
+
+def test_provider_payload_restores_canonical_source_and_removes_critical_decisions():
+    source={"source_id":"source-1","source_type":"open_dataset","source_version":"1","vehicle_compatibility":{"scope":"generic_standardized"},"timestamp":"2026-01-01T00:00:00+00:00","verified":False}
+    context={"technical_definitions":[{"source":source}],"technical_excerpts":[],"fault_codes":[{"code":"P0301"}]}
+    payload=_mock_analysis({"fault_codes":[],"vehicle":{},"technical_definitions":[]}).model_dump(mode="json")
+    payload["interpretedFaultCodes"]=[{"namespace":"sae_obd2","code":"P0301","ecu":None,"meaning":"Cylinder 1 misfire","definitionType":"generic_standardized","sourceStatus":"provided_by_database","sources":[{**source,"vehicle_compatibility":{}}],"relevance":"primary"}]
+    payload["correlations"]=[{"relatedCodes":["P0301"],"explanation":"Symptom correlation","confidence":.5,"relationshipType":"unresolved","supportingSymptoms":[],"supportingEvidence":[],"contradictingEvidence":[],"verificationStatus":"partially_verified","sources":[]}]
+    payload["warnings"]=["Éviter de conduire le véhicule."]
+    normalized,changed=_normalize_provider_payload(payload,context)
+    analysis=LLMDiagnosticAnalysis.model_validate(normalized)
+    validate_provider_sources(analysis,context)
+    assert changed is True
+    assert normalized["interpretedFaultCodes"][0]["sources"][0]==source
+    assert normalized["correlations"][0]["verificationStatus"]=="unverified"
+    assert normalized["warnings"]==["Décision réservée au moteur déterministe ou à une validation humaine."]
 
 def test_registration_resolution_validation_and_encrypted_persistence(client):
     assert client.post("/api/vehicles/resolve",json={"registration":"?"}).status_code==422
@@ -127,6 +146,26 @@ def test_multicode_p1351_analysis_step_reanalysis_and_deduplication(client):
     assert client.post(f"/api/diagnostics/{case_id}/steps/{step['id']}/result",json={"state":"positive","outcome":"Tension de batterie 11,2 V au démarrage","measurement":11.2,"unit":"V","comment":"Mesure répétée"}).status_code==200
     follow_up=client.post(f"/api/diagnostics/{case_id}/reanalyze")
     assert follow_up.status_code==200 and DiagnosticAnalysis.model_validate(follow_up.json())
+
+def test_noninformative_result_is_ignored_but_new_measurement_triggers_reanalysis(client,monkeypatch):
+    calls=[]
+    class CountingProvider:
+        async def analyze_initial_case(self,context,images):
+            calls.append("initial")
+            return ProviderResult(_mock_analysis(context),"test","counting",1)
+        async def analyze_follow_up(self,context,images):
+            calls.append("follow_up")
+            return ProviderResult(_mock_analysis(context),"test","counting",1)
+    monkeypatch.setattr(analysis_service,"get_ai_provider",lambda:CountingProvider())
+    case_id=create_case(client,("P0301",))
+    assert client.post(f"/api/diagnostics/{case_id}/analyze").status_code==200
+    step=client.get(f"/api/diagnostics/{case_id}").json()["steps"][0]
+    assert client.post(f"/api/diagnostics/{case_id}/steps/{step['id']}/result",json={"state":"inconclusive","outcome":"","comment":"No usable reading"}).status_code==200
+    assert client.post(f"/api/diagnostics/{case_id}/reanalyze").status_code==200
+    assert calls==["initial"]
+    assert client.post(f"/api/diagnostics/{case_id}/measurements",json={"name":"rail pressure","value":250,"unit":"bar","source":"manual"}).status_code==201
+    assert client.post(f"/api/diagnostics/{case_id}/reanalyze").status_code==200
+    assert calls==["initial","follow_up"]
 
 def test_private_images_validate_content_and_garage_isolation(client,tmp_path,monkeypatch):
     monkeypatch.setattr(settings,"diagnostic_image_dir",str(tmp_path))

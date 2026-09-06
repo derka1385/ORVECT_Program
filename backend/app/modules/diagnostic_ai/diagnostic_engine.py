@@ -35,6 +35,14 @@ class DiagnosticEngine:
             for item in context.get("previous_steps",[])
         )
         freeze_frame=any(bool(item.get("freeze_frame")) for item in context.get("fault_codes",[]))
-        if not (context.get("measurements") or informative_step or freeze_frame):
+        reported_symptoms=bool(str(context.get("untrusted_user_data",{}).get("symptoms") or "").strip())
+        visual_evidence=bool(context.get("images"))
+        if not (context.get("measurements") or informative_step or freeze_frame or reported_symptoms or visual_evidence):
             return DiagnosticGate(False,"insufficient_evidence",["dtc_alone_is_not_diagnostic_evidence"])
-        return DiagnosticGate(True,None,["structured_diagnostic_evidence_available"])
+        reasons=[]
+        if reported_symptoms:reasons.append("reported_symptoms_available")
+        if context.get("measurements"):reasons.append("structured_measurements_available")
+        if freeze_frame:reasons.append("freeze_frame_available")
+        if informative_step:reasons.append("informative_test_result_available")
+        if visual_evidence:reasons.append("visual_evidence_available")
+        return DiagnosticGate(True,None,reasons)

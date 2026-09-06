@@ -1,7 +1,8 @@
 """Exercise the running Docker frontend/proxy/API; remove only our synthetic vehicle.
 
 Run with backend/.venv/bin/python from the repository root. Demo credentials are
-read from environment/.env, never logged. Refuses to invoke a paid LLM provider.
+read from environment/.env, never logged. External AI calls require the explicit
+SMOKE_ALLOW_EXTERNAL_LLM=1 opt-in.
 """
 import json
 import io
@@ -33,7 +34,9 @@ def smoke():
         request(client, "GET", base + "/")
         proxied = request(client, "GET", "/health").json()
         direct = request(client, "GET", direct_api + "/health").json()
-        assert proxied == direct and proxied["llm_provider"] == "mock"
+        assert proxied == direct and proxied["llm_provider"] in {"mock", "gemini"}
+        if proxied["llm_provider"] != "mock" and os.getenv("SMOKE_ALLOW_EXTERNAL_LLM") != "1":
+            raise RuntimeError("Set SMOKE_ALLOW_EXTERNAL_LLM=1 to authorize the configured external AI provider")
         request(client, "GET", "/vehicles", expected=401)
         request(client, "POST", "/auth/login", expected=401, json={"email": "runtime-nobody@example.com", "password": "invalid-runtime-password"})
         login = request(client, "POST", "/auth/login", json={

@@ -13,6 +13,25 @@ from .schemas import LLMDiagnosticAnalysis
 
 PROMPT_VERSION = "automotive-v2"
 SYSTEM_INSTRUCTION = Path(__file__).with_name("prompts").joinpath("automotive_v1.txt").read_text()
+PROHIBITED_EXPLANATION_PHRASES = (
+    "safe to drive",
+    "continue driving",
+    "peut continuer à rouler",
+    "peut rouler",
+    "danger level",
+    "niveau de danger",
+    "should be replaced",
+    "must be replaced",
+    "doit être remplac",
+    "à remplacer",
+    "remplacer ",
+    "cause is confirmed",
+    "cause confirmée",
+    "definitively confirmed",
+    "définitivement confirm",
+    "éviter de conduire",
+)
+BOUNDARY_REVIEW_MESSAGE = "Décision réservée au moteur déterministe ou à une validation humaine."
 
 
 class AIProviderUnavailable(Exception):
@@ -45,12 +64,29 @@ class AutomotiveAIProvider(ABC):
 
 
 def _gemini_response_schema():
-    """Keep strict validation locally while removing a keyword rejected by generateContent."""
+    """Keep strict local validation while emitting Gemini's supported JSON Schema subset."""
     schema = LLMDiagnosticAnalysis.model_json_schema()
+    unsupported = {
+        "additionalProperties",
+        "default",
+        "examples",
+        "maxItems",
+        "maxLength",
+        "minLength",
+        "pattern",
+    }
 
     def clean(value):
         if isinstance(value, dict):
-            return {key: clean(item) for key, item in value.items() if key != "additionalProperties"}
+            cleaned = {}
+            for key, item in value.items():
+                if key in unsupported:
+                    continue
+                if key == "const":
+                    cleaned["enum"] = [clean(item)]
+                    continue
+                cleaned[key] = clean(item)
+            return cleaned
         if isinstance(value, list):
             return [clean(item) for item in value]
         return value
@@ -78,6 +114,46 @@ def _available_source_references(context: dict) -> dict[str, list[dict]]:
     return references
 
 
+def _normalize_provider_payload(payload: dict, context: dict) -> tuple[dict, bool]:
+    """Canonicalize provenance and remove decisions outside the LLM boundary."""
+    normalized = json.loads(json.dumps(payload))
+    changed = False
+    available = _available_source_references(context)
+    for collection in ("interpretedFaultCodes", "correlations", "hypotheses", "nextChecks"):
+        for item in normalized.get(collection, []):
+            sources = item.get("sources", []) if isinstance(item, dict) else []
+            for index, source in enumerate(sources):
+                candidates = available.get(source.get("source_id"), []) if isinstance(source, dict) else []
+                if len(candidates) == 1 and source != candidates[0]:
+                    sources[index] = candidates[0]
+                    changed = True
+            if collection in {"correlations", "hypotheses", "nextChecks"} and not sources and item.get("verificationStatus") != "unverified":
+                item["verificationStatus"] = "unverified"
+                changed = True
+            if collection == "nextChecks" and item.get("manufacturerProcedure") and not any(source.get("verified") for source in sources):
+                item["manufacturerProcedure"] = False
+                changed = True
+
+    hypotheses = normalized.get("hypotheses", [])
+    ranked = sorted(hypotheses, key=lambda item: item.get("confidence", 0), reverse=True)
+    if hypotheses != ranked:
+        normalized["hypotheses"] = ranked
+        changed = True
+
+    def scrub(value):
+        nonlocal changed
+        if isinstance(value, dict):
+            return {key: scrub(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [scrub(item) for item in value]
+        if isinstance(value, str) and any(phrase in value.casefold() for phrase in PROHIBITED_EXPLANATION_PHRASES):
+            changed = True
+            return BOUNDARY_REVIEW_MESSAGE
+        return value
+
+    return scrub(normalized), changed
+
+
 def validate_provider_sources(analysis: LLMDiagnosticAnalysis, context: dict) -> None:
     available = _available_source_references(context)
     referenced = []
@@ -94,23 +170,7 @@ def validate_provider_sources(analysis: LLMDiagnosticAnalysis, context: dict) ->
         if source.model_dump(mode="json") not in expected:
             raise AIInvalidResponse(f"Unknown or altered source reference: {source.source_id}")
     serialized = json.dumps(analysis.model_dump(mode="json"), ensure_ascii=False).casefold()
-    prohibited = (
-        "safe to drive",
-        "continue driving",
-        "peut continuer à rouler",
-        "peut rouler",
-        "danger level",
-        "niveau de danger",
-        "should be replaced",
-        "must be replaced",
-        "doit être remplac",
-        "à remplacer",
-        "cause is confirmed",
-        "cause confirmée",
-        "definitively confirmed",
-        "définitivement confirm",
-    )
-    matched = next((phrase for phrase in prohibited if phrase in serialized), None)
+    matched = next((phrase for phrase in PROHIBITED_EXPLANATION_PHRASES if phrase in serialized), None)
     if matched:
         raise AIInvalidResponse(f"Explanation layer exceeded its decision boundary: {matched}")
     gate = context.get("diagnostic_engine", {})
@@ -314,7 +374,9 @@ class GeminiAutomotiveAIProvider(AutomotiveAIProvider):
         repaired = False
         response = await self._request(context, images, model)
         try:
-            analysis = LLMDiagnosticAnalysis.model_validate(_gemini_response_payload(response))
+            payload, normalized = _normalize_provider_payload(_gemini_response_payload(response), context)
+            repaired = repaired or normalized
+            analysis = LLMDiagnosticAnalysis.model_validate(payload)
             validate_provider_sources(analysis, context)
         except Exception:
             repaired = True
@@ -324,7 +386,8 @@ class GeminiAutomotiveAIProvider(AutomotiveAIProvider):
             }
             response = await self._request(repair_context, images, model)
             try:
-                analysis = LLMDiagnosticAnalysis.model_validate(_gemini_response_payload(response))
+                payload, _ = _normalize_provider_payload(_gemini_response_payload(response), context)
+                analysis = LLMDiagnosticAnalysis.model_validate(payload)
                 validate_provider_sources(analysis, context)
             except Exception as exc:
                 raise AIInvalidResponse("Réponse Gemini invalide après une tentative de réparation") from exc

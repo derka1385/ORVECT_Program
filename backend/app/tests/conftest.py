@@ -13,9 +13,13 @@ from app.database.models import Base
 from app.database.session import SessionLocal, engine
 from app.main import app
 from app.seed import seed
+from app.modules.diagnostic_ai.routes import calls as diagnostic_ai_calls
+from app.modules.vehicle_resolution.routes import calls as vehicle_resolution_calls
 
 @pytest.fixture(autouse=True)
 def clean_database():
+    diagnostic_ai_calls.clear()
+    vehicle_resolution_calls.clear()
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     db = SessionLocal()

@@ -189,10 +189,27 @@ def _latest_result_is_non_informative(db: Session, case: DiagnosticSession) -> b
     return bool(step and (step.result or {}).get("state") in NON_INFORMATIVE_RESULT_STATES)
 
 
+def _effective_context_hash(context: dict) -> str:
+    """Hash only evidence that may legitimately change the diagnostic state."""
+    effective = {
+        **context,
+        "previous_steps": [
+            item for item in context.get("previous_steps", []) if item.get("diagnostic_effect") == "informative"
+        ],
+    }
+    canonical = DiagnosticContextBuilder.canonical(effective)
+    return hashlib.sha256(canonical.encode()).hexdigest()
+
+
 async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False):
     if case.status == "analyzing":
         raise AnalysisInProgress("Une analyse est déjà en cours")
-    if follow_up and _latest_result_is_non_informative(db, case):
+    context, images = DiagnosticContextBuilder().build(db, case)
+    if not context["fault_codes"]:
+        raise ValueError("Ajoutez au moins un code défaut")
+    context["diagnostic_engine"] = DiagnosticEngine().evaluate(context).as_dict()
+    context_hash = _effective_context_hash(context)
+    if follow_up and _latest_result_is_non_informative(db, case) and case.analysis_context_hash == context_hash:
         latest = db.scalar(
             select(AICall)
             .where(
@@ -205,12 +222,6 @@ async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False):
         )
         if latest:
             return DiagnosticAnalysis.model_validate(latest.output_payload).model_dump(mode="json")
-    context, images = DiagnosticContextBuilder().build(db, case)
-    if not context["fault_codes"]:
-        raise ValueError("Ajoutez au moins un code défaut")
-    context["diagnostic_engine"] = DiagnosticEngine().evaluate(context).as_dict()
-    canonical = DiagnosticContextBuilder.canonical(context)
-    context_hash = hashlib.sha256(canonical.encode()).hexdigest()
     operation = "follow_up" if follow_up else "initial_analysis"
     cached = db.scalar(
         select(AICall)
