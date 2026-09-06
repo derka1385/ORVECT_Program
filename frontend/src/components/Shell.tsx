@@ -1,19 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { SideNav } from "@/components/SideNav";
-import { api } from "@/services/api";
 
 const FULLSCREEN_ROUTES = ["/diagnostics/new", "/login"];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  async function logout() {
-    await api.logout().catch(() => undefined);
-    router.replace("/login");
-  }
   if (FULLSCREEN_ROUTES.includes(pathname) || pathname.startsWith("/diagnostics/ai/")) return <>{children}</>;
 
   return (
@@ -41,7 +35,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
               Système prêt
             </span>
             <Link className="btn-primary" href="/diagnostics/new">Nouveau diagnostic</Link>
-            <button className="btn-secondary" type="button" onClick={logout}>Déconnexion</button>
           </div>
         </div>
 

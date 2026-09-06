@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import {useRouter} from "next/navigation";
-import {api} from "@/services/api";
 
 export const FLOW_STEPS = ["Identification", "Vérification", "DTC & symptômes", "Résultats"] as const;
 
@@ -13,17 +11,12 @@ export function OrvectLogo({compact=false}:{compact?:boolean}){
  </Link>
 }
 
-export function ProductTopBar({identity="Session atelier"}:{identity?:string}){
- const router=useRouter();
- async function logout(){await api.logout().catch(()=>undefined);router.replace("/login")}
+export function ProductTopBar(){
  return <header className="border-b border-white/10 bg-orvect-graphite text-orvect-mineral">
   <div className="flex min-h-[68px] w-full items-center gap-6 px-5 sm:px-8 xl:px-10 2xl:px-12">
    <div className="w-[190px] shrink-0 text-orvect-orange"><OrvectLogo/></div>
    <p className="hidden flex-1 text-xs font-medium tracking-[.08em] sm:block">ATELIER ORVECT / PROTOTYPE TECHNIQUE</p>
-   <div className="ml-auto flex items-center gap-3 text-right text-xs text-orvect-alloy">
-    <span className="hidden max-w-[260px] truncate md:block">{identity}</span>
-    <button type="button" onClick={logout} className="orvect-link-button">Déconnexion</button>
-   </div>
+   <span className="ml-auto text-right text-xs font-medium uppercase tracking-[.08em] text-orvect-alloy">Mode démonstration VAG</span>
   </div>
  </header>
 }
@@ -50,9 +43,9 @@ export function ProductSidebar({active}:{active:number}){
  </aside>
 }
 
-export function ProductLayout({active,identity,children}:{active:number;identity?:string;children:React.ReactNode}){
+export function ProductLayout({active,children}:{active:number;children:React.ReactNode}){
  return <div className="min-h-dvh bg-orvect-mineral text-orvect-graphite">
-  <ProductTopBar identity={identity}/>
+  <ProductTopBar/>
   <div className="flex w-full items-start gap-5 px-5 py-6 sm:px-8 sm:py-8 xl:gap-8 xl:px-10 2xl:px-12">
    <ProductSidebar active={active}/>
    <main className="min-w-0 flex-1">{children}</main>

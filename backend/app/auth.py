@@ -87,6 +87,22 @@ def get_current_user(
 ) -> AuthContext:
     token = credentials.credentials if credentials and credentials.scheme.lower() == "bearer" else request.cookies.get("diagpilot_session")
     if not token:
+        if settings.app_environment == "development" and settings.demo_access_without_login:
+            user = db.scalar(select(User).where(User.email == settings.demo_admin_email.lower(), User.is_active.is_(True)))
+            membership = (
+                db.scalar(
+                    select(GarageMembership).where(
+                        GarageMembership.user_id == user.id,
+                        GarageMembership.is_active.is_(True),
+                        GarageMembership.role == "admin",
+                    )
+                )
+                if user
+                else None
+            )
+            if user and membership:
+                return AuthContext(user.id, membership.garage_id, "admin", user.email)
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Demo workspace is not initialized")
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Authentication required")
     session = db.scalar(
         select(AuthSession).where(

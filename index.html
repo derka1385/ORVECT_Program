@@ -67,7 +67,6 @@
     .context-ribbon{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.context-ribbon span{border:1px solid var(--alloy);padding:8px 11px;font-size:11px;text-transform:uppercase}
     .correlation{margin:18px 0;border-left:5px solid var(--orange)}
     .results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;align-items:start}.case-panel{order:1}.hypothesis-panel{order:2}.process-panel{order:3;grid-column:1/-1}.process-panel .instructions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.process-panel .instructions li{margin-top:0}
-    .floating-action{position:fixed;right:20px;bottom:20px;z-index:50;display:flex;align-items:center;gap:14px;border:1px solid var(--alloy);background:var(--mineral);padding:12px;box-shadow:0 18px 50px #10121433}.floating-action span{font-size:11px;font-weight:650;text-transform:uppercase}.floating-action .button{min-width:220px}
     .footer-note{margin-top:28px;color:var(--muted);font-size:12px;line-height:1.6}
     .mobile-only{display:none}
     @media(max-width:1100px){.dtc-workspace{grid-template-columns:1fr}.dtc-aside{position:static}.results-grid{grid-template-columns:1fr}.process-panel{grid-column:auto}.process-panel .instructions{grid-template-columns:1fr}}
@@ -156,14 +155,13 @@
       </section>
     </main>
   </div>
-  <div class="floating-action" id="floatingAction"><span id="floatingLabel">Étape 01 · Identification</span><button class="button" id="floatingSecondary" type="button" hidden>Retour</button><button class="button primary" id="floatingPrimary" type="button">Identifier le véhicule →</button></div>
   <script src="./data/fixtures/dtc_catalog.lookup.js"></script>
   <script>
     (()=>{
       const state={screen:1,idMethod:'vin',unknown:false,measurements:[],dtcs:[]};
       const $=(selector)=>document.querySelector(selector);const $$=(selector)=>[...document.querySelectorAll(selector)];
       const clean=(value)=>String(value??'').replace(/[<>]/g,'');
-      function show(screen){state.screen=Number(screen);$$('.screen').forEach(node=>node.classList.toggle('active',Number(node.dataset.screen)===state.screen));$$('[data-side]').forEach(node=>node.classList.toggle('active',Number(node.dataset.side)===state.screen));const labels=['','Étape 01 · Identification','Étape 02 · Vérification','Étape 03 · DTC & symptômes','Étape 04 · Résultats'];const actions=['','Identifier le véhicule →','Confirmer et continuer →','Analyser tous les signaux →','Réévaluer le dossier'];$('#floatingLabel').textContent=labels[state.screen];$('#floatingPrimary').textContent=actions[state.screen];$('#floatingSecondary').hidden=state.screen===1;$('#floatingSecondary').textContent=state.screen===4?'Nouveau dossier':'Retour';window.scrollTo({top:0,behavior:'smooth'})}
+      function show(screen){state.screen=Number(screen);$$('.screen').forEach(node=>node.classList.toggle('active',Number(node.dataset.screen)===state.screen));$$('[data-side]').forEach(node=>node.classList.toggle('active',Number(node.dataset.side)===state.screen));window.scrollTo({top:0,behavior:'smooth'})}
       function notice(id,message,error=false){const node=$(id);node.textContent=message;node.classList.toggle('error',error);node.classList.add('show');setTimeout(()=>node.classList.remove('show'),4200)}
       function dtcDefinition(code){const catalog=window.ORVECT_DTC_CATALOG;const row=catalog?.definitions?.[code];if(row)return{type:'generic standardized',meaning:row[0],source:`wal33d-dtc-database@${catalog.meta.source_commit.slice(0,12)}`,meta:`${catalog.meta.source_type} · MIT · ${catalog.meta.review_status}`,category:row[1]};const manufacturer=/^[PBCU]1[0-9A-F]{3}$/.test(code)||/^[BCU]2[0-9A-F]{3}$/.test(code);return{type:manufacturer?'manufacturer specific':'unknown',meaning:'Definition unavailable for this vehicle configuration.',source:'unavailable',meta:'definition unavailable · compatibility not established'}}
       function updateContext(){const make=$('#make').value||'Non identifié',model=$('#model').value||'Configuration à confirmer',engine=$('#engine').value||'Moteur non identifié',mileage=Number($('#mileage').value||0);$('#vehicleTitle').textContent=`${make} ${model}`;$('#vehicleYear').textContent=$('#year').value||'Non établie';$('#vehicleEngine').textContent=engine;$('#vehicleGearbox').textContent=$('#gearbox').value||'Non établie';$('#vehiclePlatform').textContent=$('#platform').value||'Non établie';$('#ribbonVehicle').textContent=`${make} ${model}`;$('#ribbonEngine').textContent=engine;$('#ribbonMileage').textContent=mileage?`${mileage.toLocaleString('fr-FR')} km`:'Kilométrage non renseigné';$('#diagVehicle').innerHTML=`${clean(make)} ${clean(model)}<br><span class="muted">Moteur ${clean(engine)}</span>`}
@@ -173,8 +171,6 @@
       $$('[data-go]').forEach(node=>node.addEventListener('click',()=>show(node.dataset.go)));
       $$('[data-id-method]').forEach(node=>node.addEventListener('click',()=>{state.idMethod=node.dataset.idMethod;$$('[data-id-method]').forEach(button=>button.classList.toggle('active',button===node));$('#vinField').hidden=state.idMethod!=='vin';$('#registrationField').hidden=state.idMethod!=='registration';if(state.idMethod==='vin')$('#registration').value='';else $('#vin').value=''}));
       $('#identificationForm').addEventListener('submit',event=>{event.preventDefault();const value=state.idMethod==='vin'?$('#vin').value.trim():$('#registration').value.trim();if(!value)return notice('#identificationNotice',`Renseignez ${state.idMethod==='vin'?'un VIN':'une plaque'}.`,true);setVehicle(false);show(2)});
-      $('#floatingPrimary').addEventListener('click',()=>{if(state.screen===1)return $('#identificationForm').requestSubmit();if(state.screen===2)return $('#vehicleForm').requestSubmit();if(state.screen===3)return $('#launchDiagnosis').click();$('#reanalyze').click()});
-      $('#floatingSecondary').addEventListener('click',()=>show(state.screen===4?1:state.screen-1));
       $('[data-recent-vehicle]').addEventListener('click',()=>{setVehicle(false);show(2)});
       $('[data-unknown-vehicle]').addEventListener('click',()=>{setVehicle(true);show(2)});
       $('#vehicleForm').addEventListener('submit',event=>{event.preventDefault();updateContext();const complete=['make','model','year','engine'].every(id=>$('#'+id).value.trim());notice('#vehicleNotice',complete?'Configuration confirmée par le technicien.':'Configuration incomplète conservée comme telle. Revue humaine requise.',!complete);setTimeout(()=>show(3),500)});

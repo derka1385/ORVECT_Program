@@ -16,7 +16,7 @@ from app.modules.diagnostic_ai.diagnostic_engine import DiagnosticEngine
 from app.modules.diagnostic_ai.providers import AIInvalidResponse,ProviderResult,_gemini_response_schema,_mock_analysis,validate_provider_sources
 from app.modules.diagnostic_ai.schemas import LLMDiagnosticAnalysis
 from app.modules.diagnostic_ai.safety_engine import SafetyEngine
-from app.seed import VEHICLE_ID
+from app.seed import GOLF_VEHICLE_ID,VEHICLE_ID
 
 
 def test_authentication_is_required_and_garage_header_is_ignored(client):
@@ -26,6 +26,17 @@ def test_authentication_is_required_and_garage_header_is_ignored(client):
     response=client.get("/api/vehicles",headers={"X-Garage-ID":"attacker-selected-garage"})
     assert response.status_code==200
     assert VEHICLE_ID in {item["id"] for item in response.json()["items"]}
+
+
+def test_development_demo_mode_needs_no_account_and_exposes_golf(monkeypatch):
+    monkeypatch.setattr(settings,"app_environment","development")
+    monkeypatch.setattr(settings,"demo_access_without_login",True)
+    anonymous=TestClient(app)
+    response=anonymous.get("/api/vehicles")
+    assert response.status_code==200
+    golf=next(item for item in response.json()["items"] if item["id"]==GOLF_VEHICLE_ID)
+    assert (golf["make"],golf["model"],golf["engine_code"])==("Volkswagen","Golf VII","CZCA")
+    assert anonymous.get("/api/auth/me").json()["role"]=="admin"
 
 
 def test_technician_cannot_access_administrative_knowledge_routes():

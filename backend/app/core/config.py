@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     vin_fingerprint_secret: str = ""
     development_secret: str = "diagpilot-local-development-only"
     auth_session_ttl_hours: int = 12
+    demo_access_without_login: bool = True
     demo_admin_email: str = "admin@example.com"
     demo_admin_password: str = "demo-change-me"
     demo_technician_email: str = "technician@example.com"

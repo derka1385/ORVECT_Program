@@ -52,6 +52,7 @@ services:
       DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-demo-change-me}
       DEMO_TECHNICIAN_EMAIL: ${DEMO_TECHNICIAN_EMAIL:-technician@example.com}
       DEMO_TECHNICIAN_PASSWORD: ${DEMO_TECHNICIAN_PASSWORD:-demo-tech-change-me}
+      DEMO_ACCESS_WITHOUT_LOGIN: ${DEMO_ACCESS_WITHOUT_LOGIN:-true}
     volumes:
       - ./data:/app/data:ro
       - diagnostic_images:/app/private_images

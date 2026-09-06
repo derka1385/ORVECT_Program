@@ -3,7 +3,7 @@ from pathlib import Path
 from sqlalchemy import select, update
 from app.auth import hash_password
 from app.core.config import settings
-from app.database.models import Base, DiagnosticNamespace, DiagnosticRule, DiagnosticTroubleCode, Garage, GarageMembership, KnowledgeItem, KnowledgeSource, User, VehicleProfile
+from app.database.models import Base, DiagnosticNamespace, DiagnosticRule, DiagnosticTroubleCode, Garage, GarageMembership, KnowledgeItem, KnowledgeSource, User, VehicleConfiguration, VehicleProfile
 from app.database.session import SessionLocal, engine
 from app.database.models import DiagnosticSourceAssessment
 from app.modules.vehicle_resolution.services.security import protector
@@ -12,6 +12,7 @@ GARAGE_ID="00000000-0000-0000-0000-000000000001"
 USER_ID="00000000-0000-0000-0000-000000000002"
 ADMIN_USER_ID="00000000-0000-0000-0000-000000000006"
 VEHICLE_ID="00000000-0000-0000-0000-000000000003"
+GOLF_VEHICLE_ID="00000000-0000-0000-0000-000000000007"
 SOURCE_ID="00000000-0000-0000-0000-000000000004"
 CATALOG_SOURCE_ID="00000000-0000-0000-0000-000000000005"
 
@@ -84,6 +85,17 @@ def seed(db=None):
             if not db.scalar(select(GarageMembership).where(GarageMembership.user_id==member.id,GarageMembership.garage_id==GARAGE_ID)):
                 db.add(GarageMembership(user_id=member.id,garage_id=GARAGE_ID,role=role))
         if not db.get(VehicleProfile,VEHICLE_ID): db.add(VehicleProfile(id=VEHICLE_ID,garage_id=GARAGE_ID,make="Demo Motors",model="DM-1",year=2020,market="generic_demo",engine_name="Generic 1.6 Demo",engine_code="DEMO-ENG-01",fuel_type="gasoline",transmission="manual",notes="Véhicule entièrement fictif. Ne pas utiliser sur un véhicule réel.",is_demo_vehicle=True))
+        golf=db.get(VehicleProfile,GOLF_VEHICLE_ID)
+        if not golf:
+            golf=VehicleProfile(id=GOLF_VEHICLE_ID,garage_id=GARAGE_ID)
+            db.add(golf)
+        golf.make="Volkswagen";golf.model="Golf VII";golf.year=2018;golf.market="EU";golf.engine_name="1.4 TSI 92 kW";golf.engine_code="CZCA";golf.fuel_type="gasoline";golf.transmission="manual";golf.notes="Véhicule VAG de démonstration. Configuration synthétique à confirmer avant tout usage réel.";golf.is_demo_vehicle=True
+        db.flush()
+        golf_config=db.scalar(select(VehicleConfiguration).where(VehicleConfiguration.vehicle_id==GOLF_VEHICLE_ID))
+        if not golf_config:
+            golf_config=VehicleConfiguration(vehicle_id=GOLF_VEHICLE_ID)
+            db.add(golf_config)
+        golf_config.manufacturer="Volkswagen Group";golf_config.make="Volkswagen";golf_config.model="Golf VII";golf_config.generation="VII";golf_config.model_year=2018;golf_config.market="EU";golf_config.vehicle_type="passenger_car";golf_config.body_type="hatchback";golf_config.fuel_type="gasoline";golf_config.engine_family="EA211";golf_config.engine_name="1.4 TSI 92 kW";golf_config.engine_code="CZCA";golf_config.engine_code_confirmed_by_user="CZCA";golf_config.engine_displacement_cc=1395;golf_config.engine_power_kw=92;golf_config.transmission_type="manual";golf_config.drivetrain="FWD";golf_config.platform="MQB";golf_config.providers_used=["internal_demo"];golf_config.field_provenance={"scope":"synthetic_demo"};golf_config.precision_level="demo_fixture";golf_config.confidence_score=1.0;golf_config.confirmed_by_user=True;golf_config.confirmed_by_user_id=ADMIN_USER_ID
         namespaces = (
             ("sae_obd2", None, None, "SAE_OBD_II", "Generic standardized OBD-II diagnostic identifiers"),
             ("vag_uds", "Volkswagen Group", "VAG", "UDS_OEM", "VAG manufacturer diagnostic identifiers; definitions require licensed source data"),
