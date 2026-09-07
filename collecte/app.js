@@ -69,10 +69,6 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       localStorage.setItem(draftKey, JSON.stringify({ fields: formValues(), dtcs }));
-      const state = document.querySelector('#saveState');
-      state.textContent = copy('draftSaved');
-      state.classList.add('saved');
-      setTimeout(() => { state.textContent = copy('draftLocal'); state.classList.remove('saved'); }, 1800);
     }, 250);
   }
 

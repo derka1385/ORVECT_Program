@@ -7,7 +7,7 @@
   <meta name="description" content="Partagez un cas atelier documenté avec ORVECT.">
   <link rel="icon" href="../orvect-mark.svg" type="image/svg+xml">
   <link rel="shortcut icon" href="../orvect-mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=attached-rail-2">
+  <link rel="stylesheet" href="./styles.css?v=language-control-3">
   <title>ORVECT — Partager un cas atelier</title>
 </head>
 <body>
@@ -18,8 +18,7 @@
       <strong>ORVECT</strong>
     </a>
     <span class="topbar-label">CAS ATELIER ANONYME</span>
-    <span class="save-state" id="saveState" aria-live="polite">Brouillon local</span>
-    <label class="language-control"><span class="sr-only">Langue</span><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.2 2.5 3.3 5.5 3.3 9S14.2 18.5 12 21M12 3C9.8 5.5 8.7 8.5 8.7 12S9.8 18.5 12 21"/></svg><select data-language aria-label="Langue"><option value="fr">FR</option><option value="en">EN</option><option value="sv">SV</option></select></label>
+    <label class="language-control"><span class="sr-only">Langue</span><select data-language aria-label="Langue"><option value="fr" lang="fr">Français</option><option value="en" lang="en">English</option><option value="sv" lang="sv">Svenska</option></select><svg class="language-chevron" aria-hidden="true" viewBox="0 0 16 16"><path d="m4 6 4 4 4-4"/></svg></label>
   </header>
 
   <main>
@@ -114,7 +113,7 @@
 
   <footer><span>© 2026 ORVECT</span><span>Automotive intelligence. Grounded in evidence.</span><a href="mailto:derka1385@yahoo.com">Besoin d’aide ?</a></footer>
   <script src="../data/fixtures/dtc_catalog.lookup.js"></script>
-  <script src="./app.js"></script>
+  <script src="./app.js?v=language-control-3"></script>
   <script src="../i18n.js"></script>
 </body>
 </html>
