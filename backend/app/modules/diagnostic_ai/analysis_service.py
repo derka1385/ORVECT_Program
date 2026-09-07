@@ -10,7 +10,7 @@ from app.database.models import AICall, DiagnosticEvent, DiagnosticHypothesis, D
 
 from .context_builder import DiagnosticContextBuilder
 from .diagnostic_engine import DiagnosticEngine
-from .providers import AIInvalidResponse, AIProviderUnavailable, PROMPT_VERSION, get_ai_provider, validate_provider_sources
+from .providers import AIInvalidResponse, AIProviderUnavailable, PROMPT_VERSION, get_ai_provider, selected_model, validate_provider_sources
 from .safety_engine import SafetyEngine
 from .schemas import DiagnosticAnalysis, LLMDiagnosticAnalysis, NON_INFORMATIVE_RESULT_STATES
 
@@ -231,6 +231,9 @@ async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False):
             AICall.operation_type == operation,
             AICall.status == "completed",
             AICall.schema_version == "2.0",
+            AICall.provider == settings.llm_provider,
+            AICall.model == selected_model(context, follow_up),
+            AICall.prompt_version == PROMPT_VERSION,
             AICall.output_payload.is_not(None),
         )
         .order_by(AICall.created_at.desc())

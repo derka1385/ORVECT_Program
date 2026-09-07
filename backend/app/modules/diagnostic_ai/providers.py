@@ -11,7 +11,7 @@ from app.modules.dtc.service import UNAVAILABLE_DEFINITION
 from .schemas import LLMDiagnosticAnalysis
 
 
-PROMPT_VERSION = "automotive-v2"
+PROMPT_VERSION = "automotive-v3.1-exploratory"
 SYSTEM_INSTRUCTION = Path(__file__).with_name("prompts").joinpath("automotive_v1.txt").read_text()
 PROHIBITED_EXPLANATION_PHRASES = (
     "safe to drive",
@@ -30,6 +30,11 @@ PROHIBITED_EXPLANATION_PHRASES = (
     "definitively confirmed",
     "définitivement confirm",
     "éviter de conduire",
+    "essai routier",
+    "road test",
+    "effacer les codes",
+    "effacer les défauts",
+    "clear fault codes",
 )
 BOUNDARY_REVIEW_MESSAGE = "Décision réservée au moteur déterministe ou à une validation humaine."
 
@@ -40,6 +45,12 @@ class AIProviderUnavailable(Exception):
 
 class AIInvalidResponse(Exception):
     pass
+
+
+def selected_model(context: dict, follow_up: bool = False) -> str:
+    if settings.llm_provider == "gemini":
+        return settings.gemini_model_reasoning if follow_up or len(context.get("fault_codes", [])) > 1 else settings.gemini_model_fast
+    return "deterministic-explanation-v2" if settings.llm_provider == "mock" else "unavailable"
 
 
 @dataclass
@@ -462,7 +473,7 @@ class GeminiAutomotiveAIProvider(AutomotiveAIProvider):
         )
 
     async def analyze_initial_case(self, context, images):
-        model = settings.gemini_model_reasoning if len(context.get("fault_codes", [])) > 1 else settings.gemini_model_fast
+        model = selected_model(context)
         return await self._analyze(context, images, model)
 
     async def analyze_follow_up(self, context, images):

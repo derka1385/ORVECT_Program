@@ -8,6 +8,7 @@ COPY backend/app ./app
 COPY data /workspace/data
 COPY scripts /workspace/scripts
 COPY frontend/src /workspace/frontend/src
+COPY frontend/public/demo /workspace/frontend/public/demo
 RUN pip install --no-cache-dir --no-deps .
 ENV DATABASE_URL=sqlite:///./test.db
 ENV APP_ENVIRONMENT=test

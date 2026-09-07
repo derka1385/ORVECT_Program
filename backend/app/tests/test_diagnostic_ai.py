@@ -24,6 +24,50 @@ def create_case(client,codes=("P1351",),headers=None):
 def jpeg_bytes():
     output=io.BytesIO();Image.new("RGB",(640,480),(32,64,96)).save(output,"JPEG");return output.getvalue()
 
+
+def test_analysis_cache_is_scoped_to_provider_model_and_prompt(client, monkeypatch):
+    case_id=create_case(client, codes=("P0301",))
+    path=f"/api/diagnostics/{case_id}/analyze"
+    assert client.post(path).status_code == 200
+    assert client.post(path).status_code == 200
+    def runs():
+        with SessionLocal() as db:
+            return db.scalars(select(AICall).where(AICall.session_id==case_id, AICall.status=="completed")).all()
+    assert len(runs()) == 1
+    class FakeGemini:
+        async def analyze_initial_case(self, context, images):
+            return ProviderResult(_mock_analysis(context), "gemini", settings.gemini_model_fast, 1)
+    monkeypatch.setattr(settings, "llm_provider", "gemini")
+    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda:FakeGemini())
+    assert client.post(path).status_code == 200
+    assert len(runs()) == 2
+    assert client.post(path).status_code == 200
+    assert len(runs()) == 2
+    monkeypatch.setattr(settings, "gemini_model_fast", "gemini-test-revision")
+    assert client.post(path).status_code == 200
+    assert len(runs()) == 3
+    monkeypatch.setattr(analysis_service, "PROMPT_VERSION", "test-prompt-revision")
+    assert client.post(path).status_code == 200
+    assert len(runs()) == 4
+
+
+def test_investor_golf_fixture_has_resolved_codes_and_admissible_evidence(client):
+    from pathlib import Path
+    from app.database.models import DiagnosticSession
+    from app.modules.diagnostic_ai.diagnostic_engine import DiagnosticEngine
+    fixture=json.loads((Path(__file__).resolve().parents[3]/"frontend/public/demo/golf-misfire.json").read_text())
+    assert fixture["synthetic"] is True
+    response=client.post("/api/diagnostics",json={key:fixture[key] for key in ("vehicle_id","mileage","symptoms","circumstances")})
+    assert response.status_code==201
+    case_id=response.json()["id"]
+    assert client.post(f"/api/diagnostics/{case_id}/fault-codes",json={"fault_codes":fixture["fault_codes"]}).status_code==201
+    for measurement in fixture["measurements"]:
+        assert client.post(f"/api/diagnostics/{case_id}/measurements",json=measurement).status_code==201
+    with SessionLocal() as db:
+        context,_=DiagnosticContextBuilder().build(db,db.get(DiagnosticSession,case_id))
+    assert all(item["documented"] and item["source"] for item in context["technical_definitions"])
+    assert DiagnosticEngine().evaluate(context).hypotheses_allowed
+
 def test_strict_analysis_schema_rejects_extra_range_and_bad_ranking():
     valid=_mock_analysis({"fault_codes":[{"code":"P1351"}]})
     payload=valid.model_dump(mode="json");payload["unexpected"]=True
@@ -41,6 +85,16 @@ def test_gemini_transport_schema_uses_supported_keyword_subset():
         assert f'"{keyword}"' not in serialized
     assert schema["properties"]["schemaVersion"]["enum"]==["2.0"]
     assert schema["$defs"]["Hypothesis"]["properties"]["confidence"]["maximum"]==1
+
+
+@pytest.mark.parametrize("instruction", ["Effectuer un essai routier.", "Effacer les codes défauts."])
+def test_prototype_does_not_publish_driving_or_evidence_erasure_instructions(instruction):
+    payload=_mock_analysis({"fault_codes":[]}).model_dump(mode="json")
+    payload["warnings"]=[instruction]
+    normalized,changed=_normalize_provider_payload(payload,{})
+    assert changed
+    assert instruction not in normalized["warnings"]
+    validate_provider_sources(LLMDiagnosticAnalysis.model_validate(normalized), {})
 
 def test_gemini_response_normalizes_equivalent_schema_revision():
     from app.modules.diagnostic_ai.providers import _gemini_response_payload
