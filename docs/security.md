@@ -4,7 +4,7 @@
 - **Mauvaises données** : provenance, checksum, revue humaine, statut de source et indicateur de démonstration.
 - **Procédures dangereuses** : avertissements visibles, confirmation humaine à chaque test, aucune écriture ECU ni action distante.
 - **Fichiers** : limite globale du corps HTTP, quotas par image/dossier, MIME et contenu contrôlés, limite de pixels avant décodage et rejet des decompression bombs.
-- **Multi-tenant** : session opaque hashée, appartenance active et rôle vérifiés côté serveur ; le garage ne vient jamais d’un en-tête client. Le navigateur passe par le proxy same-origin `/backend-api`, ce qui permet de conserver un cookie `HttpOnly`, `Secure` en production et `SameSite=Strict` même lorsque Next et FastAPI sont déployés séparément.
+- **Multi-tenant** : session opaque hashée, appartenance active et rôle vérifiés côté serveur ; le garage ne vient jamais d’un en-tête client. Le frontend Next passe par le proxy same-origin `/backend-api`. La page GitHub Pages officielle utilise le jeton Bearer opaque uniquement en mémoire et n’enregistre ni jeton ni mot de passe dans le stockage du navigateur.
 - **Données client** : VIN et plaque chiffrés, empreinte HMAC stable, suffixes minimaux pour affichage, absence d’identifiants dans le contexte LLM et suppression en cascade du dossier véhicule.
 - **Prise en main distante** : hors périmètre ; aucune commande véhicule, suppression de DTC ou codage ECU.
 

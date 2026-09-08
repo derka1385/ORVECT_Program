@@ -2,9 +2,8 @@
 
 ## Ouvrir le bon programme
 
-L’application connectée à Gemini est http://127.0.0.1:3000/diagnostics/new.
-Docker doit fonctionner sur ce Mac. Internet est nécessaire pour une nouvelle analyse Gemini.
-GitHub Pages et le fichier index.html restent des démonstrations statiques sans Gemini.
+L’application officielle connectée à Gemini est https://derka1385.github.io/ORVECT_Program/.
+Internet et une connexion ORVECT sont nécessaires pour une nouvelle analyse Gemini. Le fichier `index.html` reste servi par GitHub Pages, mais envoie désormais les dossiers confirmés à l’API HTTPS officielle.
 
 Sur le Mac de Nolann, le fichier exécutable
 `/Users/petrinolann/Coding/automotive-diagnostic-ai/Ouvrir_ORVECT.command`

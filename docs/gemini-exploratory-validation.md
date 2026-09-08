@@ -14,4 +14,4 @@ La nouvelle observation du connecteur a modifié les hypothèses du cas P0301 + 
 
 Validation : 52 tests ciblés avant la correction de longueur du prompt, puis 8 tests exploratoires après ajout de la régression sur la taille du champ en base. TypeScript et compilation Docker réussis.
 
-Cela prouve le fonctionnement sur ces scénarios, pas l’exactitude de tous les codes ni la disponibilité permanente du fournisseur. GitHub Pages reste une simulation statique sans Gemini.
+Cela prouve le fonctionnement sur ces scénarios, pas l’exactitude de tous les codes ni la disponibilité permanente du fournisseur. Depuis le 8 septembre 2026, GitHub Pages est raccordé à l’API HTTPS officielle authentifiée ; les trois jeux de données restent synthétiques et les approximations restent non vérifiées.

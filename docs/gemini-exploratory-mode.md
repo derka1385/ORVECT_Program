@@ -1,6 +1,6 @@
 # Mode exploratoire Gemini
 
-Le réglage serveur `DIAGNOSTIC_EXPLORATION_ENABLED=true`, associé à `LLM_PROVIDER=gemini`, autorise le raisonnement au-delà du catalogue. Il est activé sur le Mac de démonstration ; la valeur par défaut du code reste `false`.
+Le réglage serveur `DIAGNOSTIC_EXPLORATION_ENABLED=true`, associé à `LLM_PROVIDER=gemini`, autorise le raisonnement au-delà du catalogue. Il est activé sur le backend HTTPS officiel ; la valeur par défaut du code reste `false`.
 
 Pour un code sans définition documentée, Gemini peut proposer une signification provisoire étiquetée « Approximation Gemini non vérifiée ». Il peut également laisser la définition indisponible et explorer des pistes à partir des symptômes. Toutes les hypothèses, corrélations et propositions de contrôle du mode sont non vérifiées. Les définitions documentées restent identiques à celles du resolver ; aucune source constructeur n’est fabriquée. Le modèle de raisonnement configuré est utilisé, y compris pour un code unique.
 
@@ -16,8 +16,8 @@ python3 scripts/verify_exploratory_gemini.py
 
 Le rapport est écrit dans `.local/exploratory-gemini-report.json` : codes testés, URL locale, modèle réel enregistré, interprétations, hypothèses, prochaines vérifications, durée et résultat. Les tests couvrent P0171, P1351, U0100, P1FFF volontairement non documenté et P0301 + P0351. Une observation complémentaire du connecteur sert à tester la réévaluation.
 
-## Accès d’un collègue à distance
+## Déploiement officiel
 
-GitHub Pages héberge une simulation statique et ne peut pas exécuter ce backend Python. Il faut un hébergement du backend et du frontend, avec la clé Gemini exclusivement côté serveur. Un hébergement public doit utiliser l’authentification existante et un environnement de test dédié, sans accès anonyme au garage local. Ne pas publier la clé API dans GitHub, le JavaScript ou l’URL.
+GitHub Pages sert l’interface officielle et appelle `https://orvect-api.onrender.com/api` en HTTPS avec un jeton Bearer obtenu par `/auth/login`. Le backend FastAPI s’exécute sur Render, PostgreSQL sur Neon, et la clé Gemini reste exclusivement dans les variables secrètes Render. L’accès anonyme et les mots de passe de démonstration sont désactivés en production. Ne jamais publier la clé API dans GitHub, le JavaScript ou l’URL.
 
-Le frontend appelle `/backend-api` ; configurer `API_INTERNAL_URL` vers l’API du backend hébergé. Activer les deux réglages Gemini côté backend. Les paramètres de production et les prérequis d’authentification sont documentés dans `.env.example` et `docs/security.md`.
+Le frontend Next.js complet conserve son proxy same-origin `/backend-api`. La page officielle statique utilise `runtime-config.js`, qui ne contient que l’URL publique de l’API et l’identifiant du véhicule synthétique. Les paramètres de production et les prérequis d’authentification sont documentés dans `.env.example` et `docs/security.md`.
