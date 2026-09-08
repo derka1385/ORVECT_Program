@@ -104,6 +104,12 @@ def test_production_configuration_fails_without_vin_keys():
         Settings(_env_file=None,app_environment="production",vin_encryption_key="",vin_fingerprint_secret="",development_secret="production-secret",demo_admin_password="",demo_technician_password="")
 
 
+@pytest.mark.parametrize("database_url", ["postgres://user:pass@host/database", "postgresql://user:pass@host/database"])
+def test_postgres_database_urls_use_installed_psycopg_driver(database_url):
+    configured=Settings(_env_file=None,database_url=database_url)
+    assert configured.database_url=="postgresql+psycopg://user:pass@host/database"
+
+
 def test_production_bootstrap_password_requires_email_and_minimum_length():
     base={"_env_file":None,"app_environment":"production","vin_encryption_key":"vin-key","vin_fingerprint_secret":"fingerprint-secret","development_secret":"production-secret","demo_admin_password":"","demo_technician_password":""}
     with pytest.raises(ValidationError):
