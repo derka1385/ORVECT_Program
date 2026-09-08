@@ -11,7 +11,7 @@ from app.modules.dtc.service import UNAVAILABLE_DEFINITION
 from .schemas import LLMDiagnosticAnalysis
 
 
-PROMPT_VERSION = "automotive-v3.1-exploratory"
+PROMPT_VERSION = "automotive-v3.2-explore"
 SYSTEM_INSTRUCTION = Path(__file__).with_name("prompts").joinpath("automotive_v1.txt").read_text()
 PROHIBITED_EXPLANATION_PHRASES = (
     "safe to drive",
@@ -49,7 +49,7 @@ class AIInvalidResponse(Exception):
 
 def selected_model(context: dict, follow_up: bool = False) -> str:
     if settings.llm_provider == "gemini":
-        return settings.gemini_model_reasoning if follow_up or len(context.get("fault_codes", [])) > 1 else settings.gemini_model_fast
+        return settings.gemini_model_reasoning if follow_up or context.get("exploration_mode") or len(context.get("fault_codes", [])) > 1 else settings.gemini_model_fast
     return "deterministic-explanation-v2" if settings.llm_provider == "mock" else "unavailable"
 
 
@@ -173,14 +173,22 @@ def _normalize_provider_payload(payload: dict, context: dict) -> tuple[dict, boo
         provider_code = provider_codes.get(key, {})
         documented = bool(definition.get("documented"))
         source = definition.get("source") if documented else None
+        candidate = provider_code.get("meaning")
+        approximate = bool(context.get("exploration_mode") and not documented
+            and provider_code.get("sourceStatus") == "ai_general_knowledge_unverified"
+            and isinstance(candidate, str) and candidate.strip()
+            and candidate.strip() != UNAVAILABLE_DEFINITION)
+        prefix = "Approximation Gemini non vérifiée : "
+        meaning = (prefix + candidate.removeprefix(prefix).strip()) if approximate else (
+            definition.get("description") if documented else UNAVAILABLE_DEFINITION)
         canonical_codes.append(
             {
                 "namespace": key[0],
                 "code": key[1],
                 "ecu": key[2],
-                "meaning": definition.get("description") if documented else UNAVAILABLE_DEFINITION,
+                "meaning": meaning,
                 "definitionType": definition.get("definition_type", "unknown"),
-                "sourceStatus": "provided_by_database" if source else "not_found",
+                "sourceStatus": "provided_by_database" if source else ("ai_general_knowledge_unverified" if approximate else "not_found"),
                 "sources": [source] if source else [],
                 "relevance": provider_code.get("relevance")
                 if provider_code.get("relevance") in {"primary", "secondary", "consequence", "unknown"}
@@ -190,6 +198,21 @@ def _normalize_provider_payload(payload: dict, context: dict) -> tuple[dict, boo
     if canonical_codes and normalized.get("interpretedFaultCodes") != canonical_codes:
         normalized["interpretedFaultCodes"] = canonical_codes
         changed = True
+
+    if context.get("exploration_mode"):
+        warning = "MODE EXPLORATOIRE GEMINI : interprétations et pistes non vérifiées, à confirmer par des contrôles et une documentation compatible."
+        warnings = normalized.setdefault("warnings", [])
+        if warning not in warnings:
+            warnings.append(warning)
+            changed = True
+        for collection in ("correlations", "hypotheses", "nextChecks"):
+            for item in normalized.get(collection, []):
+                if item.get("verificationStatus") != "unverified":
+                    item["verificationStatus"] = "unverified"
+                    changed = True
+                if collection == "nextChecks" and item.get("manufacturerProcedure"):
+                    item["manufacturerProcedure"] = False
+                    changed = True
 
     submitted_codes = {item.get("code") for item in context.get("fault_codes", [])}
     correlations = []

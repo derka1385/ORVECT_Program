@@ -74,12 +74,14 @@ def seed(db=None):
             db.add(user)
         user.email=settings.demo_technician_email
         if settings.demo_technician_password and not user.password_hash:user.password_hash=hash_password(settings.demo_technician_password)
+        bootstrap_email=settings.bootstrap_admin_email.strip().lower()
         admin=db.get(User,ADMIN_USER_ID)
         if not admin:
-            admin=User(id=ADMIN_USER_ID,garage_id=GARAGE_ID,email=settings.demo_admin_email,display_name="Administrateur Démo",role="admin")
+            admin=User(id=ADMIN_USER_ID,garage_id=GARAGE_ID,email=bootstrap_email or settings.demo_admin_email,display_name="Administrateur Démo",role="admin")
             db.add(admin)
-        admin.email=settings.demo_admin_email
-        if settings.demo_admin_password and not admin.password_hash:admin.password_hash=hash_password(settings.demo_admin_password)
+        if bootstrap_email or settings.app_environment != "production":admin.email=bootstrap_email or settings.demo_admin_email
+        if settings.bootstrap_admin_password and not admin.password_hash:admin.password_hash=hash_password(settings.bootstrap_admin_password)
+        elif settings.demo_admin_password and not admin.password_hash:admin.password_hash=hash_password(settings.demo_admin_password)
         db.flush()
         for member,role in ((user,"technician"),(admin,"admin")):
             if not db.scalar(select(GarageMembership).where(GarageMembership.user_id==member.id,GarageMembership.garage_id==GARAGE_ID)):

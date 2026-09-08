@@ -8,7 +8,8 @@ from pydantic import ValidationError
 from sqlalchemy import select
 
 from app.core.config import Settings,settings
-from app.database.models import DiagnosticHypothesis,DiagnosticSession,DiagnosticTroubleCode,EcuConfiguration,VehicleConfiguration,VehicleConfigurationCandidate,VehicleProfile,VehicleResolutionEvent,VinResolutionRequest
+from app.auth import verify_password
+from app.database.models import DiagnosticHypothesis,DiagnosticSession,DiagnosticTroubleCode,EcuConfiguration,User,VehicleConfiguration,VehicleConfigurationCandidate,VehicleProfile,VehicleResolutionEvent,VinResolutionRequest
 from app.database.session import SessionLocal
 from app.main import PayloadLimitMiddleware,app
 from app.modules.diagnostic_ai import analysis_service
@@ -16,7 +17,7 @@ from app.modules.diagnostic_ai.diagnostic_engine import DiagnosticEngine
 from app.modules.diagnostic_ai.providers import AIInvalidResponse,ProviderResult,_gemini_response_schema,_mock_analysis,validate_provider_sources
 from app.modules.diagnostic_ai.schemas import LLMDiagnosticAnalysis
 from app.modules.diagnostic_ai.safety_engine import SafetyEngine
-from app.seed import GOLF_VEHICLE_ID,VEHICLE_ID
+from app.seed import ADMIN_USER_ID,GOLF_VEHICLE_ID,VEHICLE_ID,seed
 
 
 def test_authentication_is_required_and_garage_header_is_ignored(client):
@@ -101,6 +102,31 @@ def test_explanation_layer_cannot_emit_critical_decisions():
 def test_production_configuration_fails_without_vin_keys():
     with pytest.raises(ValidationError):
         Settings(_env_file=None,app_environment="production",vin_encryption_key="",vin_fingerprint_secret="",development_secret="production-secret",demo_admin_password="",demo_technician_password="")
+
+
+def test_production_bootstrap_password_requires_email_and_minimum_length():
+    base={"_env_file":None,"app_environment":"production","vin_encryption_key":"vin-key","vin_fingerprint_secret":"fingerprint-secret","development_secret":"production-secret","demo_admin_password":"","demo_technician_password":""}
+    with pytest.raises(ValidationError):
+        Settings(**base,bootstrap_admin_password="long-enough-password")
+    with pytest.raises(ValidationError):
+        Settings(**base,bootstrap_admin_email="owner@example.com",bootstrap_admin_password="too-short")
+
+
+def test_seed_bootstrap_password_is_applied_only_when_password_is_missing(monkeypatch):
+    with SessionLocal() as db:
+        admin=db.get(User,ADMIN_USER_ID)
+        admin.password_hash=None
+        db.commit()
+        monkeypatch.setattr(settings,"bootstrap_admin_email","owner@example.com")
+        monkeypatch.setattr(settings,"bootstrap_admin_password","first-bootstrap-password")
+        seed(db)
+        db.refresh(admin)
+        original_hash=admin.password_hash
+        assert admin.email=="owner@example.com" and verify_password("first-bootstrap-password",original_hash)
+        monkeypatch.setattr(settings,"bootstrap_admin_password","replacement-bootstrap-password")
+        seed(db)
+        db.refresh(admin)
+        assert admin.password_hash==original_hash
 
 
 def test_direct_vin_is_encrypted_and_vehicle_delete_cascades(client,tmp_path,monkeypatch):

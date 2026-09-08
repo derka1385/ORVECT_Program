@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./diagnostic.db"
     cors_origins: str = "http://localhost:3000"
     llm_provider: str = "mock"
+    diagnostic_exploration_enabled: bool = False
     max_upload_bytes: int = 1_048_576
     max_request_bytes: int = 25_000_000
     log_level: str = "INFO"
@@ -20,6 +21,8 @@ class Settings(BaseSettings):
     demo_admin_password: str = "demo-change-me"
     demo_technician_email: str = "technician@example.com"
     demo_technician_password: str = "demo-tech-change-me"
+    bootstrap_admin_email: str = ""
+    bootstrap_admin_password: str = ""
     vin_provider: str = "mock"
     nhtsa_vpic_enabled: bool = False
     vin_provider_timeout_seconds: float = 10
@@ -86,6 +89,10 @@ class Settings(BaseSettings):
                 raise ValueError("DEVELOPMENT_SECRET must be replaced in production")
             if self.demo_admin_password or self.demo_technician_password:
                 raise ValueError("Demo passwords must be empty in production")
+            if self.bootstrap_admin_password and not self.bootstrap_admin_email:
+                raise ValueError("BOOTSTRAP_ADMIN_EMAIL is required when BOOTSTRAP_ADMIN_PASSWORD is set")
+            if self.bootstrap_admin_password and len(self.bootstrap_admin_password) < 16:
+                raise ValueError("BOOTSTRAP_ADMIN_PASSWORD must contain at least 16 characters")
         if self.max_request_bytes < self.max_upload_bytes:
             raise ValueError("MAX_REQUEST_BYTES must be greater than or equal to MAX_UPLOAD_BYTES")
         return self

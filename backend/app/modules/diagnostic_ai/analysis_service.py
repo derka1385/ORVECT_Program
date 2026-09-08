@@ -46,6 +46,12 @@ def _validate_dtc_interpretations(analysis: LLMDiagnosticAnalysis, context: dict
         raise AIInvalidResponse("The explanation layer must return each input DTC exactly once")
     for identity, definition in expected.items():
         item = actual[identity]
+        if (context.get("exploration_mode") and not definition["documented"]
+            and item.sourceStatus == "ai_general_knowledge_unverified"):
+            if (item.definitionType != definition["definition_type"] or item.sources
+                or not item.meaning.startswith("Approximation Gemini non vérifiée : ")):
+                raise AIInvalidResponse("An exploratory DTC meaning must remain explicitly unverified and source-free")
+            continue
         expected_status = "provided_by_database" if definition["documented"] else "not_found"
         expected_sources = [definition["source"]] if definition["documented"] else []
         if (
@@ -207,6 +213,7 @@ async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False):
     context, images = DiagnosticContextBuilder().build(db, case)
     if not context["fault_codes"]:
         raise ValueError("Ajoutez au moins un code défaut")
+    context["exploration_mode"] = settings.diagnostic_exploration_enabled and settings.llm_provider == "gemini"
     context["diagnostic_engine"] = DiagnosticEngine().evaluate(context).as_dict()
     context_hash = _effective_context_hash(context)
     if follow_up and _latest_result_is_non_informative(db, case) and case.analysis_context_hash == context_hash:

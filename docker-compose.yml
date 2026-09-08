@@ -22,6 +22,7 @@ services:
       DATABASE_URL: postgresql+psycopg://diagnostic:diagnostic@db:5432/diagnostic
       CORS_ORIGINS: http://localhost:3000
       LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      DIAGNOSTIC_EXPLORATION_ENABLED: ${DIAGNOSTIC_EXPLORATION_ENABLED:-false}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL_FAST: ${GEMINI_MODEL_FAST:-gemini-3.1-flash-lite}
       GEMINI_MODEL_REASONING: ${GEMINI_MODEL_REASONING:-gemini-3.5-flash}
