@@ -18,9 +18,9 @@ class Settings(BaseSettings):
     auth_session_ttl_hours: int = 12
     demo_access_without_login: bool = True
     demo_admin_email: str = "admin@example.com"
-    demo_admin_password: str = "demo-change-me"
+    demo_admin_password: str = ""
     demo_technician_email: str = "technician@example.com"
-    demo_technician_password: str = "demo-tech-change-me"
+    demo_technician_password: str = ""
     bootstrap_admin_email: str = ""
     bootstrap_admin_password: str = ""
     vin_provider: str = "mock"

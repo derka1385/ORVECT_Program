@@ -7,6 +7,8 @@ os.environ["REGISTRATION_PROVIDER"] = "mock"
 os.environ["VEHICLE_PROVIDER_PRIMARY"] = "mock"
 os.environ["VEHICLE_PROVIDER_FALLBACKS"] = ""
 os.environ["VEHICLE_LOOKUP_ENABLE_MOCK"] = "true"
+os.environ["DEMO_ADMIN_PASSWORD"] = "demo-change-me"
+os.environ["DEMO_TECHNICIAN_PASSWORD"] = "demo-tech-change-me"
 import pytest
 from fastapi.testclient import TestClient
 from app.database.models import Base
