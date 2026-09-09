@@ -6,7 +6,7 @@
   if(runtime.mode!=='gemini')return;
   const $=selector=>document.querySelector(selector);
   const ui=window.ORVECT_UI;
-  let token='',activeCase=null,currentStep=null,busy=false;
+  let token='',activeCase=null,currentStep=null,activeVehicle=null,busy=false;
   const banner=document.createElement('section');banner.className='panel';banner.setAttribute('aria-live','polite');
   const heading=document.createElement('strong');heading.textContent='GEMINI · MODE EXPLORATOIRE';
   const status=document.createElement('p');status.textContent='Hypothèses et interprétations approximatives non vérifiées. Connexion au service requise.';
@@ -14,10 +14,6 @@
   $('#launchDiagnosis').textContent='Analyser avec Gemini';
   $('#reanalyze').textContent='Réévaluer avec Gemini';
   const footer=$('[data-screen="4"] .footer-note');if(footer)footer.textContent='Analyse réelle générée par Gemini. Les interprétations approximatives doivent être confirmées ; les décisions de sécurité restent distinctes.';
-  const dialog=document.createElement('dialog');dialog.setAttribute('aria-labelledby','gemini-login-title');
-  dialog.style.cssText='max-width:440px;width:calc(100% - 32px);border:1px solid #d5d5d2;padding:24px;background:#f5f5f0;color:#171a1b';
-  dialog.innerHTML='<form id="gemini-login"><h2 id="gemini-login-title">Connexion ORVECT</h2><p>Connectez-vous pour tester le raisonnement Gemini.</p><label>Adresse e-mail<input name="email" type="email" autocomplete="username" required></label><label>Mot de passe<input name="password" type="password" autocomplete="current-password" required></label><p id="gemini-login-error" role="alert"></p><div class="button-row"><button class="button primary" type="submit">Se connecter</button><button class="button" type="button" id="gemini-cancel">Annuler</button></div></form>';
-  document.body.append(dialog);
   function base(){
     if(!runtime.apiBase)throw Error('Le service Gemini du site officiel n’est pas encore raccordé. Aucun résultat simulé ne sera généré.');
     const url=new URL(runtime.apiBase,location.href);
@@ -25,6 +21,7 @@
     return url.href.replace(/\/$/,'');
   }
   async function request(path,payload,anonymous=false){
+    if(!anonymous)token=await window.ORVECT_AUTH.token();
     const headers={'Content-Type':'application/json'};if(token&&!anonymous)headers.Authorization='Bearer '+token;
     const response=await fetch(base()+path,{method:payload===undefined?'GET':'POST',headers,credentials:'omit',body:payload===undefined?undefined:JSON.stringify(payload),signal:AbortSignal.timeout(240000)});
     const body=await response.json().catch(()=>({}));
@@ -33,17 +30,10 @@
     return body;
   }
   async function login(){
-    base();if(token)return;
-    await new Promise((resolve,reject)=>{
-      const form=$('#gemini-login'),error=$('#gemini-login-error'),submit=form.querySelector('[type="submit"]');let finished=false;
-      error.textContent='';form.reset();submit.disabled=false;
-      const cancel=()=>{if(finished)return;finished=true;dialog.close();reject(Error('Connexion annulée. Aucun appel Gemini effectué.'));};
-      $('#gemini-cancel').onclick=cancel;dialog.oncancel=event=>{event.preventDefault();cancel();};
-      form.onsubmit=async event=>{event.preventDefault();submit.disabled=true;error.textContent='';
-        try{const data=new FormData(form);const result=await request('/auth/login',{email:data.get('email'),password:data.get('password')},true);if(!result.access_token)throw Error('Session invalide.');token=result.access_token;finished=true;form.reset();dialog.close();resolve();}
-        catch(value){error.textContent=value.message||'Connexion impossible.';submit.disabled=false;}
-      };dialog.showModal();
-    });
+    base();await window.ORVECT_AUTH.ensure();await request('/auth/me');
+    const vehicles=await request('/vehicles');
+    activeVehicle=(vehicles.items||[]).find(vehicle=>vehicle.is_demo_vehicle&&vehicle.make==='Volkswagen')||null;
+    if(!activeVehicle)throw Error('Aucun véhicule de démonstration n’est configuré pour ce compte.');
   }
   function p(parent,text,tag='p'){const node=document.createElement(tag);node.textContent=String(text??'');parent.append(node);return node;}
   function list(parent,items){const ul=document.createElement('ul');for(const item of items||[])p(ul,item,'li');parent.append(ul);}
@@ -80,7 +70,7 @@
     const data=ui.context();
     if(!data.dtcs.length||data.dtcs.some(item=>item.status!=='confirmed'))throw Error('Confirmez chaque code avant l’analyse.');
     if(!data.symptoms.trim())throw Error('Décrivez les symptômes pour tester le raisonnement.');
-    const vehicleId=runtime.vehicleId;if(!vehicleId)throw Error('Véhicule de démonstration non configuré côté site.');
+    const vehicleId=activeVehicle?.id||runtime.vehicleId;if(!vehicleId)throw Error('Véhicule de démonstration non configuré côté site.');
     const vehicle=await request('/vehicles/'+encodeURIComponent(vehicleId)+'/configuration');
     if(!vehicle.vehicle?.is_demo_vehicle)throw Error('Ce parcours public de test exige le véhicule synthétique configuré.');
     const config=data.vehicle;

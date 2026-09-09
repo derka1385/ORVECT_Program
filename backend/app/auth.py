@@ -85,6 +85,9 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
     db: Session = Depends(get_db),
 ) -> AuthContext:
+    if settings.auth_provider == "firebase":
+        from app.firebase_auth import firebase_context
+        return firebase_context(credentials.credentials if credentials else None, db)
     token = credentials.credentials if credentials and credentials.scheme.lower() == "bearer" else request.cookies.get("diagpilot_session")
     if not token:
         if settings.app_environment == "development" and settings.demo_access_without_login:
@@ -141,6 +144,8 @@ def require_admin(auth: AuthContext = Depends(get_current_user)) -> AuthContext:
 
 @router.post("/login")
 def login(data: LoginInput, response: Response, db: Session = Depends(get_db)):
+    if settings.auth_provider == "firebase":
+        raise HTTPException(410, "Use Firebase Authentication to sign in")
     user = db.scalar(select(User).where(User.email == data.email.lower()))
     if not user or not user.is_active or not verify_password(data.password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")

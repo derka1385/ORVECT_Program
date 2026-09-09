@@ -17,6 +17,11 @@ class User(Base, Timestamps):
     __tablename__="users"; id: Mapped[str]=mapped_column(String(36), primary_key=True, default=uid); garage_id: Mapped[str]=mapped_column(ForeignKey("garages.id"), index=True); email: Mapped[str]=mapped_column(String(320), unique=True); display_name: Mapped[str]=mapped_column(String(160)); role: Mapped[str]=mapped_column(String(20), default="technician"); password_hash: Mapped[str|None]=mapped_column(String(300)); is_active: Mapped[bool]=mapped_column(Boolean,default=True)
 class GarageMembership(Base, Timestamps):
     __tablename__="garage_memberships"; __table_args__=(UniqueConstraint("user_id","garage_id",name="uq_membership_user_garage"),); id: Mapped[str]=mapped_column(String(36),primary_key=True,default=uid); user_id: Mapped[str]=mapped_column(ForeignKey("users.id"),index=True); garage_id: Mapped[str]=mapped_column(ForeignKey("garages.id"),index=True); role: Mapped[str]=mapped_column(String(20)); is_active: Mapped[bool]=mapped_column(Boolean,default=True)
+class FirebaseIdentity(Base):
+    __tablename__ = "firebase_identities"
+    uid: Mapped[str] = mapped_column(String(128), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True, nullable=False)
+
 class AuthSession(Base):
     # Revision 0007 creates both the unique constraint and the lookup index.
     __table_args__ = (UniqueConstraint("token_hash", name="auth_sessions_token_hash_key"),)

@@ -1,0 +1,2 @@
+# Kept separate from the existing generated dependency lock.
+firebase-admin==7.5.0

@@ -3,8 +3,9 @@ WORKDIR /app
 ENV APP_ENVIRONMENT=production \
     DEMO_ACCESS_WITHOUT_LOGIN=false
 COPY backend/requirements.lock backend/pyproject.toml backend/alembic.ini ./
+COPY backend/requirements-firebase.txt ./
 COPY backend/alembic ./alembic
 COPY backend/app ./app
 COPY data ./data
-RUN pip install --no-cache-dir -r requirements.lock && pip install --no-cache-dir --no-deps .
+RUN pip install --no-cache-dir -r requirements.lock -r requirements-firebase.txt && pip install --no-cache-dir --no-deps .
 CMD ["sh", "-c", "alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

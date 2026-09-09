@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     vin_fingerprint_secret: str = ""
     development_secret: str = "diagpilot-local-development-only"
     auth_session_ttl_hours: int = 12
+    auth_provider: Literal["legacy", "firebase"] = "legacy"
+    firebase_project_id: str = ""
+    firebase_self_signup_enabled: bool = False
     demo_access_without_login: bool = True
     demo_admin_email: str = "admin@example.com"
     demo_admin_password: str = ""
@@ -83,6 +86,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def production_secrets_are_required(self):
+        if self.auth_provider == "firebase" and not self.firebase_project_id:
+            raise ValueError("FIREBASE_PROJECT_ID is required for Firebase authentication")
         if self.app_environment == "production":
             missing = [
                 name
