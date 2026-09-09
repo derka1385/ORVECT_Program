@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     auth_provider: Literal["legacy", "firebase"] = "legacy"
     firebase_project_id: str = ""
     firebase_self_signup_enabled: bool = False
+    firebase_check_revoked: bool = True
     demo_access_without_login: bool = True
     demo_admin_email: str = "admin@example.com"
     demo_admin_password: str = ""

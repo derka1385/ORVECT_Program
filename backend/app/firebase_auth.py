@@ -54,6 +54,22 @@ def firebase_app():
 
 
 def verify_token(token):
+    if not settings.firebase_check_revoked:
+        from google.auth.exceptions import GoogleAuthError
+        from google.auth.transport.requests import Request
+        from google.oauth2 import id_token
+        try:
+            claims = id_token.verify_token(
+                token,
+                Request(),
+                audience=settings.firebase_project_id,
+                certs_url="https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com",
+            )
+        except (GoogleAuthError, ValueError) as exc:
+            raise HTTPException(401, "Invalid or expired Firebase session") from exc
+        if claims.get("iss") != f"https://securetoken.google.com/{settings.firebase_project_id}":
+            raise HTTPException(401, "Invalid Firebase token issuer")
+        return claims
     from firebase_admin import auth
     try:
         app = firebase_app()

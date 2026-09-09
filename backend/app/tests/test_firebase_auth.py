@@ -86,3 +86,15 @@ def test_revoked_firebase_token_rejected(monkeypatch):
     with pytest.raises(HTTPException) as error:
         firebase_auth.verify_token("revoked")
     assert error.value.status_code == 401
+
+
+def test_keyless_verification_uses_firebase_public_certificates(monkeypatch):
+    from google.oauth2 import id_token
+    monkeypatch.setattr(settings, "firebase_check_revoked", False)
+    monkeypatch.setattr(settings, "firebase_project_id", "orvect")
+    def verify(token, request, *, audience, certs_url):
+        assert token == "signed" and audience == "orvect"
+        assert certs_url.endswith("securetoken@system.gserviceaccount.com")
+        return {"uid": "user", "iss": "https://securetoken.google.com/orvect"}
+    monkeypatch.setattr(id_token, "verify_token", verify)
+    assert firebase_auth.verify_token("signed")["uid"] == "user"

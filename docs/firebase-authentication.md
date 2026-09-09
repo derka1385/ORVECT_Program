@@ -13,9 +13,12 @@ sent only to Firebase. Existing diagnostics and garage permissions stay in SQL.
 3. Copy the public Web configuration (`apiKey`, `authDomain`, `projectId`, `appId`)
    into `runtime-config.js` under `firebase`. This API key identifies Firebase;
    it is not a Gemini key or a service-account private key.
-4. On Render, install the backend dependency changes, mount a Firebase Admin
-   service-account JSON as a secret file and set `GOOGLE_APPLICATION_CREDENTIALS`
-   to its server path. Set `FIREBASE_PROJECT_ID` and `AUTH_PROVIDER=firebase`.
+4. On Render, set `FIREBASE_PROJECT_ID` and `AUTH_PROVIDER=firebase`. By default,
+   the Admin SDK also checks revocation and therefore requires a mounted Firebase
+   service-account JSON through `GOOGLE_APPLICATION_CREDENTIALS`. A keyless host
+   can set `FIREBASE_CHECK_REVOKED=false`: signature, audience, issuer and expiry
+   remain validated with Google's public Firebase certificates, while explicit
+   revocation takes effect when the short-lived ID token expires.
    For the public demo, set `FIREBASE_SELF_SIGNUP_ENABLED=true`; every verified
    signup receives a separate workspace and synthetic Golf fixture.
    Keep `APP_ENVIRONMENT=production` and `DEMO_ACCESS_WITHOUT_LOGIN=false`.
@@ -29,8 +32,9 @@ is enabled, a new account receives an isolated garage and synthetic demo vehicle
 signup never grants access to the shared garage.
 Existing passwords do not transfer: create a Firebase account with the same email.
 
-Every request verifies token signature, project, expiry, revocation and disabled
-Firebase status through the Admin SDK, then checks the database membership.
+Every request verifies token signature, project, issuer and expiry, then checks
+the database membership. With `FIREBASE_CHECK_REVOKED=true`, the Admin SDK also
+checks explicit revocation and disabled Firebase status.
 Legacy login and development bypass are disabled when AUTH_PROVIDER=firebase.
 Firestore is not needed for this migration. Do not enable public database rules.
 
