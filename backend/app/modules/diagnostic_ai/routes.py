@@ -8,7 +8,7 @@ from sqlalchemy import func,select
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.auth import active_garage_id,authenticated_user_id
-from app.database.models import AICall,DiagnosticEvent,DiagnosticHypothesis,DiagnosticImage,DiagnosticObservation,DiagnosticSession,DiagnosticStep,VehicleConfiguration,VehicleProfile,now
+from app.database.models import AICall,DiagnosticDataConsent,DiagnosticEvent,DiagnosticHypothesis,DiagnosticImage,DiagnosticObservation,DiagnosticSession,DiagnosticStep,ProductAnalyticsEvent,VehicleConfiguration,VehicleProfile,now
 from app.database.session import get_db
 from app.modules.diagnostic_data.resolver import DiagnosticDataResolver,build_vehicle_context
 from .analysis_service import AnalysisInProgress,analyze_case
@@ -29,6 +29,8 @@ def rate_limit(gid):
     while q and q[0]<current-timedelta(minutes=1):q.popleft()
     if len(q)>=settings.gemini_rate_limit_per_minute:raise HTTPException(429,"Trop d’analyses. Réessayez dans une minute.")
     q.append(current)
+def track(db,name,gid,uid,case_id=None,metadata=None):
+    db.add(ProductAnalyticsEvent(garage_id=gid,user_id=uid,session_id=case_id,event_name=name,event_metadata=metadata or {}))
 
 @router.post("",status_code=201)
 def create_case(data:DiagnosticCreate,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
@@ -37,7 +39,7 @@ def create_case(data:DiagnosticCreate,db:Session=Depends(get_db),gid:str=Depends
     config=db.scalar(select(VehicleConfiguration).where(VehicleConfiguration.vehicle_id==vehicle.id))
     effective_engine=config.engine_code_confirmed_by_user or config.engine_code if config else vehicle.engine_code
     if not effective_engine or effective_engine=="UNKNOWN" or (config and not config.confirmed_by_user):raise HTTPException(409,"Confirmez une motorisation avant de lancer le diagnostic")
-    row=DiagnosticSession(garage_id=gid,technician_id=uid,vehicle_profile_id=data.vehicle_id,status="draft",mileage=data.mileage,customer_complaint=data.symptoms,observed_symptoms=data.symptoms,appearance_circumstances=data.circumstances);db.add(row);db.commit();return serialize(row)
+    row=DiagnosticSession(garage_id=gid,technician_id=uid,vehicle_profile_id=data.vehicle_id,status="draft",mileage=data.mileage,customer_complaint=data.symptoms,observed_symptoms=data.symptoms,appearance_circumstances=data.circumstances);db.add(row);db.flush();track(db,"diagnostic_started",gid,uid,row.id);db.commit();return serialize(row)
 
 @router.post("/dtc-preview")
 def preview_fault_codes(data:DTCPreviewInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
@@ -76,18 +78,19 @@ def detail(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_
             # Preserve the stored payload; never invent safety/provenance fields
             # to make an old or invalid result appear compatible with this UI.
             pass
-    return {"case":serialize(case),"vehicle":serialize(case.vehicle),"observations":[serialize(x) for x in db.scalars(select(DiagnosticObservation).where(DiagnosticObservation.session_id==case.id)).all()],"images":[{**serialize(x),"storage_path":None,"thumbnail_path":None,"url":f"/api/diagnostics/{case.id}/images/{x.id}"} for x in db.scalars(select(DiagnosticImage).where(DiagnosticImage.session_id==case.id)).all()],"steps":[serialize(x) for x in db.scalars(select(DiagnosticStep).where(DiagnosticStep.session_id==case.id).order_by(DiagnosticStep.step_order)).all()],"analysis":analysis,"analysis_status":analysis_status}
+    return {"case":serialize(case),"vehicle":serialize(case.vehicle),"observations":[serialize(x) for x in db.scalars(select(DiagnosticObservation).where(DiagnosticObservation.session_id==case.id)).all()],"images":[{**serialize(x),"storage_path":None,"thumbnail_path":None,"url":f"/api/diagnostics/{case.id}/images/{x.id}"} for x in db.scalars(select(DiagnosticImage).where(DiagnosticImage.session_id==case.id)).all()],"steps":[serialize(x) for x in db.scalars(select(DiagnosticStep).where(DiagnosticStep.session_id==case.id).order_by(DiagnosticStep.step_order)).all()],"hypotheses":[serialize(x) for x in db.scalars(select(DiagnosticHypothesis).where(DiagnosticHypothesis.session_id==case.id).order_by(DiagnosticHypothesis.probability_score.desc())).all()],"analysis":analysis,"analysis_status":analysis_status}
 @router.delete("/{case_id}",status_code=204)
 def delete_case(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
     case=owned_case(db,case_id,gid)
+    if case.status=="completed":raise HTTPException(409,"Un diagnostic terminé reste dans l’historique. Ajoutez un amendement si nécessaire.")
     for image in db.scalars(select(DiagnosticImage).where(DiagnosticImage.session_id==case.id)).all():
         for candidate in (image.storage_path,image.thumbnail_path):safe_unlink(candidate)
         db.delete(image)
-    for model in (AICall,DiagnosticEvent,DiagnosticHypothesis,DiagnosticStep,DiagnosticObservation):
+    for model in (AICall,DiagnosticDataConsent,ProductAnalyticsEvent,DiagnosticEvent,DiagnosticHypothesis,DiagnosticStep,DiagnosticObservation):
         for row in db.scalars(select(model).where(model.session_id==case.id)).all():db.delete(row)
     db.delete(case);db.commit();return Response(status_code=204)
 @router.post("/{case_id}/fault-codes",status_code=201)
-def fault_codes(case_id:str,data:FaultCodesInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
+def fault_codes(case_id:str,data:FaultCodesInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
     case=owned_case(db,case_id,gid)
     if case.status=="analyzing":raise HTTPException(409,"Analyse en cours")
     existing=db.scalar(select(func.count()).select_from(DiagnosticObservation).where(DiagnosticObservation.session_id==case.id,DiagnosticObservation.observation_type=="DTC")) or 0
@@ -97,7 +100,7 @@ def fault_codes(case_id:str,data:FaultCodesInput,db:Session=Depends(get_db),gid:
         context=build_vehicle_context(db,case.vehicle,item.ecu,item.ecu_identifiers)
         resolution=diagnostic_data_resolver.resolve(db,item.namespace,item.code,context)
         row=DiagnosticObservation(session_id=case.id,observation_type="DTC",key=item.code,value={"raw_code":item.code,"normalized_code":item.code,"namespace":item.namespace,"category":resolution["definition_type"],"ecu":item.ecu,"ecu_identifiers":item.ecu_identifiers,"sub_code":None,"status":item.status,"freeze_frame":item.freeze_frame,"resolution_status":resolution["status"],"description":resolution["description"],"description_source_id":resolution["source"]["source_id"] if resolution["source"] else None,"description_source":resolution["source"],"missing_information":resolution["missing_information"],"technician_verification":item.technician_verification,"technician_note":item.technician_note},source="manual_entry");db.add(row);rows.append(row)
-    db.commit();return [serialize(x) for x in rows]
+    track(db,"dtc_added",gid,uid,case.id,{"count":len(rows)});db.commit();return [serialize(x) for x in rows]
 @router.post("/{case_id}/measurements",status_code=201)
 def measurement(case_id:str,data:MeasurementInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
     case=owned_case(db,case_id,gid);count=db.scalar(select(func.count()).select_from(DiagnosticObservation).where(DiagnosticObservation.session_id==case.id,DiagnosticObservation.observation_type=="measurement")) or 0
@@ -132,23 +135,23 @@ def image_file(case_id:str,image_id:str,thumbnail:bool=True,db:Session=Depends(g
     if not Path(path).exists():raise HTTPException(410,"Image supprimée")
     return FileResponse(path,media_type=row.mime_type,headers={"Cache-Control":"private, max-age=300"})
 @router.post("/{case_id}/analyze")
-async def analyze(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
-    rate_limit(gid);case=owned_case(db,case_id,gid)
+async def analyze(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
+    rate_limit(gid);case=owned_case(db,case_id,gid);track(db,"analysis_requested",gid,uid,case.id);db.commit()
     try:return await analyze_case(db,case,False)
     except AnalysisInProgress as exc:raise HTTPException(409,str(exc))
     except ValueError as exc:raise HTTPException(422,str(exc))
     except AIProviderUnavailable as exc:raise HTTPException(503,str(exc))
     except AIInvalidResponse as exc:raise HTTPException(502,str(exc))
 @router.post("/{case_id}/steps/{step_id}/result")
-def step_result(case_id:str,step_id:str,data:StepResultInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
+def step_result(case_id:str,step_id:str,data:StepResultInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
     case=owned_case(db,case_id,gid);step=db.scalar(select(DiagnosticStep).where(DiagnosticStep.id==step_id,DiagnosticStep.session_id==case.id))
     if case.status=="analyzing":raise HTTPException(409,"Analyse en cours")
     if not step:raise HTTPException(404,"Étape introuvable")
     if step.status!="current":raise HTTPException(409,"Seule l’étape courante non terminée peut recevoir un résultat")
-    step.status="completed" if data.state in {"positive","negative"} else "blocked";step.result=data.model_dump();step.technician_comment=data.comment;step.completed_at=now();db.commit();return serialize(step)
+    step.status="completed" if data.state in {"positive","negative"} else "blocked";step.result=data.model_dump();step.technician_comment=data.comment;step.completed_at=now();track(db,"test_recorded",gid,uid,case.id,{"state":data.state});db.commit();return serialize(step)
 @router.post("/{case_id}/reanalyze")
-async def reanalyze(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
-    rate_limit(gid);case=owned_case(db,case_id,gid)
+async def reanalyze(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
+    rate_limit(gid);case=owned_case(db,case_id,gid);track(db,"diagnostic_reassessed",gid,uid,case.id);db.commit()
     try:return await analyze_case(db,case,True)
     except AnalysisInProgress as exc:raise HTTPException(409,str(exc))
     except ValueError as exc:raise HTTPException(422,str(exc))

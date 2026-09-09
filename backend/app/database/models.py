@@ -41,6 +41,90 @@ class DiagnosticRule(Base, Timestamps):
 class DiagnosticSession(Base, Timestamps):
     __table_args__ = (Index("ix_diagnostic_sessions_created_at", "created_at"),)
     __tablename__="diagnostic_sessions"; id: Mapped[str]=mapped_column(String(36), primary_key=True, default=uid); garage_id: Mapped[str]=mapped_column(ForeignKey("garages.id"), index=True); technician_id: Mapped[str]=mapped_column(ForeignKey("users.id")); vehicle_profile_id: Mapped[str]=mapped_column(ForeignKey("vehicle_profiles.id")); status: Mapped[str]=mapped_column(String(30), default="draft",index=True); mileage: Mapped[int|None]=mapped_column(Integer); customer_complaint: Mapped[str]=mapped_column(Text, default=""); observed_symptoms: Mapped[str]=mapped_column(Text, default=""); appearance_circumstances: Mapped[str]=mapped_column(Text,default=""); urgency_level: Mapped[str|None]=mapped_column(String(20)); current_summary: Mapped[str]=mapped_column(Text,default=""); prompt_version: Mapped[str|None]=mapped_column(String(30)); ai_model: Mapped[str|None]=mapped_column(String(100)); analysis_context_hash: Mapped[str|None]=mapped_column(String(64),index=True); analysis_started_at: Mapped[datetime|None]=mapped_column(DateTime(timezone=True)); completed_at: Mapped[datetime|None]=mapped_column(DateTime(timezone=True)); vehicle: Mapped[VehicleProfile]=relationship()
+
+class DiagnosticDataConsent(Base):
+    __tablename__ = "diagnostic_data_consents"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    session_id: Mapped[str] = mapped_column(ForeignKey("diagnostic_sessions.id"), index=True)
+    garage_id: Mapped[str] = mapped_column(ForeignKey("garages.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    consent: Mapped[bool] = mapped_column(Boolean, default=False)
+    consent_version: Mapped[str] = mapped_column(String(30))
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
+
+class DiagnosticCompletion(Base):
+    __tablename__ = "diagnostic_completions"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    session_id: Mapped[str] = mapped_column(ForeignKey("diagnostic_sessions.id"), unique=True, index=True)
+    garage_id: Mapped[str] = mapped_column(ForeignKey("garages.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    resolution_status: Mapped[str] = mapped_column(String(50), index=True)
+    confirmed_cause: Mapped[str] = mapped_column(Text, default="")
+    selected_hypothesis_id: Mapped[str | None] = mapped_column(ForeignKey("diagnostic_hypotheses.id"))
+    repair_action_type: Mapped[str] = mapped_column(String(50))
+    repair_action_details: Mapped[str] = mapped_column(Text, default="")
+    components_involved: Mapped[list] = mapped_column(JSON, default=list)
+    root_cause_confidence: Mapped[str] = mapped_column(String(50))
+    post_repair_result: Mapped[str] = mapped_column(String(40), index=True)
+    dtc_after_repair: Mapped[str] = mapped_column(String(40))
+    technician_notes: Mapped[str] = mapped_column(Text, default="")
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
+
+class DiagnosticContribution(Base, Timestamps):
+    __tablename__ = "diagnostic_contributions"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    session_id: Mapped[str] = mapped_column(ForeignKey("diagnostic_sessions.id"), unique=True, index=True)
+    consent_id: Mapped[str] = mapped_column(ForeignKey("diagnostic_data_consents.id"))
+    garage_id: Mapped[str] = mapped_column(ForeignKey("garages.id"), index=True)
+    submitted_by_user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    source_type: Mapped[str] = mapped_column(String(40), default="WORKSHOP_CASE")
+    status: Mapped[str] = mapped_column(String(40), default="PENDING_REVIEW", index=True)
+    sanitized_payload: Mapped[dict] = mapped_column(JSON)
+    provenance_references: Mapped[list] = mapped_column(JSON, default=list)
+    conflict_summary: Mapped[dict] = mapped_column(JSON, default=dict)
+    reviewed_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    review_notes: Mapped[str] = mapped_column(Text, default="")
+
+class DTCSubmission(Base, Timestamps):
+    __tablename__ = "dtc_submissions"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    garage_id: Mapped[str] = mapped_column(ForeignKey("garages.id"), index=True)
+    submitted_by_user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    code: Mapped[str] = mapped_column(String(80), index=True)
+    manufacturer: Mapped[str] = mapped_column(String(120), index=True)
+    ecu_module: Mapped[str] = mapped_column(String(120), default="", index=True)
+    description: Mapped[str] = mapped_column(Text)
+    vehicle: Mapped[str] = mapped_column(String(160), default="")
+    engine: Mapped[str] = mapped_column(String(120), default="")
+    platform: Mapped[str] = mapped_column(String(120), default="")
+    subcode: Mapped[str] = mapped_column(String(80), default="")
+    source_reference: Mapped[str] = mapped_column(Text, default="")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    attested: Mapped[bool] = mapped_column(Boolean)
+    status: Mapped[str] = mapped_column(String(40), default="PENDING_REVIEW", index=True)
+    duplicate_candidates: Mapped[list] = mapped_column(JSON, default=list)
+    conflict_detected: Mapped[bool] = mapped_column(Boolean, default=False)
+    reviewed_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    review_notes: Mapped[str] = mapped_column(Text, default="")
+
+class AccountPreference(Base, Timestamps):
+    __tablename__ = "account_preferences"
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    garage_id: Mapped[str] = mapped_column(ForeignKey("garages.id"), index=True)
+    plan: Mapped[str] = mapped_column(String(30), default="FREE")
+    data_sharing_preference: Mapped[str] = mapped_column(String(40), default="ASK_EVERY_TIME")
+
+class ProductAnalyticsEvent(Base):
+    __tablename__ = "product_analytics_events"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    garage_id: Mapped[str] = mapped_column(ForeignKey("garages.id"), index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), index=True)
+    session_id: Mapped[str | None] = mapped_column(ForeignKey("diagnostic_sessions.id"), index=True)
+    event_name: Mapped[str] = mapped_column(String(60), index=True)
+    event_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
 class DiagnosticObservation(Base):
     __tablename__="diagnostic_observations"; id: Mapped[str]=mapped_column(String(36), primary_key=True, default=uid); session_id: Mapped[str]=mapped_column(ForeignKey("diagnostic_sessions.id"), index=True); observation_type: Mapped[str]=mapped_column(String(40)); key: Mapped[str]=mapped_column(String(100)); value: Mapped[dict]=mapped_column(JSON); unit: Mapped[str|None]=mapped_column(String(30)); source: Mapped[str]=mapped_column(String(80)); observed_at: Mapped[datetime]=mapped_column(DateTime(timezone=True), default=now); created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True), default=now)
 class DiagnosticHypothesis(Base, Timestamps):

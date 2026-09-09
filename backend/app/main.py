@@ -9,6 +9,7 @@ from app.modules.vehicle_resolution.routes import router as vehicle_resolution_r
 from app.modules.vehicle_data.routes import router as vehicle_data_router
 from app.modules.diagnostic_ai.routes import router as diagnostic_ai_router
 from app.modules.diagnostic_data.routes import router as diagnostic_data_router
+from app.workspace import router as workspace_router
 from app.core.config import settings
 from app.core.logging import configure_logging, logger
 
@@ -45,6 +46,7 @@ app.include_router(vehicle_resolution_router)
 app.include_router(vehicle_data_router)
 app.include_router(diagnostic_ai_router)
 app.include_router(diagnostic_data_router)
+app.include_router(workspace_router)
 @app.middleware("http")
 async def request_context(request:Request,call_next):
     request_id=request.headers.get("x-request-id") or str(uuid.uuid4())

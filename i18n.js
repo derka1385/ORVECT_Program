@@ -10,6 +10,7 @@
   };
 
   Object.assign(en, {
+    'Dashboard':'Dashboard','Nouveau diagnostic':'New diagnostic','Diagnostics actifs':'Active diagnostics','Historique':'History','Connaissances':'Knowledge','Suggérer un DTC':'Suggest a DTC','Compte':'Account','Revue admin':'Admin review','Diagnostic terminé':'Diagnostic completed',
     'ATELIER ORVECT / PROTOTYPE TECHNIQUE':'ORVECT WORKSHOP / TECHNICAL PROTOTYPE',
     'VIN ou plaque, jamais les deux. La configuration détectée reste modifiable et chaque DTC doit être confirmé par le technicien.':'VIN or registration plate, never both. The detected configuration remains editable and every DTC must be confirmed by the technician.',
     '01 / Identification':'01 / Identification','Identifier le véhicule.':'Identify the vehicle.','Une seule donnée suffit.':'One identifier is enough.',
@@ -33,6 +34,7 @@
   });
 
   Object.assign(sv, {
+    'Dashboard':'Översikt','Nouveau diagnostic':'Ny diagnos','Diagnostics actifs':'Aktiva diagnoser','Historique':'Historik','Connaissances':'Kunskap','Suggérer un DTC':'Föreslå en DTC','Compte':'Konto','Revue admin':'Admingranskning','Diagnostic terminé':'Diagnos slutförd',
     'ATELIER ORVECT / PROTOTYPE TECHNIQUE':'ORVECT VERKSTAD / TEKNISK PROTOTYP',
     'VIN ou plaque, jamais les deux. La configuration détectée reste modifiable et chaque DTC doit être confirmé par le technicien.':'VIN eller registreringsnummer, aldrig båda. Den identifierade konfigurationen kan ändras och varje DTC måste bekräftas av teknikern.',
     '01 / Identification':'01 / Identifiering','Identifier le véhicule.':'Identifiera fordonet.','Une seule donnée suffit.':'En uppgift räcker.',

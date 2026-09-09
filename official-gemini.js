@@ -20,15 +20,16 @@
     if(url.protocol!=='https:'&&!['127.0.0.1','localhost'].includes(url.hostname))throw Error('Le service doit utiliser HTTPS.');
     return url.href.replace(/\/$/,'');
   }
-  async function request(path,payload,anonymous=false){
-    if(!anonymous)token=await window.ORVECT_AUTH.token();
-    const headers={'Content-Type':'application/json'};if(token&&!anonymous)headers.Authorization='Bearer '+token;
-    const response=await fetch(base()+path,{method:payload===undefined?'GET':'POST',headers,credentials:'omit',body:payload===undefined?undefined:JSON.stringify(payload),signal:AbortSignal.timeout(240000)});
+  async function request(path,payload,method){
+    token=await window.ORVECT_AUTH.token();
+    const headers={'Content-Type':'application/json'};if(token)headers.Authorization='Bearer '+token;
+    const response=await fetch(base()+path,{method:method||(payload===undefined?'GET':'POST'),headers,credentials:'omit',body:payload===undefined?undefined:JSON.stringify(payload),signal:AbortSignal.timeout(240000)});
     const body=await response.json().catch(()=>({}));
     if(response.status===401){token='';throw Error('Connexion expirée ou identifiants incorrects. Reconnectez-vous.');}
     if(!response.ok)throw Error(typeof body.detail==='string'?body.detail:`Le service a répondu avec une erreur (${response.status}).`);
     return body;
   }
+  window.ORVECT_SERVICE={request,activeCase:()=>activeCase};
   async function login(){
     base();await window.ORVECT_AUTH.ensure();await request('/auth/me');
     const vehicles=await request('/vehicles');
