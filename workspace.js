@@ -201,11 +201,11 @@
   function runWorkspaceAction(key) {
     const run = {dashboard:showDashboard,new:()=>window.ORVECT_UI.show(1),active:()=>showHistory(true),history:()=>showHistory(false),knowledge:showKnowledge,suggest:showSuggestion,account:showSettings,review:showReview}[key];
     if (!run) return;
-    Promise.resolve().then(run).catch(error=>dialog('Action indisponible',`<p>${escape(error.message)}</p>`));
+    Promise.resolve().then(run).catch(error=>{if(error.code!=='AUTH_CANCELLED')dialog('Action indisponible',`<p>${escape(error.message)}</p>`)});
   }
   nav.onclick=event=>{const key=event.target.dataset.workspace;if(key)runWorkspaceAction(key)};
   window.ORVECT_WORKSPACE = {
     closeAccount,
-    openAccount: () => showSettings().catch(error => dialog('Action indisponible', `<p>${escape(error.message)}</p>`))
+    openAccount: () => showSettings().catch(error => {if(error.code!=='AUTH_CANCELLED')dialog('Action indisponible', `<p>${escape(error.message)}</p>`)})
   };
 })();
