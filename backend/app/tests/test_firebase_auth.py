@@ -51,6 +51,20 @@ def test_verified_signup_gets_isolated_demo_workspace(monkeypatch):
         assert len(vehicles) == 1 and vehicles[0].is_demo_vehicle
 
 
+@pytest.mark.parametrize("identity_claim", ["user_id", "sub"])
+def test_keyless_firebase_identity_claim_provisions_workspace(monkeypatch, identity_claim):
+    monkeypatch.setattr(settings, "firebase_self_signup_enabled", True)
+    monkeypatch.setattr(firebase_auth, "verify_token", lambda token: {
+        identity_claim: f"keyless-{identity_claim}",
+        "email": f"keyless-{identity_claim}@example.com",
+        "email_verified": True,
+    })
+    with SessionLocal() as db:
+        context = firebase_auth.firebase_context("valid", db)
+        assert context.role == "admin"
+        assert db.get(FirebaseIdentity, f"keyless-{identity_claim}").user_id == context.user_id
+
+
 def test_firebase_mode_rejects_legacy_cookie_and_login(client, monkeypatch):
     monkeypatch.setattr(settings, "auth_provider", "firebase")
     monkeypatch.setattr(settings, "demo_access_without_login", True)

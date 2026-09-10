@@ -90,7 +90,10 @@ def firebase_context(token, db):
     claims = verify_token(token)
     if claims.get("email_verified") is not True:
         raise HTTPException(403, "Vérifiez votre adresse e-mail avant de continuer.")
-    uid = claims.get("uid")
+    # firebase-admin adds ``uid`` to decoded tokens, while the keyless
+    # google-auth verifier returns the original Firebase claims. Firebase ID
+    # tokens carry the stable user id in ``user_id`` and ``sub``.
+    uid = claims.get("uid") or claims.get("user_id") or claims.get("sub")
     email = str(claims.get("email", "")).lower()
     if not uid or not email:
         raise HTTPException(401, "Firebase identity is incomplete")
