@@ -135,3 +135,33 @@ window.ORVECT_INVESTOR_CASES = [
     "summary": "P1351 · code constructeur non documenté. Montrer comment le prototype explicite ses limites."
   }
 ];
+
+window.ORVECT_INVESTOR_CASES_DE = {
+  "golf-misfire": {
+    "title": "Golf VII · Fehlzündungen und Zündstromkreis",
+    "symptoms": "SYNTHETISCHE DEMONSTRATION. Unruhiger Leerlauf, Vibrationen und Motorkontrollleuchte. Die beobachteten Fehlzündungen konzentrieren sich auf Zylinder 1. Es wurde noch kein Bauteil geprüft.",
+    "circumstances": "Simuliertes Szenario: Motor auf Betriebstemperatur, Fahrzeug steht in der Werkstatt. Sporadische Symptome im Leerlauf.",
+    "measurements": [
+      {"name":"Fehlzündungszähler Zylinder 1","unit":"Ereignisse / 60 s"},
+      {"name":"Fehlzündungszähler Zylinder 2, 3 und 4","unit":"Ereignisse / 60 s"},
+      {"name":"Batteriespannung"}
+    ]
+  },
+  "golf-connector": {
+    "title": "Golf VII · zusätzliche Beobachtung",
+    "symptoms": "SYNTHETISCHE DEMONSTRATION. Unruhiger Leerlauf, Vibrationen und Motorkontrollleuchte. Die beobachteten Fehlzündungen konzentrieren sich auf Zylinder 1. SIMULATION: Bei einer Sichtprüfung wurde eine gebrochene Steckerverriegelung festgestellt; es erfolgte weder eine Reparatur noch eine Bestätigung der Ursache.",
+    "circumstances": "Simuliertes Szenario: Motor auf Betriebstemperatur, Fahrzeug steht in der Werkstatt. Sporadische Symptome im Leerlauf.",
+    "measurements": [
+      {"name":"Fehlzündungszähler Zylinder 1","unit":"Ereignisse / 60 s"},
+      {"name":"Fehlzündungszähler Zylinder 2, 3 und 4","unit":"Ereignisse / 60 s"},
+      {"name":"Batteriespannung"},
+      {"name":"Sichtprüfung des Zündspulensteckers an Zylinder 1","value":"SIMULATION: Verriegelung gebrochen, Stecker teilweise gelöst; kein Teil ersetzt"}
+    ]
+  },
+  "golf-unknown": {
+    "title": "Golf VII · fehlende Definition",
+    "symptoms": "SYNTHETISCHE DEMONSTRATION. Motorkontrollleuchte gemeldet. Es liegen keine zusätzlichen Messwerte und keine validierte Herstellerdefinition vor.",
+    "circumstances": "Fiktives Szenario mit unzureichenden Daten. Aus dem Code allein darf keine Herstellerinterpretation abgeleitet werden.",
+    "measurements": []
+  }
+};

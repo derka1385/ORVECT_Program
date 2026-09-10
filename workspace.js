@@ -3,7 +3,7 @@
   const service = window.ORVECT_SERVICE;
   if (!service) return;
   const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const date = value => value ? new Intl.DateTimeFormat('fr-FR', {dateStyle:'medium', timeStyle:'short'}).format(new Date(value)) : '—';
+  const date = value => value ? new Intl.DateTimeFormat({fr:'fr-FR',en:'en-GB',sv:'sv-SE',de:'de-DE'}[document.documentElement.lang] || 'fr-FR', {dateStyle:'medium', timeStyle:'short'}).format(new Date(value)) : '—';
   const labels = {
     completed:'Terminé', draft:'Actif', in_progress:'Actif', analyzing:'Analyse en cours',
     resolved:'Problème résolu', partially_resolved:'Partiellement résolu', not_resolved:'Non résolu', unknown_not_tested:'Non testé',

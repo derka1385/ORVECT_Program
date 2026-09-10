@@ -3,6 +3,10 @@
   let sdkPromise;
   let pending;
   const runtime = window.ORVECT_RUNTIME || {};
+  const accountLabel = user => {
+    const labels = { fr: 'Mon compte', en: 'My account', sv: 'Mitt konto', de: 'Mein Konto' };
+    return user ? `${labels[document.documentElement.lang] || labels.fr} · ${user.email}` : ({ fr: 'Se connecter', en: 'Sign in', sv: 'Logga in', de: 'Anmelden' }[document.documentElement.lang] || 'Se connecter');
+  };
   async function sdk() {
     if (!sdkPromise) sdkPromise = (async () => {
       if (location.protocol === 'file:') throw Error('Ouvrez ORVECT via son site HTTPS ou localhost pour vous connecter.');
@@ -14,11 +18,11 @@
         import('https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js')
       ]);
       const session = auth.getAuth(app.initializeApp(runtime.firebase));
-      session.languageCode = 'fr';
+      session.languageCode = ['fr', 'en', 'sv', 'de'].includes(document.documentElement.lang) ? document.documentElement.lang : 'fr';
       await auth.setPersistence(session, auth.browserSessionPersistence);
       await session.authStateReady();
       auth.onAuthStateChanged(session, user => {
-        account.textContent = user ? 'Mon compte · ' + user.email : 'Se connecter';
+        account.textContent = accountLabel(user);
       });
       return { ...auth, session };
     })().catch(error => { sdkPromise = null; throw error; });
@@ -115,5 +119,13 @@
       return api.session.currentUser.getIdToken();
     }
   };
+  window.addEventListener('orvect:language', event => {
+    const language = event.detail?.language;
+    if (!['fr', 'en', 'sv', 'de'].includes(language)) return;
+    sdk().then(({ session }) => {
+      session.languageCode = language;
+      account.textContent = accountLabel(session.currentUser);
+    }).catch(() => {});
+  });
   if (runtime.firebase?.apiKey) sdk().catch(error => { message.textContent = errorMessage(error); });
 })();

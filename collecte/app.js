@@ -14,6 +14,9 @@
     },
     sv: {
       meaningMissing: 'Betydelse ej angiven', invalidCode: 'Ange en giltig OBD-kod, till exempel P0299.', duplicateCode: 'Koden finns redan i ärendet.', draftSaved: 'Utkast sparat', draftLocal: 'Lokalt utkast', requiredField: 'Obligatoriskt fält', atLeastOneCode: 'Minst en felkod', addOneCode: 'Lägg till minst en felkod.', missing: count => `${count} obligatorisk${count > 1 ? 'a uppgifter' : ' uppgift'} saknas:`, iphoneDelivery: 'Välj Mail eller AirDrop i iPhones delningsmeny för att skicka TXT- och JSON-filerna till din Mac.', downloadedDelivery: 'TXT- och JSON-filerna har hämtats. Bifoga dem till ORVECT-meddelandet som nyss öppnades.', mailHello: 'Hej ORVECT,', mailFiles: id => `Här är de anonyma TXT- och JSON-filerna för ärende ${id}, nyss hämtade och redo att bifogas till meddelandet.`, vehicleUnknown: 'fordon ej angivet', shareTitle: id => `Verkstadsärende ${id}`, shareText: 'Anonymt ORVECT-verkstadsärende — TXT + JSON'
+    },
+    de: {
+      meaningMissing: 'Bedeutung nicht angegeben', invalidCode: 'Geben Sie einen gültigen OBD-Code ein, zum Beispiel P0299.', duplicateCode: 'Dieser Code ist bereits im Fall enthalten.', draftSaved: 'Entwurf gespeichert', draftLocal: 'Lokaler Entwurf', requiredField: 'Pflichtfeld', atLeastOneCode: 'Mindestens ein Fehlercode', addOneCode: 'Fügen Sie mindestens einen Fehlercode hinzu.', missing: count => `${count} Pflichtangabe${count > 1 ? 'n fehlen' : ' fehlt'}:`, iphoneDelivery: 'Wählen Sie im iPhone-Teilen-Menü Mail oder AirDrop, um die TXT- und JSON-Dateien an Ihren Mac zu senden.', downloadedDelivery: 'Die TXT- und JSON-Dateien wurden heruntergeladen. Fügen Sie sie der soeben geöffneten ORVECT-Nachricht hinzu.', mailHello: 'Hallo ORVECT,', mailFiles: id => `Anbei die anonymen TXT- und JSON-Dateien für den Fall ${id}, die gerade heruntergeladen wurden und dieser Nachricht beigefügt werden können.`, vehicleUnknown: 'Fahrzeug nicht angegeben', shareTitle: id => `Werkstattfall ${id}`, shareText: 'Anonymer ORVECT-Werkstattfall — TXT + JSON'
     }
   };
   const copy = key => messages[document.documentElement.lang]?.[key] ?? messages.fr[key];
@@ -146,6 +149,45 @@
   function caseText(data) {
     const vehicle = [data.vehicle.make, data.vehicle.model].filter(Boolean).join(' ') || 'Non renseigné';
     const value = item => item ?? 'Non renseigné';
+    if (data.language === 'de') {
+      const germanVehicle = [data.vehicle.make, data.vehicle.model].filter(Boolean).join(' ') || 'Nicht angegeben';
+      const germanValue = item => item ?? 'Nicht angegeben';
+      return [
+        'ORVECT — ANONYMER WERKSTATTFALL',
+        `ID: ${data.caseId}`,
+        `Datum: ${data.submittedAt}`,
+        '',
+        'FAHRZEUG',
+        `Marke / Modell: ${germanVehicle}`,
+        `Jahr: ${germanValue(data.vehicle.firstRegistrationYear)}`,
+        `Motorkennbuchstabe: ${germanValue(data.vehicle.engineCode)}`,
+        `Getriebecode: ${germanValue(data.vehicle.gearboxCode)}`,
+        `Leistung: ${data.vehicle.power ? `${data.vehicle.power} ${data.vehicle.powerUnit}` : 'Nicht angegeben'}`,
+        `Kilometerstand: ${data.vehicle.mileageKm ? `${data.vehicle.mileageKm} km` : 'Nicht angegeben'}`,
+        `Kraftstoff: ${germanValue(data.vehicle.fuel)}`,
+        `Getriebeart: ${germanValue(data.vehicle.gearboxType)}`,
+        '',
+        'FEHLERCODES',
+        ...data.incident.dtcs.map(item => `${item.code} — ${item.meaning || 'Bedeutung nicht angegeben'}`),
+        '',
+        'SYMPTOME', data.incident.symptoms,
+        '',
+        'AUFTRETENSBEDINGUNGEN', germanValue(data.incident.occurrenceConditions),
+        '',
+        'PRÜFUNGEN UND UNTERSUCHUNGEN', data.incident.diagnosticSteps,
+        '',
+        'REPARATUR', data.resolution.repairAction,
+        '',
+        'TATSÄCHLICHE URSACHE', data.resolution.rootCause,
+        '',
+        `Ersetzte Teile: ${germanValue(data.resolution.partsReplaced)}`,
+        `Ergebnis: ${data.resolution.outcome}`,
+        `Prüfung: ${germanValue(data.resolution.verification)}`,
+        `Nützliche Information: ${germanValue(data.resolution.lessonLearned)}`,
+        '',
+        'Anonymer Export — ohne Namen, E-Mail-Adresse, Kennzeichen oder FIN.'
+      ].join('\n');
+    }
     return [
       'ORVECT — CAS ATELIER ANONYME',
       `ID : ${data.caseId}`,
