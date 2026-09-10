@@ -1,12 +1,12 @@
 import csv, hashlib, io, json, re
 from datetime import datetime
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Response, UploadFile
 from pydantic import ValidationError
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.auth import AuthContext, active_garage_id, authenticated_user_id, require_admin
-from app.database.models import DiagnosticEvent, DiagnosticHypothesis, DiagnosticObservation, DiagnosticSession, DiagnosticStep, DiagnosticTroubleCode, KnowledgeItem, KnowledgeSource, VehicleProfile, now
+from app.database.models import AICall, DiagnosticEvent, DiagnosticHypothesis, DiagnosticObservation, DiagnosticSession, DiagnosticStep, DiagnosticTroubleCode, KnowledgeItem, KnowledgeSource, VehicleProfile, now
 from app.database.session import get_db
 from app.modules.diagnostics.engine import analyze, complete_step, event
 from app.modules.dtc.service import resolve_dtc,source_reference
@@ -40,6 +40,18 @@ def knowledge_item_payload(db,row):
 def health(db:Session=Depends(get_db)):
     db.execute(text("SELECT 1"))
     return {"status":"ok","service":"diagpilot-api","llm_provider":settings.llm_provider}
+
+@router.get("/public/metrics")
+def public_metrics(response:Response,db:Session=Depends(get_db)):
+    completed_filter=(AICall.status=="completed",AICall.output_payload.is_not(None))
+    diagnostics_analyzed=db.scalar(
+        select(func.count(func.distinct(AICall.session_id))).where(*completed_filter)
+    ) or 0
+    response.headers["Cache-Control"]="public, max-age=15, stale-while-revalidate=60"
+    return {
+        "diagnostics_analyzed":diagnostics_analyzed,
+        "counting_rule":"one_per_diagnostic_after_first_successful_analysis",
+    }
 @router.get("/vehicles")
 def vehicles(page:int=Query(1,ge=1),page_size:int=Query(settings.default_page_size,ge=1,le=settings.max_page_size),db:Session=Depends(get_db),gid:str=Depends(active_garage_id)): return paginated(db,select(VehicleProfile).where(VehicleProfile.garage_id==gid).order_by(VehicleProfile.created_at.desc()),page,page_size)
 @router.post("/vehicles",status_code=201)
