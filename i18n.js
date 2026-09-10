@@ -141,11 +141,6 @@
     document.querySelector('meta[name="description"]')?.setAttribute('content', metadata[1]);
     selector.value = lang;
     translateNode(document.body, dictionaries[lang]);
-    document.querySelectorAll('[aria-label]').forEach(node => {
-      const original = node.dataset.originalAriaLabel || node.getAttribute('aria-label');
-      node.dataset.originalAriaLabel = original;
-      node.setAttribute('aria-label', dictionaries[lang][original] ?? original);
-    });
     localStorage.setItem('orvect-language', lang);
     window.dispatchEvent(new CustomEvent('orvect:language', {detail:{language:lang}}));
   }
