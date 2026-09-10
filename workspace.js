@@ -28,6 +28,7 @@
     .account-workspace{display:grid;grid-template-columns:294px minmax(0,1fr);min-height:calc(100vh - 117px);background:var(--mineral)}
     .account-sidebar{display:flex;min-width:0;flex-direction:column;background:var(--graphite);color:var(--mineral);padding:31px 22px 28px}.account-sidebar h2{margin:12px 0 6px;font-size:24px}.account-sidebar-copy{margin:0;color:var(--alloy);font-size:13px}.account-menu{display:grid;min-width:0;max-width:100%;gap:5px;margin-top:20px}.account-menu button{min-height:57px;border:0;border-left:3px solid transparent;background:transparent;color:var(--alloy);padding:12px 14px;text-align:left;font-size:13px}.account-menu button:hover,.account-menu button.active{border-left-color:var(--orange);background:#232628;color:var(--mineral)}.account-plan-side{margin-top:auto;border:1px solid #ffffff35;padding:18px 14px;min-height:136px}.account-plan-side strong{display:block;margin-top:10px}.account-plan-side small{display:block;margin-top:8px;color:var(--alloy)}
     .account-main{min-width:0;padding:43px 40px 72px}.account-breadcrumb{color:var(--orange)}.account-main h1{margin:17px 0 8px;font-size:clamp(38px,4vw,56px);line-height:1;letter-spacing:-.045em}.account-lead{margin:0;color:var(--muted);font-size:17px}.account-demo-label{margin-top:13px;color:var(--muted);font-size:10px;text-transform:uppercase}.account-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px;margin-top:48px}.account-card{min-width:0;min-height:292px;border:1px solid var(--line);background:#ffffff42;padding:26px}.account-card.dark{background:var(--graphite);border-color:var(--graphite);color:var(--mineral)}.account-card h2{margin:20px 0 12px;font-size:26px;line-height:1.12;letter-spacing:-.025em}.account-card p{line-height:1.45}.account-card .eyebrow{color:var(--orange)}.account-profile{grid-column:span 5}.account-plan{grid-column:span 3}.account-activity{grid-column:span 4}.account-privacy{grid-column:span 6}.account-contributions{grid-column:span 3}.account-security{grid-column:span 3}.account-profile-line{display:flex;align-items:center;gap:16px;margin-top:20px}.account-avatar{display:grid;place-items:center;width:70px;height:70px;flex:0 0 70px;border-radius:50%;background:var(--graphite);color:var(--mineral);font-weight:700}.account-profile-line h2{margin:0 0 4px}.account-profile-line p{margin:0;color:var(--muted);overflow-wrap:anywhere}.account-org{margin:26px 0 12px;color:var(--muted)}.plan-badge{display:block;border:1px solid var(--orange);border-radius:999px;background:var(--mineral);color:var(--orange);padding:6px 10px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase}.account-note{color:var(--alloy);font-size:12px}.account-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}.account-metric{background:#e8e7e3;padding:14px;min-height:98px}.account-metric strong{display:block;font-size:34px;line-height:1}.account-metric span{display:block;margin-top:12px;color:var(--muted);font-size:10px}.account-card-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}.account-card-actions .button{min-height:50px}.dark .account-card-actions .button.primary{color:var(--graphite)}.account-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:22px}.account-toggle-copy strong{display:block}.account-toggle-copy small{display:block;margin-top:6px;color:var(--muted)}.privacy-toggle{position:relative;width:60px;height:34px;flex:0 0 60px;border:0;border-radius:999px;background:#a8aaad;padding:0}.privacy-toggle::after{content:"";position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:white;transition:transform .18s}.privacy-toggle[aria-checked="true"]{background:var(--orange)}.privacy-toggle[aria-checked="true"]::after{transform:translateX(26px)}.account-status{min-height:20px;margin:15px 0 0;color:var(--muted);font-size:12px}.account-security .button{width:100%}.account-back{display:none}
+    .account-workspace-tools{gap:12px;margin:0 0 34px;padding-bottom:20px}.account-workspace-tools button{min-height:58px;padding:13px 20px;font-size:14px}.account-workspace-tools button.active{border-color:var(--orange);background:var(--orange)}
     @media(max-width:1250px){.account-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.account-profile,.account-plan,.account-activity,.account-privacy,.account-contributions,.account-security{grid-column:span 1}.account-privacy{grid-column:1/-1}}
     @media(max-width:980px){.account-workspace{grid-template-columns:1fr}.account-sidebar{display:block;padding:22px}.account-menu{display:flex;overflow:auto}.account-menu button{flex:0 0 auto;min-height:44px;border-left:0;border-bottom:3px solid transparent}.account-menu button:hover,.account-menu button.active{border-left-color:transparent;border-bottom-color:var(--orange)}.account-plan-side{display:none}.account-back{display:inline-flex;margin-top:18px}.account-main{padding:34px 22px 60px}.account-grid{margin-top:34px}}
     @media(max-width:800px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-form,.filter-row{grid-template-columns:1fr}.workspace-form .wide{grid-column:auto}.workspace-table thead{display:none}.workspace-table,.workspace-table tbody,.workspace-table tr,.workspace-table td{display:block}.workspace-table tr{border:1px solid var(--line);margin-top:10px;padding:8px}.workspace-table td{border:0;padding:5px}.workspace-table td::before{content:attr(data-label);display:block;font-size:9px;text-transform:uppercase;color:var(--muted)}.account-grid{grid-template-columns:1fr}.account-profile,.account-plan,.account-activity,.account-privacy,.account-contributions,.account-security{grid-column:auto}.account-card{min-height:0}.account-metrics{gap:7px}.account-metric{padding:11px}.account-metric strong{font-size:28px}.account-card-actions .button{width:100%}.account-main h1{font-size:39px}}
@@ -113,6 +114,15 @@
         <div class="account-plan-side"><p class="eyebrow">Plan actuel</p><strong>Bêta · Gratuit</strong><small>Prototype ORVECT</small></div>
       </aside>
       <main class="account-main" id="overview">
+        <nav class="workspace-nav account-workspace-tools" aria-label="Espace ORVECT">
+          <button type="button" data-account-workspace="dashboard">Dashboard</button>
+          <button type="button" data-account-workspace="new">Nouveau diagnostic</button>
+          <button type="button" data-account-workspace="active">Diagnostics actifs</button>
+          <button type="button" data-account-workspace="history">Historique</button>
+          <button type="button" data-account-workspace="knowledge">Connaissances</button>
+          <button type="button" data-account-workspace="suggest">Suggérer un DTC</button>
+          <button class="active" type="button" data-account-workspace="account">Compte</button>
+        </nav>
         <p class="eyebrow account-breadcrumb">Mon espace / Compte</p>
         <h1 id="account-title">Gérer votre compte ORVECT.</h1>
         <p class="account-lead">Profil, plan, activité, préférences de partage et contributions à la base de diagnostic.</p>
@@ -132,6 +142,11 @@
       accountRoot.querySelectorAll('[data-account-target]').forEach(item => item.classList.toggle('active', item === button));
       accountRoot.querySelector('#' + button.dataset.accountTarget)?.scrollIntoView({behavior:'smooth', block:'start'});
     });
+    accountRoot.querySelector('.account-workspace-tools').onclick = event => {
+      const key = event.target.dataset.accountWorkspace; if (!key) return;
+      if (key === 'account') { accountRoot.querySelector('#overview').scrollIntoView({behavior:'smooth', block:'start'}); return; }
+      runWorkspaceAction(key);
+    };
     accountRoot.querySelector('[data-account-close]').onclick = () => window.ORVECT_UI.show(1);
     accountRoot.querySelector('[data-profile-info]').onclick = () => accountRoot.querySelector('[data-profile-status]').textContent = 'Adresse e-mail vérifiée et session protégée par Firebase.';
     accountRoot.querySelector('[data-shared]').onclick = () => { closeAccount(); showHistory(false).catch(error => dialog('Action indisponible', `<p>${escape(error.message)}</p>`)); };
@@ -183,7 +198,12 @@
 
   const completion=document.createElement('button'); completion.id='completeDiagnostic'; completion.type='button'; completion.className='button dark'; completion.textContent='Diagnostic terminé'; document.querySelector('[data-screen="4"] .button-row').append(completion);
   completion.onclick=()=>showCompletion().catch(error=>{const node=document.querySelector('#diagnosticNotice');node.textContent=error.message;node.classList.add('show','error')});
-  nav.onclick=event=>{const key=event.target.dataset.workspace;if(!key)return;const run={dashboard:showDashboard,new:()=>window.ORVECT_UI.show(1),active:()=>showHistory(true),history:()=>showHistory(false),knowledge:showKnowledge,suggest:showSuggestion,account:showSettings,review:showReview}[key];Promise.resolve().then(run).catch(error=>dialog('Action indisponible',`<p>${escape(error.message)}</p>`))};
+  function runWorkspaceAction(key) {
+    const run = {dashboard:showDashboard,new:()=>window.ORVECT_UI.show(1),active:()=>showHistory(true),history:()=>showHistory(false),knowledge:showKnowledge,suggest:showSuggestion,account:showSettings,review:showReview}[key];
+    if (!run) return;
+    Promise.resolve().then(run).catch(error=>dialog('Action indisponible',`<p>${escape(error.message)}</p>`));
+  }
+  nav.onclick=event=>{const key=event.target.dataset.workspace;if(key)runWorkspaceAction(key)};
   window.ORVECT_WORKSPACE = {
     closeAccount,
     openAccount: () => showSettings().catch(error => dialog('Action indisponible', `<p>${escape(error.message)}</p>`))
