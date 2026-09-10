@@ -65,6 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LLM_PROVIDER: mock
+      DEMO_ACCESS_WITHOUT_LOGIN: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
