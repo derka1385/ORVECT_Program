@@ -21,11 +21,11 @@
     a{color:inherit}
     :focus-visible{outline:3px solid var(--orange);outline-offset:3px}
     .topbar{position:sticky;top:0;z-index:20;background:var(--graphite);color:var(--mineral);border-bottom:1px solid #ffffff1a}
-    .topbar-inner{width:100%;min-height:70px;padding:0 28px;display:flex;align-items:center;gap:28px}
-    .logo{display:inline-flex;align-items:center;gap:10px;border:0;background:transparent;padding:0;color:var(--orange);text-decoration:none;appearance:none;-webkit-appearance:none}
-    .logo svg{width:36px;height:30px}.logo strong{color:var(--mineral);font-size:22px;letter-spacing:-.04em}
-    .topbar-title{font-size:12px;letter-spacing:.08em;font-weight:600}.topbar-meta{margin-left:auto;color:var(--alloy);font-size:12px;text-align:right}.case-cta{display:inline-flex;align-items:center;min-height:38px;padding:7px 12px;border:1px solid var(--orange);color:var(--orange);font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap}.language-control{display:inline-flex;align-items:center;gap:7px;margin-left:0}.language-control svg{width:18px;height:18px;flex:0 0 18px;fill:none;stroke:var(--orange);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.language-control select{min-height:38px;width:auto;padding:7px 24px 7px 8px;border:1px solid #ffffff55;background:var(--graphite);color:var(--mineral);font-size:11px;font-weight:700;letter-spacing:.08em}.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-    .demo-strip{background:var(--orange);color:var(--graphite);padding:10px 24px;text-align:center;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.demo-strip a{margin-left:12px;text-decoration:underline;text-underline-offset:3px}
+    .topbar-inner{width:100%;min-height:80px;padding:0 30px;display:flex;align-items:center;gap:12px}
+    .logo{display:inline-flex;align-items:center;border:0;background:transparent;padding:0;color:var(--mineral);text-decoration:none;appearance:none;-webkit-appearance:none}
+    .logo strong{font-size:17px;letter-spacing:-.035em;white-space:nowrap}
+    .topbar-meta{margin-left:auto;color:#9b9da0;font-size:14px;text-align:right;white-space:nowrap}.case-cta{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px 16px;border:1px solid var(--orange);border-radius:5px;color:var(--mineral);font-size:13px;font-weight:650;text-decoration:none;white-space:nowrap}.case-cta:hover{background:#ffffff0b}.language-control{position:relative;display:inline-flex;align-items:center;justify-content:center;width:48px;height:42px;border:1px solid #ffffff55;border-radius:5px;margin-left:0}.language-control svg{width:19px;height:19px;flex:0 0 19px;fill:none;stroke:var(--mineral);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.language-control select{position:absolute;inset:0;width:100%;height:100%;min-height:0;padding:0;border:0;opacity:0;cursor:pointer}.account-slot{display:flex}.account-access{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:42px;padding:8px 18px;border:1px solid var(--orange);border-radius:5px;background:var(--orange);color:var(--graphite);font-size:13px;font-weight:700;white-space:nowrap}.account-access:hover{background:#ff7447}.account-access-icon{position:relative;width:17px;height:18px;flex:0 0 17px}.account-access-icon::before{content:"";position:absolute;left:6px;top:1px;width:5px;height:5px;border:1.7px solid currentColor;border-radius:50%}.account-access-icon::after{content:"";position:absolute;left:3px;bottom:1px;width:11px;height:7px;border:1.7px solid currentColor;border-bottom:0;border-radius:8px 8px 0 0}.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .demo-strip{background:var(--orange);color:var(--graphite);padding:11px 24px;text-align:center;font-size:12px;font-weight:500}.demo-strip a{font-weight:700;text-decoration:underline;text-underline-offset:3px}
     .shell{display:flex;width:100%;align-items:stretch;min-height:calc(100vh - 108px)}
     .sidebar{width:220px;flex:0 0 220px;background:var(--graphite);color:var(--mineral);padding:28px 20px}
     .eyebrow{margin:0;font-size:11px;line-height:1.35;font-weight:650;letter-spacing:.08em;text-transform:uppercase}
@@ -72,21 +72,18 @@
     .mobile-only{display:none}
     @media(max-width:1100px){.dtc-workspace{grid-template-columns:1fr}.dtc-workspace>.grid-2{grid-column:1;grid-row:2}.dtc-aside{grid-column:1;grid-row:1;position:static}.results-grid{grid-template-columns:1fr}.process-panel{grid-column:auto}.process-panel .instructions{grid-template-columns:1fr}}
     @media(max-width:980px){.sidebar{display:none}.grid-3{grid-template-columns:1fr}.mobile-only{display:block}.shell{min-height:auto}}
-    @media(max-width:720px){.topbar-inner{padding:0 14px;gap:10px}.topbar-title,.topbar-meta{display:none}.case-cta{margin-left:auto;padding:7px 9px}.logo strong{font-size:19px}main{padding:28px 18px 60px}.grid-2{grid-template-columns:1fr}.flow{grid-template-columns:repeat(2,1fr)}.headline{font-size:42px}.hero-card h2{font-size:34px}.panel{padding:20px}.measurement{grid-template-columns:1fr}.button-row .button{width:100%}}
+    @media(max-width:720px){.topbar-inner{min-height:66px;padding:0 14px;gap:8px}.topbar-meta,.case-cta{display:none}.logo{margin-right:auto}.logo strong{font-size:13px}.language-control{width:42px;height:40px}.account-access{min-height:40px;padding:7px 11px;font-size:11px}.account-access-icon{display:none}.demo-strip{padding:9px 14px;font-size:10px}main{padding:28px 18px 60px}.grid-2{grid-template-columns:1fr}.flow{grid-template-columns:repeat(2,1fr)}.headline{font-size:42px}.hero-card h2{font-size:34px}.panel{padding:20px}.measurement{grid-template-columns:1fr}.button-row .button{width:100%}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}
   </style>
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-inner">
-      <button class="logo" type="button" data-go="1" aria-label="Retour à l’entrée ORVECT">
-        <svg aria-hidden="true" viewBox="0 0 120 100" fill="currentColor"><path d="M8 76 29 24h19L27 76Z M41 76 70 4h19L60 76Z M74 76 95 24h19L93 76Z"/></svg>
-        <strong>ORVECT</strong>
-      </button>
-      <span class="topbar-title">ATELIER ORVECT / PROTOTYPE TECHNIQUE</span>
+      <button class="logo" type="button" data-go="1" aria-label="Retour à l’entrée ORVECT"><strong>ORVECT / PROTOTYPE TECHNIQUE</strong></button>
       <span class="topbar-meta">Mode démonstration VAG</span>
       <a class="case-cta" href="./collecte/">Partager un cas</a>
       <label class="language-control"><span class="sr-only">Langue</span><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.2 2.5 3.3 5.5 3.3 9S14.2 18.5 12 21M12 3C9.8 5.5 8.7 8.5 8.7 12S9.8 18.5 12 21"/></svg><select data-language aria-label="Langue"><option value="fr">FR</option><option value="en">EN</option><option value="sv">SV</option><option value="de">DE</option></select></label>
+      <div class="account-slot" data-account-slot></div>
     </div>
   </header>
   <div class="demo-strip">Vous avez résolu une panne intéressante ? <a href="./collecte/">Partager un cas atelier →</a></div>
@@ -166,7 +163,7 @@
       const $=(selector)=>document.querySelector(selector);const $$=(selector)=>[...document.querySelectorAll(selector)];
       const clean=(value)=>String(value??'').replace(/[<>]/g,'');
       const tr=(fr,de)=>document.documentElement.lang==='de'?de:fr;
-      function show(screen){state.screen=Number(screen);$$('.screen').forEach(node=>node.classList.toggle('active',Number(node.dataset.screen)===state.screen));$$('[data-side]').forEach(node=>node.classList.toggle('active',Number(node.dataset.side)===state.screen));window.scrollTo({top:0,behavior:'smooth'})}
+      function show(screen){window.ORVECT_WORKSPACE?.closeAccount?.();state.screen=Number(screen);$$('.screen').forEach(node=>node.classList.toggle('active',Number(node.dataset.screen)===state.screen));$$('[data-side]').forEach(node=>node.classList.toggle('active',Number(node.dataset.side)===state.screen));window.scrollTo({top:0,behavior:'smooth'})}
       function notice(id,message,error=false){const node=$(id);node.textContent=message;node.classList.toggle('error',error);node.classList.add('show');setTimeout(()=>node.classList.remove('show'),4200)}
       function dtcDefinition(code){const catalog=window.ORVECT_DTC_CATALOG;const row=catalog?.definitions?.[code],germanMeanings={P0301:'Fehlzündung an Zylinder 1 erkannt',P0351:'Primärstromkreis der Zündspule A offen'};if(row)return{type:tr('generic standardized','allgemein standardisiert'),meaning:document.documentElement.lang==='de'?(germanMeanings[code]||row[0]):row[0],source:`wal33d-dtc-database@${catalog.meta.source_commit.slice(0,12)}`,meta:`${catalog.meta.source_type} · MIT · ${catalog.meta.review_status}`,category:row[1]};const manufacturer=/^[PBCU]1[0-9A-F]{3}$/.test(code)||/^[BCU]2[0-9A-F]{3}$/.test(code);return{type:manufacturer?tr('manufacturer specific','herstellerspezifisch'):tr('unknown','unbekannt'),meaning:tr('Definition unavailable for this vehicle configuration.','Für diese Fahrzeugkonfiguration ist keine Definition verfügbar.'),source:'unavailable',meta:tr('definition unavailable · compatibility not established','Definition nicht verfügbar · Kompatibilität nicht festgestellt')}}
       function updateContext(){const make=$('#make').value||tr('Non identifié','Nicht identifiziert'),model=$('#model').value||tr('Configuration à confirmer','Konfiguration zu bestätigen'),engine=$('#engine').value||tr('Moteur non identifié','Motor nicht identifiziert'),mileage=Number($('#mileage').value||0),locale=document.documentElement.lang==='de'?'de-DE':'fr-FR';$('#vehicleTitle').textContent=`${make} ${model}`;$('#vehicleYear').textContent=$('#year').value||tr('Non établie','Nicht festgestellt');$('#vehicleEngine').textContent=engine;$('#vehicleGearbox').textContent=$('#gearbox').value||tr('Non établie','Nicht festgestellt');$('#vehiclePlatform').textContent=$('#platform').value||tr('Non établie','Nicht festgestellt');$('#ribbonVehicle').textContent=`${make} ${model}`;$('#ribbonEngine').textContent=engine;$('#ribbonMileage').textContent=mileage?`${mileage.toLocaleString(locale)} km`:tr('Kilométrage non renseigné','Kilometerstand nicht angegeben');$('#diagVehicle').innerHTML=`${clean(make)} ${clean(model)}<br><span class="muted">${tr('Moteur','Motor')} ${clean(engine)}</span>`}
@@ -210,9 +207,9 @@
     })();
   </script>
   <script src="./runtime-config.js"></script>
-  <script src="./firebase-auth.js?v=de-1"></script>
+  <script src="./firebase-auth.js?v=account-1"></script>
   <script src="./official-gemini.js"></script>
-  <script src="./workspace.js?v=de-1"></script>
-  <script src="./i18n.js?v=de-1"></script>
+  <script src="./workspace.js?v=account-1"></script>
+  <script src="./i18n.js?v=account-1"></script>
 </body>
 </html>

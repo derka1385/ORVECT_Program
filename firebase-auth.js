@@ -3,9 +3,12 @@
   let sdkPromise;
   let pending;
   const runtime = window.ORVECT_RUNTIME || {};
-  const accountLabel = user => {
-    const labels = { fr: 'Mon compte', en: 'My account', sv: 'Mitt konto', de: 'Mein Konto' };
-    return user ? `${labels[document.documentElement.lang] || labels.fr} · ${user.email}` : ({ fr: 'Se connecter', en: 'Sign in', sv: 'Logga in', de: 'Anmelden' }[document.documentElement.lang] || 'Se connecter');
+  const accountLabel = user => user
+    ? ({ fr: 'Mon compte', en: 'My account', sv: 'Mitt konto', de: 'Mein Konto' }[document.documentElement.lang] || 'Mon compte')
+    : ({ fr: 'Accès au compte', en: 'Account access', sv: 'Till kontot', de: 'Zum Konto' }[document.documentElement.lang] || 'Accès au compte');
+  const updateAccount = user => {
+    account.querySelector('[data-account-label]').textContent = accountLabel(user);
+    account.setAttribute('aria-label', accountLabel(user));
   };
   async function sdk() {
     if (!sdkPromise) sdkPromise = (async () => {
@@ -22,7 +25,8 @@
       await auth.setPersistence(session, auth.browserSessionPersistence);
       await session.authStateReady();
       auth.onAuthStateChanged(session, user => {
-        account.textContent = accountLabel(user);
+        updateAccount(user);
+        window.dispatchEvent(new CustomEvent('orvect:auth', { detail: { user } }));
       });
       return { ...auth, session };
     })().catch(error => { sdkPromise = null; throw error; });
@@ -48,8 +52,9 @@
   const form = dialog.querySelector('form');
   const message = dialog.querySelector('#firebase-message');
   const account = document.createElement('button');
-  account.className = 'button'; account.textContent = 'Se connecter'; account.type = 'button';
-  document.querySelector('main').prepend(account);
+  account.className = 'account-access'; account.type = 'button';
+  account.innerHTML = '<span class="account-access-icon" aria-hidden="true"></span><span data-account-label>Accès au compte</span>';
+  (document.querySelector('[data-account-slot]') || document.querySelector('main')).prepend(account);
   function errorMessage(error) {
     const messages = {
       'auth/invalid-credential': 'E-mail ou mot de passe incorrect.',
@@ -104,7 +109,13 @@
   form.onsubmit = event => { event.preventDefault(); action('login'); };
   dialog.querySelectorAll('[data-action]').forEach(button => button.onclick = () => button.dataset.action === 'close' ? cancel() : action(button.dataset.action));
   dialog.oncancel = event => { event.preventDefault(); cancel(); };
-  account.onclick = () => { message.textContent = ''; dialog.showModal(); };
+  account.onclick = () => {
+    if (window.ORVECT_WORKSPACE?.openAccount) {
+      window.ORVECT_WORKSPACE.openAccount();
+      return;
+    }
+    message.textContent = ''; dialog.showModal();
+  };
   window.ORVECT_AUTH = {
     async ensure() {
       const api = await sdk();
@@ -117,6 +128,22 @@
       const api = await sdk();
       if (!api.session.currentUser) throw Error('Connectez-vous pour continuer.');
       return api.session.currentUser.getIdToken();
+    },
+    async currentUser() {
+      const api = await sdk();
+      return api.session.currentUser;
+    },
+    async resetPassword() {
+      const api = await sdk();
+      const email = api.session.currentUser?.email;
+      if (!email) throw Error('Connectez-vous pour continuer.');
+      await api.sendPasswordResetEmail(api.session, email);
+      return 'Un e-mail de réinitialisation du mot de passe vient d’être envoyé.';
+    },
+    async logout() {
+      const api = await sdk();
+      await api.signOut(api.session);
+      location.reload();
     }
   };
   window.addEventListener('orvect:language', event => {
@@ -124,7 +151,7 @@
     if (!['fr', 'en', 'sv', 'de'].includes(language)) return;
     sdk().then(({ session }) => {
       session.languageCode = language;
-      account.textContent = accountLabel(session.currentUser);
+      updateAccount(session.currentUser);
     }).catch(() => {});
   });
   if (runtime.firebase?.apiKey) sdk().catch(error => { message.textContent = errorMessage(error); });
