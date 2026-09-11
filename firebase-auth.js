@@ -108,8 +108,8 @@
   function errorMessage(error) {
     const messages = {
       'auth/invalid-credential': 'E-mail ou mot de passe incorrect.',
-      'auth/weak-password': 'Choisissez un mot de passe d’au moins douze caractères.',
-      'auth/password-does-not-meet-requirements': 'Choisissez un mot de passe d’au moins douze caractères.',
+      'auth/weak-password': 'Choisissez un mot de passe d’au moins six caractères.',
+      'auth/password-does-not-meet-requirements': 'Choisissez un mot de passe d’au moins six caractères.',
       'auth/admin-restricted-operation': 'La création de compte est temporairement désactivée.',
       'auth/email-already-in-use': 'Ce compte existe déjà. Connectez-vous ou réinitialisez le mot de passe.',
       'auth/too-many-requests': 'Trop de tentatives. Réessayez dans quelques minutes.',
@@ -129,7 +129,7 @@
     intro.textContent = login ? 'Retrouvez vos diagnostics et votre espace atelier.' : signup ? 'Première visite ? Créez votre accès en quelques secondes.' : reset ? 'Indiquez votre e-mail pour recevoir un lien sécurisé.' : 'Votre compte sera accessible après vérification de l’adresse e-mail.';
     submit.textContent = login ? 'Se connecter' : signup ? 'Créer mon compte' : 'Envoyer le lien';
     form.elements.password.autocomplete = signup ? 'new-password' : 'current-password';
-    form.elements.password.minLength = signup ? 12 : 0;
+    form.elements.password.minLength = signup ? 6 : 0;
     form.elements.password.required = !reset;
     form.elements.password.disabled = reset;
     if (!page.hidden) setTimeout(() => form.elements.email.focus(), 0);
