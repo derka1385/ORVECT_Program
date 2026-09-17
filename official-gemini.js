@@ -7,10 +7,6 @@
   const $=selector=>document.querySelector(selector);
   const ui=window.ORVECT_UI;
   let token='',activeCase=null,currentStep=null,activeVehicle=null,busy=false;
-  const banner=document.createElement('section');banner.className='panel';banner.setAttribute('aria-live','polite');
-  const heading=document.createElement('strong');heading.textContent='GEMINI · MODE EXPLORATOIRE';
-  const status=document.createElement('p');status.textContent='Hypothèses et interprétations approximatives non vérifiées. Connexion au service requise.';
-  banner.append(heading,status);$('main').prepend(banner);
   $('#launchDiagnosis').textContent='Analyser avec Gemini';
   $('#reanalyze').textContent='Réévaluer avec Gemini';
   const footer=$('[data-screen="4"] .footer-note');if(footer)footer.textContent='Analyse réelle générée par Gemini. Les interprétations approximatives doivent être confirmées ; les décisions de sécurité restent distinctes.';
@@ -43,7 +39,6 @@
     if(!detail.case?.ai_model?.startsWith('gemini-'))throw Error('Le backend n’a pas produit de résultat Gemini. La simulation n’a pas été affichée.');
     activeCase=id;currentStep=(detail.steps||[]).find(step=>step.status==='current')?.id||null;
     ui.updateContext();ui.show(4);
-    status.textContent=`Résultat Gemini enregistré · ${detail.case.ai_model} · dossier ${id.slice(0,8)}. Interprétations exploratoires non vérifiées.`;
     $('#diagSymptoms').textContent=analysis.caseSummary;
     const codes=$('#diagDtcList');codes.replaceChildren();
     for(const code of analysis.interpretedFaultCodes||[]){const card=document.createElement('article');card.className='dtc-card';p(card,code.code,'h3');p(card,code.meaning);p(card,code.sourceStatus==='ai_general_knowledge_unverified'?'APPROXIMATION GEMINI · NON VÉRIFIÉE':code.sourceStatus==='provided_by_database'?'DÉFINITION DU CATALOGUE · SOURCE CONSERVÉE':'DÉFINITION INDISPONIBLE');codes.append(card);}
@@ -61,12 +56,11 @@
   }
   async function run(action){
     if(busy)return;busy=true;const controls=[...document.querySelectorAll('main input,main textarea,main select,main button')].map(node=>({node,disabled:node.disabled}));controls.forEach(({node})=>node.disabled=true);
-    status.textContent='Connexion et analyse Gemini en cours…';
     try{await login();await action();}
-    catch(error){status.textContent=error.message||'Service Gemini indisponible. Aucun résultat simulé généré.';}
+    catch(error){throw error;}
     finally{busy=false;controls.forEach(({node,disabled})=>node.disabled=disabled);$('#recordResult').disabled=!currentStep;}
   }
-  function intercept(id,action){$(id).addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();run(action);},true);}
+  function intercept(id,action){$(id).addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();run(action).catch(error=>{const notice=$('#diagnosticNotice')||$('#evidenceNotice')||$('#identificationNotice');if(notice){notice.textContent=error.message||'Action indisponible.';notice.classList.add('show','error');}});},true);}
   intercept('#launchDiagnosis',async()=>{
     const data=ui.context();
     if(!data.dtcs.length||data.dtcs.some(item=>item.status!=='confirmed'))throw Error('Confirmez chaque code avant l’analyse.');

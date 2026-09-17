@@ -25,7 +25,7 @@
     .logo{display:inline-flex;align-items:center;border:0;background:transparent;padding:0;color:var(--mineral);text-decoration:none;appearance:none;-webkit-appearance:none}
     .logo strong{font-size:17px;letter-spacing:-.035em;white-space:nowrap}
     .topbar-meta{margin-left:auto;color:#9b9da0;font-size:14px;text-align:right;white-space:nowrap}.case-cta{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px 16px;border:1px solid var(--orange);border-radius:5px;color:var(--mineral);font-size:13px;font-weight:650;text-decoration:none;white-space:nowrap}.case-cta:hover{background:#ffffff0b}.language-control{position:relative;display:inline-flex;align-items:center;justify-content:center;width:48px;height:42px;border:1px solid #ffffff55;border-radius:5px;margin-left:0}.language-control svg{width:19px;height:19px;flex:0 0 19px;fill:none;stroke:var(--mineral);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.language-control select{position:absolute;inset:0;width:100%;height:100%;min-height:0;padding:0;border:0;opacity:0;cursor:pointer}.account-slot{display:flex}.account-access{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:42px;padding:8px 18px;border:1px solid var(--orange);border-radius:5px;background:var(--orange);color:var(--graphite);font-size:13px;font-weight:700;white-space:nowrap}.account-access:hover{background:#ff7447}.account-access-icon{position:relative;width:17px;height:18px;flex:0 0 17px}.account-access-icon::before{content:"";position:absolute;left:6px;top:1px;width:5px;height:5px;border:1.7px solid currentColor;border-radius:50%}.account-access-icon::after{content:"";position:absolute;left:3px;bottom:1px;width:11px;height:7px;border:1.7px solid currentColor;border-bottom:0;border-radius:8px 8px 0 0}.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-    .demo-strip{background:var(--orange);color:var(--graphite);padding:11px 24px;text-align:center;font-size:12px;font-weight:500}.demo-strip a{font-weight:700;text-decoration:underline;text-underline-offset:3px}
+    .demo-strip{position:relative;background:var(--orange);color:var(--graphite);padding:11px 56px 11px 24px;text-align:center;font-size:12px;font-weight:500}.demo-strip a{font-weight:700;text-decoration:underline;text-underline-offset:3px}.demo-strip-dismiss{position:absolute;top:50%;right:16px;display:grid;width:30px;height:30px;place-items:center;transform:translateY(-50%);border:1px solid #10121466;border-radius:50%;background:transparent;color:var(--graphite);font-size:20px;line-height:1;transition:background .18s,color .18s}.demo-strip-dismiss:hover{background:var(--graphite);color:var(--mineral)}
     .shell{display:flex;width:100%;align-items:stretch;min-height:calc(100vh - 108px)}
     .sidebar{width:220px;flex:0 0 220px;background:var(--graphite);color:var(--mineral);padding:28px 20px}
     .eyebrow{margin:0;font-size:11px;line-height:1.35;font-weight:650;letter-spacing:.08em;text-transform:uppercase}
@@ -72,7 +72,7 @@
     .mobile-only{display:none}
     @media(max-width:1100px){.dtc-workspace{grid-template-columns:1fr}.dtc-workspace>.grid-2{grid-column:1;grid-row:2}.dtc-aside{grid-column:1;grid-row:1;position:static}.results-grid{grid-template-columns:1fr}.process-panel{grid-column:auto}.process-panel .instructions{grid-template-columns:1fr}}
     @media(max-width:980px){.sidebar{display:none}.grid-3{grid-template-columns:1fr}.mobile-only{display:block}.shell{min-height:auto}}
-    @media(max-width:720px){.topbar-inner{min-height:66px;padding:0 14px;gap:8px}.topbar-meta,.case-cta{display:none}.logo{margin-right:auto}.logo strong{font-size:13px}.language-control{width:42px;height:40px}.account-access{min-height:40px;padding:7px 11px;font-size:11px}.account-access-icon{display:none}.demo-strip{padding:9px 14px;font-size:10px}main{padding:28px 18px 60px}.grid-2{grid-template-columns:1fr}.flow{grid-template-columns:repeat(2,1fr)}.headline{font-size:42px}.hero-card h2{font-size:34px}.panel{padding:20px}.measurement{grid-template-columns:1fr}.button-row .button{width:100%}}
+    @media(max-width:720px){.topbar-inner{min-height:66px;padding:0 14px;gap:8px}.topbar-meta,.case-cta{display:none}.logo{margin-right:auto}.logo strong{font-size:13px}.language-control{width:42px;height:40px}.account-access{min-height:40px;padding:7px 11px;font-size:11px}.account-access-icon{display:none}.demo-strip{padding:9px 48px 9px 14px;font-size:10px}.demo-strip-dismiss{right:10px;width:28px;height:28px}main{padding:28px 18px 60px}.grid-2{grid-template-columns:1fr}.flow{grid-template-columns:repeat(2,1fr)}.headline{font-size:42px}.hero-card h2{font-size:34px}.panel{padding:20px}.measurement{grid-template-columns:1fr}.button-row .button{width:100%}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}
   </style>
 </head>
@@ -86,7 +86,7 @@
       <div class="account-slot" data-account-slot></div>
     </div>
   </header>
-  <div class="demo-strip">Vous avez résolu une panne intéressante ? <a href="./collecte/">Partager un cas atelier →</a></div>
+  <div class="demo-strip" data-feedback-banner>Vous avez résolu une panne intéressante ? <a href="./collecte/">Partager un cas atelier →</a><button class="demo-strip-dismiss" type="button" data-dismiss-feedback-banner aria-label="Fermer ce bandeau">×</button></div>
   <div class="shell">
     <aside class="sidebar" aria-label="Étapes du diagnostic">
       <p class="eyebrow">Diagnostic assisté</p>
@@ -104,7 +104,8 @@
         <div id="identificationNotice" class="notice" role="status"></div>
         <div class="grid-2">
           <form class="panel dark" id="identificationForm"><p class="eyebrow">Méthode d’identification</p><div class="choice-tabs"><button class="button secondary active" type="button" data-id-method="vin">Par VIN</button><button class="button secondary" type="button" data-id-method="registration">Par plaque</button></div><label id="vinField"><span class="field-label">VIN</span><input id="vin" value="WVWZZZAUZHW000001" maxlength="17" autocomplete="off"></label><label id="registrationField" hidden><span class="field-label">Plaque</span><input id="registration" value="OR-VEC-01" maxlength="12" autocomplete="off"></label><p class="muted">Données synthétiques dans cette démonstration publique.</p><button class="button primary" type="submit">Détecter le véhicule</button></form>
-          <article class="panel"><p class="eyebrow muted">Démonstrations investisseurs · données synthétiques</p><h2>Trois cas à explorer</h2><p class="muted">Les cas sont préremplis dans le navigateur. Après confirmation humaine des codes et connexion, l’analyse est envoyée au backend HTTPS officiel et traitée par Gemini.</p><div class="recent"><div><strong>01 · Ratés d’allumage</strong><small>P0301 + P0351 · trois mesures</small></div><button class="button primary" data-demo="golf-misfire">Charger le cas 1</button></div><div class="recent"><div><strong>02 · Observation du connecteur</strong><small>Même contexte · observation complémentaire</small></div><button class="button primary" data-demo="golf-connector">Charger le cas 2</button></div><div class="recent"><div><strong>03 · Définition manquante</strong><small>P1351 · limites du catalogue</small></div><button class="button primary" data-demo="golf-unknown">Charger le cas 3</button></div><div class="recent"><div><strong>Configuration incomplète</strong><small>Aucune donnée technique inventée</small></div><button class="button" data-unknown-vehicle>Compléter</button></div></article>
+          <article class="panel"><p class="eyebrow muted">Parcours atelier</p><h2>Commencer un diagnostic</h2><p class="muted">Saisissez un VIN ou une plaque, vérifiez la configuration puis documentez les codes et symptômes observés. Chaque conclusion reste à confirmer par le technicien.</p><div class="recent"><div><strong>Configuration incomplète</strong><small>Aucune donnée technique n’est inventée.</small></div><button class="button" data-unknown-vehicle>Compléter la configuration</button></div></article>
+          <article id="adminDemoCases" class="panel" hidden aria-label="Cas de démonstration réservés à l’administrateur"><p class="eyebrow muted">Démonstrations administrateur · données synthétiques</p><h2>Trois cas à explorer</h2><p class="muted">Exemples réservés au compte administrateur ORVECT.</p><div class="recent"><div><strong>01 · Ratés d’allumage</strong><small>P0301 + P0351 · trois mesures</small></div><button class="button primary" data-demo="golf-misfire">Charger le cas 1</button></div><div class="recent"><div><strong>02 · Observation du connecteur</strong><small>Même contexte · observation complémentaire</small></div><button class="button primary" data-demo="golf-connector">Charger le cas 2</button></div><div class="recent"><div><strong>03 · Définition manquante</strong><small>P1351 · limites du catalogue</small></div><button class="button primary" data-demo="golf-unknown">Charger le cas 3</button></div></article>
         </div>
       </section>
 
@@ -159,7 +160,11 @@
   <script src="./investor-cases.js?v=de-1"></script>
   <script>
     (()=>{
-      const state={screen:1,idMethod:'vin',unknown:false,measurements:[],dtcs:[]};
+      const feedbackBanner=document.querySelector('[data-feedback-banner]');
+      const dismissFeedbackBanner=document.querySelector('[data-dismiss-feedback-banner]');
+      try{if(localStorage.getItem('orvect-feedback-banner-dismissed')==='1')feedbackBanner.hidden=true}catch{}
+      dismissFeedbackBanner?.addEventListener('click',()=>{feedbackBanner.hidden=true;try{localStorage.setItem('orvect-feedback-banner-dismissed','1')}catch{}});
+      const state={screen:1,idMethod:'vin',unknown:false,measurements:[],dtcs:[],adminDemoAccess:false};
       const $=(selector)=>document.querySelector(selector);const $$=(selector)=>[...document.querySelectorAll(selector)];
       const clean=(value)=>String(value??'').replace(/[<>]/g,'');
       const tr=(fr,de)=>document.documentElement.lang==='de'?de:fr;
@@ -174,6 +179,7 @@
       $$('[data-id-method]').forEach(node=>node.addEventListener('click',()=>{state.idMethod=node.dataset.idMethod;$$('[data-id-method]').forEach(button=>button.classList.toggle('active',button===node));$('#vinField').hidden=state.idMethod!=='vin';$('#registrationField').hidden=state.idMethod!=='registration';if(state.idMethod==='vin')$('#registration').value='';else $('#vin').value=''}));
       $('#identificationForm').addEventListener('submit',event=>{event.preventDefault();const value=state.idMethod==='vin'?$('#vin').value.trim():$('#registration').value.trim();if(!value)return notice('#identificationNotice',`Renseignez ${state.idMethod==='vin'?'un VIN':'une plaque'}.`,true);setVehicle(false);show(2)});
       function loadDemo(id){
+        if(!state.adminDemoAccess)return notice('#identificationNotice','Ces cas de démonstration sont réservés au compte administrateur.',true);
         const demo=window.ORVECT_INVESTOR_CASES?.find(item=>item.id===id);
         if(!demo)return notice('#identificationNotice','Exemple indisponible. Rechargez la page.',true);
         const localized=document.documentElement.lang==='de'?window.ORVECT_INVESTOR_CASES_DE?.[id]||demo:demo;
@@ -203,12 +209,22 @@
       window.ORVECT_UI={show,updateContext,context:()=>({dtcs:state.dtcs.map(item=>({...item})),measurements:state.measurements.map(item=>({...item})),symptoms:[$('#symptoms').value,$('#technicianNotes').value].filter(Boolean).join(' · '),circumstances:$('#conditions').value,mileage:Number($('#mileage').value)||null,vehicle:{make:$('#make').value,model:$('#model').value,engine:$('#engine').value,year:$('#year').value}})};
       updateContext();renderDtcs();show(1);
       window.addEventListener('orvect:language',()=>{renderCatalogStatus();updateContext();renderDtcs()});
-      const requestedDemo=new URLSearchParams(location.search).get('demo');if(requestedDemo)loadDemo(requestedDemo);
+      const requestedDemo=new URLSearchParams(location.search).get('demo');
+      window.addEventListener('orvect:auth',event=>{
+        if(!event.detail?.user)state.adminDemoAccess=false;
+      });
+      window.addEventListener('orvect:workspace-auth',event=>{
+        const me=event.detail?.me;
+        state.adminDemoAccess=Boolean(me?.role==='admin'&&me.email?.toLowerCase()==='nolann.orvect@gmail.com');
+        const adminCases=$('#adminDemoCases');
+        if(adminCases)adminCases.hidden=!state.adminDemoAccess;
+        if(state.adminDemoAccess&&requestedDemo)loadDemo(requestedDemo);
+      });
     })();
   </script>
   <script src="./runtime-config.js"></script>
   <script src="./firebase-auth.js?v=auth-2"></script>
-  <script src="./official-gemini.js"></script>
+  <script src="./official-gemini.js?v=beta-1"></script>
   <script src="./workspace.js?v=account-3"></script>
   <script src="./i18n.js?v=account-1"></script>
 </body>

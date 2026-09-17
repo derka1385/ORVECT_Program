@@ -30,13 +30,14 @@ export default function NewDiagnostic(){
  const [symptoms,setSymptoms]=useState(""),[circumstances,setCircumstances]=useState(""),[technicianNotes,setTechnicianNotes]=useState(""),[symptomTags,setSymptomTags]=useState<string[]>([]);
  const [dtcs,setDtcs]=useState<DTCDraft[]>([]),[dtcCode,setDtcCode]=useState(""),[dtcNamespace,setDtcNamespace]=useState("sae_obd2"),[dtcEcu,setDtcEcu]=useState(""),[dtcStatus,setDtcStatus]=useState<DTCDraft["status"]>("unknown"),[editDtc,setEditDtc]=useState<string|null>(null);
  const [measurements,setMeasurements]=useState<Measurement[]>([]),[measure,setMeasure]=useState<Measurement>({name:"",value:"",unit:"",conditions:""}),[images,setImages]=useState<ImageDraft[]>([]);
- const [busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState(""),[uploadProgress,setUploadProgress]=useState(0);
+ const [busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState(""),[uploadProgress,setUploadProgress]=useState(0),[canAccessDemoCases,setCanAccessDemoCases]=useState(false);
  const inputReady=Boolean(vehicleId&&dtcs.length&&dtcs.every(item=>item.technician_verification==="confirmed")&&(symptoms.trim()||symptomTags.length));
  const confirmedCount=dtcs.filter(item=>item.technician_verification==="confirmed").length;
  const contextTitle=vehicleForm.make&&vehicleForm.model?`${vehicleForm.make} ${vehicleForm.model}`:"Véhicule non confirmé";
  const savedDemo=sessions.find(item=>item.customer_complaint?.includes("DÉMONSTRATION SYNTHÉTIQUE")&&item.ai_model?.startsWith("gemini-"));
 
  async function loadDemo(golfDemo:typeof investorCases[number]){
+  if(!canAccessDemoCases){setError("Ces cas de démonstration sont réservés au compte administrateur ORVECT.");return}
   setBusy(true);resetMessages();
   try{
    const data=await api.vehicleConfiguration(golfDemo.vehicle_id);
@@ -51,7 +52,7 @@ export default function NewDiagnostic(){
   }catch(value){setError(value instanceof Error?value.message:"Chargement de l’exemple impossible")}finally{setBusy(false)}
  }
 
- useEffect(()=>{Promise.all([api.vehicles(),api.sessions()]).then(([v,s])=>{const vag=v.filter(item=>vagBrands.has(item.make.trim().toLocaleLowerCase("fr")));const ids=new Set(vag.map(item=>item.id));setVehicles(vag);setSessions(s.filter(item=>ids.has(item.vehicle_profile_id)))}).catch(value=>setError(value instanceof Error?value.message:"Chargement impossible"))},[]);
+ useEffect(()=>{Promise.all([api.vehicles(),api.sessions(),api.me()]).then(([v,s,me])=>{const vag=v.filter(item=>vagBrands.has(item.make.trim().toLocaleLowerCase("fr")));const ids=new Set(vag.map(item=>item.id));setVehicles(vag);setSessions(s.filter(item=>ids.has(item.vehicle_profile_id)));setCanAccessDemoCases(me.role==="admin"&&me.email.toLowerCase()==="nolann.orvect@gmail.com")}).catch(value=>setError(value instanceof Error?value.message:"Chargement impossible"))},[]);
  function go(target:number){if(target<step){setError("");setNotice("");setStep(target)}}
  function resetMessages(){setError("");setNotice("")}
  async function identify(event:FormEvent){event.preventDefault();setBusy(true);resetMessages();setLookup(null);setVehicleId("");try{const result=await api.resolveVehicle(identifierMode==="registration"?{registration,country_code:country}:{vin,country_code:country});if(!result.resolution_id||!result.candidates?.length)throw new Error(result.warnings?.[0]||"Aucun véhicule détecté. Vérifiez l’identifiant ou utilisez un véhicule enregistré.");const first=result.candidates[0];setLookup(result);setCandidateId(first.id);setVehicleForm(fromCandidate(first));setHistoryStatus("provider_not_configured");setHistoryMessage("Aucune source d’historique de contrôle technique n’est configurée. Aucun historique n’est inventé.");setStep(2)}catch(value){setError(value instanceof Error?value.message:"Identification impossible")}finally{setBusy(false)}}
@@ -70,7 +71,7 @@ export default function NewDiagnostic(){
  async function launchAnalysis(){if(!inputReady){if(dtcs.some(item=>item.technician_verification==="interpretation_mismatch"))return setError("Corrigez les DTC signalés comme discordants avant l’analyse.");return setError("Confirmez le véhicule, au moins un symptôme et l’interprétation de chaque DTC.")}setBusy(true);resetMessages();try{const observed=[...symptomTags,symptoms.trim(),technicianNotes.trim()].filter(Boolean).join(" · ");const created=await api.createDiagnostic({vehicle_id:vehicleId,mileage:mileage?Number(mileage):null,symptoms:observed,circumstances});await api.addFaultCodes(created.id,{fault_codes:dtcs.map(item=>({code:item.code,namespace:item.namespace,ecu:item.ecu||null,status:item.status,freeze_frame:{},technician_verification:item.technician_verification,technician_note:item.technician_note}))});for(const item of measurements){const numeric=Number(item.value);await api.addMeasurement(created.id,{name:item.name,value:Number.isFinite(numeric)&&item.value.trim()?numeric:item.value,unit:item.unit||null,conditions:item.conditions,source:"manual"})}for(let index=0;index<images.length;index++){const item=images[index];const data=new FormData();data.append("files",item.file);data.append("category",item.category);data.append("description",item.description);await api.uploadImages(created.id,data);setUploadProgress(Math.round(((index+1)/images.length)*100))}await api.analyzeDiagnostic(created.id);router.push(`/diagnostics/ai/${created.id}`)}catch(value){setError(value instanceof Error?value.message:"Analyse impossible");setBusy(false)}}
 
  return <ProductLayout active={step}>
-  {step===1&&<section className="orvect-panel-dark mb-6" aria-label="Cas de démonstration investisseurs">
+  {step===1&&canAccessDemoCases&&<section className="orvect-panel-dark mb-6" aria-label="Cas de démonstration réservés à l’administrateur">
    <p className="orvect-label text-orvect-alloy">DÉMONSTRATION SYNTHÉTIQUE · 3 CAS PRÊTS À CHARGER</p>
    <h2 className="mt-3 text-3xl font-medium">Trois situations pour explorer ORVECT.</h2>
    <p className="mt-3 max-w-3xl text-sm leading-6 text-orvect-alloy">Données fictives préremplies. Choisissez un cas, relisez les codes, puis lancez l’analyse. Les résultats dépendent du fournisseur configuré.</p>

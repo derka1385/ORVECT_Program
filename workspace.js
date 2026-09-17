@@ -27,11 +27,11 @@
     .review-card{border:1px solid var(--line);padding:16px;margin-top:10px;overflow-wrap:anywhere}.review-card pre{white-space:pre-wrap;font-size:11px}
     .account-workspace{display:grid;grid-template-columns:294px minmax(0,1fr);min-height:calc(100vh - 117px);background:var(--mineral)}
     .account-sidebar{display:flex;min-width:0;flex-direction:column;background:var(--graphite);color:var(--mineral);padding:31px 22px 28px}.account-sidebar h2{margin:12px 0 6px;font-size:24px}.account-sidebar-copy{margin:0;color:var(--alloy);font-size:13px}.account-menu{display:grid;min-width:0;max-width:100%;gap:5px;margin-top:20px}.account-menu button{min-height:57px;border:0;border-left:3px solid transparent;background:transparent;color:var(--alloy);padding:12px 14px;text-align:left;font-size:13px}.account-menu button:hover,.account-menu button.active{border-left-color:var(--orange);background:#232628;color:var(--mineral)}.account-plan-side{margin-top:auto;border:1px solid #ffffff35;padding:18px 14px;min-height:136px}.account-plan-side strong{display:block;margin-top:10px}.account-plan-side small{display:block;margin-top:8px;color:var(--alloy)}
-    .account-main{min-width:0;padding:43px 40px 72px}.account-breadcrumb{color:var(--orange)}.account-main h1{margin:17px 0 8px;font-size:clamp(38px,4vw,56px);line-height:1;letter-spacing:-.045em}.account-lead{margin:0;color:var(--muted);font-size:17px}.account-demo-label{margin-top:13px;color:var(--muted);font-size:10px;text-transform:uppercase}.account-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px;margin-top:48px}.account-card{min-width:0;min-height:292px;border:1px solid var(--line);background:#ffffff42;padding:26px}.account-card.dark{background:var(--graphite);border-color:var(--graphite);color:var(--mineral)}.account-card h2{margin:20px 0 12px;font-size:26px;line-height:1.12;letter-spacing:-.025em}.account-card p{line-height:1.45}.account-card .eyebrow{color:var(--orange)}.account-profile{grid-column:span 5}.account-plan{grid-column:span 3}.account-activity{grid-column:span 4}.account-privacy{grid-column:span 6}.account-contributions{grid-column:span 3}.account-security{grid-column:span 3}.account-profile-line{display:flex;align-items:center;gap:16px;margin-top:20px}.account-avatar{display:grid;place-items:center;width:70px;height:70px;flex:0 0 70px;border-radius:50%;background:var(--graphite);color:var(--mineral);font-weight:700}.account-profile-line h2{margin:0 0 4px}.account-profile-line p{margin:0;color:var(--muted);overflow-wrap:anywhere}.account-org{margin:26px 0 12px;color:var(--muted)}.plan-badge{display:block;border:1px solid var(--orange);border-radius:999px;background:var(--mineral);color:var(--orange);padding:6px 10px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase}.account-note{color:var(--alloy);font-size:12px}.account-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}.account-metric{background:#e8e7e3;padding:14px;min-height:98px}.account-metric strong{display:block;font-size:34px;line-height:1}.account-metric span{display:block;margin-top:12px;color:var(--muted);font-size:10px}.account-card-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}.account-card-actions .button{min-height:50px}.dark .account-card-actions .button.primary{color:var(--graphite)}.account-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:22px}.account-toggle-copy strong{display:block}.account-toggle-copy small{display:block;margin-top:6px;color:var(--muted)}.privacy-toggle{position:relative;width:60px;height:34px;flex:0 0 60px;border:0;border-radius:999px;background:#a8aaad;padding:0}.privacy-toggle::after{content:"";position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:white;transition:transform .18s}.privacy-toggle[aria-checked="true"]{background:var(--orange)}.privacy-toggle[aria-checked="true"]::after{transform:translateX(26px)}.account-status{min-height:20px;margin:15px 0 0;color:var(--muted);font-size:12px}.account-security .button{width:100%}.account-back{display:none}
+    .account-main{min-width:0;padding:43px 40px 72px}.account-breadcrumb{color:var(--orange)}.account-main h1{margin:17px 0 8px;font-size:clamp(38px,4vw,56px);line-height:1;letter-spacing:-.045em}.account-lead{margin:0;color:var(--muted);font-size:17px}.account-demo-label{margin-top:13px;color:var(--muted);font-size:10px;text-transform:uppercase}.account-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px;margin-top:48px}.account-card{min-width:0;min-height:292px;border:1px solid var(--line);background:#ffffff42;padding:26px}.account-card.dark{background:var(--graphite);border-color:var(--graphite);color:var(--mineral)}.account-card h2{margin:20px 0 12px;font-size:26px;line-height:1.12;letter-spacing:-.025em}.account-card p{line-height:1.45}.account-card .eyebrow{color:var(--orange)}.account-summary{grid-column:1/-1;min-height:0}.account-profile{grid-column:span 7}.account-plan{grid-column:span 5}.account-activity,.account-privacy{grid-column:1/-1}.account-contributions,.account-security{grid-column:span 6}.account-profile-line{display:flex;align-items:center;gap:16px;margin-top:20px}.account-avatar{display:grid;place-items:center;width:70px;height:70px;flex:0 0 70px;border-radius:50%;background:var(--graphite);color:var(--mineral);font-weight:700}.account-profile-line h2{margin:0 0 4px}.account-profile-line p{margin:0;color:var(--muted);overflow-wrap:anywhere}.account-org{margin:26px 0 12px;color:var(--muted)}.plan-badge{display:block;border:1px solid var(--orange);border-radius:999px;background:var(--mineral);color:var(--orange);padding:6px 10px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase}.account-note{color:var(--alloy);font-size:12px}.account-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}.account-metric{background:#e8e7e3;padding:14px;min-height:98px}.account-metric strong{display:block;font-size:34px;line-height:1}.account-metric span{display:block;margin-top:12px;color:var(--muted);font-size:10px}.account-card-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}.account-card-actions .button{min-height:50px}.dark .account-card-actions .button.primary{color:var(--graphite)}.account-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:22px}.account-toggle-copy strong{display:block}.account-toggle-copy small{display:block;margin-top:6px;color:var(--muted)}.privacy-toggle{position:relative;width:60px;height:34px;flex:0 0 60px;border:0;border-radius:999px;background:#a8aaad;padding:0}.privacy-toggle::after{content:"";position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:white;transition:transform .18s}.privacy-toggle[aria-checked="true"]{background:var(--orange)}.privacy-toggle[aria-checked="true"]::after{transform:translateX(26px)}.account-status{min-height:20px;margin:15px 0 0;color:var(--muted);font-size:12px}.account-security .button{width:100%}.account-back{display:inline-flex;margin-top:18px}.account-signout{margin-top:10px;border-color:#ffffff4f;color:var(--mineral)}.account-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:22px}.account-shortcuts button{min-height:86px;border:1px solid var(--line);background:transparent;padding:14px;text-align:left;font-size:13px;font-weight:650}.account-shortcuts button:hover{border-color:var(--orange)}.account-loading{animation:account-pulse 1.2s ease-in-out infinite alternate}@keyframes account-pulse{to{opacity:.55}}
     .account-workspace-tools{gap:12px;margin:0 0 34px;padding-bottom:20px}.account-workspace-tools button{min-height:58px;padding:13px 20px;font-size:14px}.account-workspace-tools button.active{border-color:var(--orange);background:var(--orange)}
     @media(max-width:1250px){.account-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.account-profile,.account-plan,.account-activity,.account-privacy,.account-contributions,.account-security{grid-column:span 1}.account-privacy{grid-column:1/-1}}
-    @media(max-width:980px){.account-workspace{grid-template-columns:1fr}.account-sidebar{display:block;padding:22px}.account-menu{display:flex;overflow:auto}.account-menu button{flex:0 0 auto;min-height:44px;border-left:0;border-bottom:3px solid transparent}.account-menu button:hover,.account-menu button.active{border-left-color:transparent;border-bottom-color:var(--orange)}.account-plan-side{display:none}.account-back{display:inline-flex;margin-top:18px}.account-main{padding:34px 22px 60px}.account-grid{margin-top:34px}}
-    @media(max-width:800px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-form,.filter-row{grid-template-columns:1fr}.workspace-form .wide{grid-column:auto}.workspace-table thead{display:none}.workspace-table,.workspace-table tbody,.workspace-table tr,.workspace-table td{display:block}.workspace-table tr{border:1px solid var(--line);margin-top:10px;padding:8px}.workspace-table td{border:0;padding:5px}.workspace-table td::before{content:attr(data-label);display:block;font-size:9px;text-transform:uppercase;color:var(--muted)}.account-grid{grid-template-columns:1fr}.account-profile,.account-plan,.account-activity,.account-privacy,.account-contributions,.account-security{grid-column:auto}.account-card{min-height:0}.account-metrics{gap:7px}.account-metric{padding:11px}.account-metric strong{font-size:28px}.account-card-actions .button{width:100%}.account-main h1{font-size:39px}}
+    @media(max-width:980px){.account-workspace{grid-template-columns:1fr}.account-sidebar{display:block;padding:22px}.account-menu{display:flex;overflow:auto}.account-menu button{flex:0 0 auto;min-height:44px;border-left:0;border-bottom:3px solid transparent}.account-menu button:hover,.account-menu button.active{border-left-color:transparent;border-bottom-color:var(--orange)}.account-plan-side{display:none}.account-main{padding:34px 22px 60px}.account-grid{margin-top:34px}.account-signout{margin-left:10px}}
+    @media(max-width:800px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-form,.filter-row{grid-template-columns:1fr}.workspace-form .wide{grid-column:auto}.workspace-table thead{display:none}.workspace-table,.workspace-table tbody,.workspace-table tr,.workspace-table td{display:block}.workspace-table tr{border:1px solid var(--line);margin-top:10px;padding:8px}.workspace-table td{border:0;padding:5px}.workspace-table td::before{content:attr(data-label);display:block;font-size:9px;text-transform:uppercase;color:var(--muted)}.account-grid{grid-template-columns:1fr}.account-profile,.account-plan,.account-activity,.account-privacy,.account-contributions,.account-security{grid-column:auto}.account-card{min-height:0}.account-metrics{gap:7px}.account-metric{padding:11px}.account-metric strong{font-size:28px}.account-card-actions .button{width:100%}.account-main h1{font-size:39px}.account-shortcuts{grid-template-columns:1fr}.account-sidebar{padding:18px}.account-main{padding:28px 18px 52px}.account-menu{margin-top:14px}.account-menu button{padding:10px 8px;font-size:12px}.account-back,.account-signout{width:100%;justify-content:center;margin-left:0}}
   `;
   document.head.append(style);
 
@@ -50,17 +50,35 @@
   }
   async function authenticated() {
     await window.ORVECT_AUTH.ensure(); const me=await service.request('/auth/me');
+    window.dispatchEvent(new CustomEvent('orvect:workspace-auth', { detail: { me } }));
     if(me.role==='admin'&&!nav.querySelector('[data-workspace=review]')){const button=document.createElement('button');button.type='button';button.dataset.workspace='review';button.textContent='Revue admin';nav.append(button)}
     return me;
   }
   function failure(node, error) { const target=node.querySelector('.workspace-message') || node.querySelector('[role=status]'); if(target) target.textContent=error.message || 'Une erreur est survenue.'; }
 
   async function showDashboard() {
-    await authenticated(); const data=await service.request('/workspace/dashboard'); const m=data.metrics;
+    const me=await authenticated(); const data=await service.request('/workspace/dashboard'); const m=data.metrics;
     const node=dialog('Dashboard atelier', `<p class="eyebrow">${escape(data.account.product)}</p><h3>Forfait ${escape(data.account.plan)} · ${data.account.monthly_price_eur} €/mois</h3><div class="metric-grid"></div><h3>Diagnostics récents</h3><div class="recent-list"></div><p class="workspace-message" role="status"></p>`);
     const cards=[['Total',m.total_diagnostics],['Terminés',m.completed_diagnostics],['Actifs',m.active_diagnostics],['Résolus',m.resolved_diagnostics],['Non concluants',m.inconclusive_diagnostics],['Véhicules',m.vehicles_diagnosed],['DTC uniques',m.unique_dtcs],['Partagés',m.cases_shared]];
     node.querySelector('.metric-grid').innerHTML=cards.map(([label,value])=>`<div class="metric-card"><strong>${value}</strong><span>${escape(label)}</span></div>`).join('');
     renderRows(node.querySelector('.recent-list'), data.recent_diagnostics);
+    if(me.role==='admin') {
+      const section=document.createElement('section'); section.setAttribute('aria-label','Coûts API IA');
+      section.innerHTML='<h3>Usage & coûts API IA · USD</h3><p role="status">Chargement…</p>';
+      node.querySelector('.dialog-body').append(section);
+      try { renderAIUsage(section, await service.request('/diagnostics/usage')); }
+      catch(error) { section.querySelector('[role=status]').textContent='Coûts indisponibles : '+error.message; }
+    }
+  }
+
+  function renderAIUsage(target, data) {
+    const s=data.summary;
+    target.innerHTML=`<h3>Usage & coûts API IA · USD</h3><p>Atelier courant, diagnostics conservés. Tarifs fournis, hors taxes et frais annexes. Les appels de réparation sont comptés séparément ; un échec peut être facturé si le fournisseur retourne des tokens.</p>
+      <div class="metric-grid">${[['Dépense calculée',s.total_spend_display],['Tentatives API',s.request_count],['Coût moyen / appel tarifé',s.average_cost_display],['Tokens moyens / appel mesuré',s.average_tokens_per_request==null?'—':s.average_tokens_per_request.toFixed(1)]].map(([label,value])=>`<div class="metric-card"><strong>${escape(value)}</strong><span>${escape(label)}</span></div>`).join('')}</div>
+      <p>${s.priced_request_count} appels tarifés · ${s.unpriced_request_count} non chiffrés · ${s.failed_request_count} échecs API · ${data.legacy_runs_without_accounting} analyses historiques non comptabilisées. Une valeur inconnue n’est pas zéro. Les moyennes excluent les données manquantes ; les échecs non mesurés ne sont pas comptés comme une consommation réussie.</p>
+      <table class="workspace-table"><thead><tr><th>Fournisseur / modèle</th><th>Tentatives</th><th>Dépense calculée</th><th>Moyenne / tarifé</th></tr></thead><tbody>${data.by_model.map(r=>`<tr><td data-label="Modèle">${escape(r.provider)} / ${escape(r.model)}</td><td data-label="Tentatives">${r.request_count}</td><td data-label="USD">${escape(r.total_spend_display)}</td><td data-label="Moyenne">${escape(r.average_cost_display)}</td></tr>`).join('')}</tbody></table>
+      <details><summary>Comparer les tarifs actuels (USD / million de tokens)</summary><p>Mêmes unités tarifaires, pas une comparaison de qualité ou de tokenisation. Le profil Gemini doit être associé à un ID exact. Le stockage cache est par million de tokens-heures et n’est pas déduit d’un cache hit.</p><table class="workspace-table"><thead><tr><th>Profil / modèles associés</th><th>Entrée / sortie</th><th>Cache écriture / lecture</th><th>Stockage / heure</th></tr></thead><tbody>${data.pricing_comparison.map(r=>`<tr><td data-label="Profil">${escape(r.model)}<br>${escape(r.bound_models.join(', ')||'ID Gemini à confirmer')}</td><td data-label="Entrée / sortie">$${escape(r.rates.input)} / $${escape(r.rates.output)}</td><td data-label="Cache">$${escape(r.rates.cache_write)} / $${escape(r.rates.cache_read)}</td><td data-label="Stockage">$${escape(r.rates.cache_storage)}</td></tr>`).join('')}</tbody></table></details>
+      <details><summary>50 dernières tentatives et détails de coûts</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">${escape(JSON.stringify(data.recent_requests,null,2))}</pre></details>`;
   }
 
   function renderRows(target, rows) {
@@ -88,18 +106,13 @@
     document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(url);
   }
 
-  async function showSettings() {
-    const me = await authenticated();
-    const [settings, dashboard, firebaseUser] = await Promise.all([
-      service.request('/workspace/settings'),
-      service.request('/workspace/dashboard'),
-      window.ORVECT_AUTH.currentUser()
-    ]);
-    const metrics = dashboard.metrics;
-    const email = firebaseUser?.email || me.email || '—';
-    const profileName = firebaseUser?.displayName || 'Utilisateur ORVECT';
+  function renderSettings({ me = null, settings = null, dashboard = null, firebaseUser = null, loading = false } = {}) {
+    const metrics = dashboard?.metrics || { total_diagnostics: '—', cases_shared: '—', unique_dtcs: '—' };
+    const email = firebaseUser?.email || me?.email || (loading ? 'Chargement de votre session…' : '—');
+    const profileName = firebaseUser?.displayName || (loading ? 'Votre compte ORVECT' : 'Utilisateur ORVECT');
     const initials = firebaseUser?.displayName ? profileName.split(/\s+/).map(part => part[0]).join('').slice(0,2).toUpperCase() : 'OR';
-    const sharingEnabled = settings.data_sharing_preference === 'ASK_EVERY_TIME';
+    const sharingEnabled = settings?.data_sharing_preference === 'ASK_EVERY_TIME';
+    const disabled = loading ? 'disabled' : '';
     accountRoot.innerHTML = `
       <aside class="account-sidebar">
         <p class="eyebrow">Mon espace</p><h2>Compte ORVECT</h2><p class="account-sidebar-copy">Gestion du compte</p>
@@ -109,8 +122,10 @@
           <button type="button" data-account-target="activity">Utilisation</button>
           <button type="button" data-account-target="privacy">Données & confidentialité</button>
           <button type="button" data-account-target="contributions">Contributions</button>
+          <button type="button" data-account-target="security">Sécurité</button>
         </nav>
         <button class="button account-back" type="button" data-account-close>Retour au diagnostic</button>
+        <button class="button account-signout" type="button" data-logout ${disabled}>Se déconnecter</button>
         <div class="account-plan-side"><p class="eyebrow">Plan actuel</p><strong>Bêta · Gratuit</strong><small>Prototype ORVECT</small></div>
       </aside>
       <main class="account-main" id="overview">
@@ -125,29 +140,38 @@
         </nav>
         <p class="eyebrow account-breadcrumb">Mon espace / Compte</p>
         <h1 id="account-title">Gérer votre compte ORVECT.</h1>
-        <p class="account-lead">Profil, plan, activité, préférences de partage et contributions à la base de diagnostic.</p>
-        <p class="account-demo-label">Données de votre espace sécurisé</p>
+        <p class="account-lead">Un espace découpé par sujet, pour retrouver vos réglages sans faire défiler une page unique.</p>
+        <p class="account-demo-label ${loading ? 'account-loading' : ''}">${loading ? 'Préparation de votre espace sécurisé…' : 'Données de votre espace sécurisé'}</p>
         <div class="account-grid">
-          <article class="account-card account-profile" id="profile"><p class="eyebrow">Profil</p><div class="account-profile-line"><span class="account-avatar">${escape(initials)}</span><div><h2>${escape(profileName)}</h2><p>${escape(email)}</p></div></div><p class="account-org">Organisation / garage · non renseigné</p><button class="button" type="button" data-profile-info>Profil Firebase vérifié</button><p class="account-status" data-profile-status aria-live="polite"></p></article>
-          <article class="account-card dark account-plan"><p class="eyebrow">Plan actuel</p><h2>Bêta · Gratuit</h2><p class="account-note">Accès au prototype, aux diagnostics et aux fonctions de contribution.</p><span class="plan-badge">Actif</span><p class="account-note">Aucune facturation pendant la bêta.</p></article>
-          <article class="account-card account-activity" id="activity"><p class="eyebrow">Activité</p><h2>Votre utilisation</h2><div class="account-metrics"><div class="account-metric"><strong>${metrics.total_diagnostics}</strong><span>Diagnostics</span></div><div class="account-metric"><strong>${metrics.cases_shared}</strong><span>Cas partagés</span></div><div class="account-metric"><strong>${metrics.unique_dtcs}</strong><span>DTC uniques</span></div></div><p class="account-status">Compteurs calculés depuis votre espace atelier.</p></article>
-          <article class="account-card account-privacy" id="privacy"><p class="eyebrow">Données & confidentialité</p><h2>Partage des diagnostics terminés</h2><p class="muted">Choisissez si ORVECT doit vous proposer de contribuer à la base avec un cas validé. Aucun diagnostic n’est partagé sans action explicite du technicien.</p><div class="account-toggle-row"><div class="account-toggle-copy"><strong>Me proposer le partage à la fin d’un diagnostic</strong><small>DTC, contexte véhicule et résolution confirmée uniquement.</small></div><button class="privacy-toggle" type="button" role="switch" aria-checked="${sharingEnabled}" aria-label="Préférence de partage"></button></div><div class="account-card-actions"><button class="button" type="button" data-shared>Voir les données partagées</button><button class="button" type="button" data-export>Exporter mes données</button></div><p class="account-status" data-privacy-status role="status"></p></article>
-          <article class="account-card dark account-contributions" id="contributions"><p class="eyebrow">Contributions</p><h2>Enrichir la base DTC</h2><p class="account-note">Proposez un code erreur, une interprétation ou un cas atelier. Chaque ajout reste soumis à validation.</p><strong>${settings.cases_contributed} contribution(s) enregistrée(s)</strong><div class="account-card-actions"><button class="button primary" type="button" data-suggest>Ajouter un code erreur</button></div></article>
-          <article class="account-card account-security"><p class="eyebrow">Sécurité</p><h2>Session & accès</h2><p class="muted">Vos identifiants sont gérés par Firebase Authentication.</p><strong>Session actuelle · active</strong><div class="account-card-actions"><button class="button" type="button" data-password>Modifier le mot de passe</button><button class="button" type="button" data-logout>Se déconnecter</button></div><p class="account-status" data-security-status role="status"></p></article>
+          <article class="account-card account-summary" data-account-panel="overview"><p class="eyebrow">Vue d’ensemble</p><h2>Votre atelier, en un coup d’œil.</h2><p class="muted">Choisissez une rubrique pour gérer votre profil, votre activité, vos données ou votre accès.</p><div class="account-shortcuts"><button type="button" data-account-target="profile">Profil & plan</button><button type="button" data-account-target="activity">Utilisation</button><button type="button" data-account-target="privacy">Données</button></div></article>
+          <article class="account-card account-profile" data-account-panel="profile"><p class="eyebrow">Profil</p><div class="account-profile-line"><span class="account-avatar">${escape(initials)}</span><div><h2>${escape(profileName)}</h2><p>${escape(email)}</p></div></div><p class="account-org">Organisation / garage · non renseigné</p><button class="button" type="button" data-profile-info ${disabled}>Profil Firebase vérifié</button><p class="account-status" data-profile-status aria-live="polite"></p></article>
+          <article class="account-card dark account-plan" data-account-panel="profile"><p class="eyebrow">Plan actuel</p><h2>Bêta · Gratuit</h2><p class="account-note">Accès au prototype, aux diagnostics et aux fonctions de contribution.</p><span class="plan-badge">Actif</span><p class="account-note">Aucune facturation pendant la bêta.</p></article>
+          <article class="account-card account-activity" data-account-panel="activity"><p class="eyebrow">Activité</p><h2>Votre utilisation</h2><div class="account-metrics"><div class="account-metric"><strong>${metrics.total_diagnostics}</strong><span>Diagnostics</span></div><div class="account-metric"><strong>${metrics.cases_shared}</strong><span>Cas partagés</span></div><div class="account-metric"><strong>${metrics.unique_dtcs}</strong><span>DTC uniques</span></div></div><p class="account-status">Compteurs calculés depuis votre espace atelier.</p></article>
+          <article class="account-card account-privacy" data-account-panel="privacy"><p class="eyebrow">Données & confidentialité</p><h2>Partage des diagnostics terminés</h2><p class="muted">Choisissez si ORVECT doit vous proposer de contribuer à la base avec un cas validé. Aucun diagnostic n’est partagé sans action explicite du technicien.</p><div class="account-toggle-row"><div class="account-toggle-copy"><strong>Me proposer le partage à la fin d’un diagnostic</strong><small>DTC, contexte véhicule et résolution confirmée uniquement.</small></div><button class="privacy-toggle" type="button" role="switch" aria-checked="${sharingEnabled}" aria-label="Préférence de partage" ${disabled}></button></div><div class="account-card-actions"><button class="button" type="button" data-shared ${disabled}>Voir les données partagées</button><button class="button" type="button" data-export ${disabled}>Exporter mes données</button></div><p class="account-status" data-privacy-status role="status"></p></article>
+          <article class="account-card dark account-contributions" data-account-panel="contributions"><p class="eyebrow">Contributions</p><h2>Enrichir la base DTC</h2><p class="account-note">Proposez un code erreur, une interprétation ou un cas atelier. Chaque ajout reste soumis à validation.</p><strong>${settings?.cases_contributed ?? '—'} contribution(s) enregistrée(s)</strong><div class="account-card-actions"><button class="button primary" type="button" data-suggest ${disabled}>Ajouter un code erreur</button></div></article>
+          <article class="account-card account-security" data-account-panel="security"><p class="eyebrow">Sécurité</p><h2>Session & accès</h2><p class="muted">Vos identifiants sont gérés par Firebase Authentication.</p><strong>Session actuelle · active</strong><div class="account-card-actions"><button class="button" type="button" data-password ${disabled}>Modifier le mot de passe</button><button class="button" type="button" data-logout ${disabled}>Se déconnecter</button></div><p class="account-status" data-security-status role="status"></p></article>
         </div>
       </main>`;
     diagnosticShell.hidden = true; accountRoot.hidden = false; window.scrollTo({top:0, behavior:'smooth'});
 
-    accountRoot.querySelectorAll('[data-account-target]').forEach(button => button.onclick = () => {
-      accountRoot.querySelectorAll('[data-account-target]').forEach(item => item.classList.toggle('active', item === button));
-      accountRoot.querySelector('#' + button.dataset.accountTarget)?.scrollIntoView({behavior:'smooth', block:'start'});
-    });
+    const views = { overview:['Vue d’ensemble','Choisissez une rubrique pour gérer votre espace atelier.'], profile:['Profil & plan','Vos informations de compte et votre accès bêta.'], activity:['Utilisation','Retrouvez les compteurs de votre espace atelier.'], privacy:['Données & confidentialité','Réglez les propositions de partage et exportez vos données.'], contributions:['Contributions','Proposez une information à soumettre à validation.'], security:['Sécurité','Gérez votre session et votre mot de passe.'] };
+    const selectAccountView = target => {
+      const view = views[target] || views.overview;
+      accountRoot.querySelectorAll('[data-account-target]').forEach(item => item.classList.toggle('active', item.dataset.accountTarget === target));
+      accountRoot.querySelectorAll('[data-account-panel]').forEach(panel => panel.hidden = panel.dataset.accountPanel !== target);
+      accountRoot.querySelector('#account-title').textContent = view[0];
+      accountRoot.querySelector('.account-lead').textContent = view[1];
+      accountRoot.querySelector('.account-main').scrollTo?.({top:0, behavior:'smooth'});
+    };
+    accountRoot.querySelectorAll('[data-account-target]').forEach(button => button.onclick = () => selectAccountView(button.dataset.accountTarget));
+    selectAccountView('overview');
     accountRoot.querySelector('.account-workspace-tools').onclick = event => {
       const key = event.target.dataset.accountWorkspace; if (!key) return;
       if (key === 'account') { accountRoot.querySelector('#overview').scrollIntoView({behavior:'smooth', block:'start'}); return; }
       runWorkspaceAction(key);
     };
-    accountRoot.querySelector('[data-account-close]').onclick = () => window.ORVECT_UI.show(1);
+    accountRoot.querySelector('[data-account-close]').onclick = () => { closeAccount(); window.ORVECT_UI.show(1); };
+    if (loading) return;
     accountRoot.querySelector('[data-profile-info]').onclick = () => accountRoot.querySelector('[data-profile-status]').textContent = 'Adresse e-mail vérifiée et session protégée par Firebase.';
     accountRoot.querySelector('[data-shared]').onclick = () => { closeAccount(); showHistory(false).catch(error => dialog('Action indisponible', `<p>${escape(error.message)}</p>`)); };
     accountRoot.querySelector('[data-export]').onclick = () => downloadAccountData({ exported_at: new Date().toISOString(), user: { email: me.email, role: me.role }, settings, account: dashboard.account, metrics });
@@ -156,7 +180,7 @@
       const status = accountRoot.querySelector('[data-security-status]'); status.textContent = '';
       try { status.textContent = await window.ORVECT_AUTH.resetPassword(); } catch (error) { status.textContent = error.message; }
     };
-    accountRoot.querySelector('[data-logout]').onclick = () => window.ORVECT_AUTH.logout();
+    accountRoot.querySelectorAll('[data-logout]').forEach(button => button.onclick = () => window.ORVECT_AUTH.logout());
     accountRoot.querySelector('.privacy-toggle').onclick = async event => {
       const toggle = event.currentTarget; const next = toggle.getAttribute('aria-checked') !== 'true'; const status = accountRoot.querySelector('[data-privacy-status]');
       toggle.disabled = true; status.textContent = '';
@@ -166,6 +190,23 @@
       } catch (error) { status.textContent = error.message || 'Une erreur est survenue.'; }
       finally { toggle.disabled = false; }
     };
+  }
+
+  async function showSettings() {
+    // Render before authentication and API calls so the account button always responds instantly.
+    renderSettings({ loading: true });
+    try {
+      const me = await authenticated();
+      const [settings, dashboard, firebaseUser] = await Promise.all([
+        service.request('/workspace/settings'),
+        service.request('/workspace/dashboard'),
+        window.ORVECT_AUTH.currentUser()
+      ]);
+      if (!accountRoot.hidden) renderSettings({ me, settings, dashboard, firebaseUser });
+    } catch (error) {
+      closeAccount();
+      throw error;
+    }
   }
 
   async function showSuggestion() {

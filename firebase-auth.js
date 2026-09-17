@@ -23,24 +23,28 @@
     const label = accountLabel(user);
     account.querySelector('[data-account-label]').textContent = label;
     account.setAttribute('aria-label', label);
+    const adminCases = document.querySelector('#adminDemoCases');
+    if (adminCases && !user) adminCases.hidden = true;
   }
 
   const style = document.createElement('style');
   style.textContent = `
     body.auth-open{overflow:hidden}
-    .auth-page{position:fixed;inset:0;z-index:100;display:grid;grid-template-columns:minmax(390px,.9fr) minmax(520px,1.1fr);overflow:auto;background:var(--mineral);color:var(--graphite)}
+    .auth-page{position:fixed;inset:0;z-index:100;display:grid;grid-template-columns:minmax(390px,.9fr) minmax(520px,1.1fr);overflow:auto;background:var(--mineral);color:var(--graphite);animation:auth-page-in .38s cubic-bezier(.2,.8,.2,1)}
     .auth-brand{position:relative;isolation:isolate;display:flex;min-height:100vh;overflow:hidden;flex-direction:column;background:var(--graphite);color:var(--mineral);padding:34px 46px}
     .auth-brand::before{content:"";position:absolute;z-index:-1;right:-165px;bottom:115px;width:430px;height:430px;border:1px solid #ffffff24;transform:rotate(45deg)}
     .auth-brand::after{content:"";position:absolute;z-index:-1;right:68px;bottom:72px;width:92px;height:220px;background:var(--orange);transform:skewY(-18deg)}
     .auth-brand-head{display:flex;align-items:center;justify-content:space-between;gap:18px}.auth-back{flex:0 0 auto;min-height:40px;border:1px solid #ffffff4f;background:transparent;color:var(--mineral);padding:8px 12px;font-size:12px;font-weight:650}.auth-wordmark{font-size:16px;font-weight:700;letter-spacing:-.035em}
     .auth-brand-copy{max-width:570px;margin:auto 0}.auth-brand-copy .eyebrow{color:var(--orange)}.auth-brand-copy h2{max-width:560px;margin:18px 0;font-size:clamp(46px,5vw,74px);line-height:.98;letter-spacing:-.055em}.auth-brand-copy p:last-child{max-width:510px;color:var(--alloy);font-size:17px;line-height:1.55}
     .auth-security-note{position:relative;z-index:1;max-width:370px;border:1px solid #ffffff3b;padding:16px 18px}.auth-security-note strong{display:block;color:var(--orange);font-size:10px;letter-spacing:.08em;text-transform:uppercase}.auth-security-note span{display:block;margin-top:7px;color:var(--alloy);font-size:12px;line-height:1.45}
-    .auth-panel{display:grid;min-height:100vh;place-items:center;padding:54px 8vw}.auth-card{width:min(100%,520px)}.auth-card>.eyebrow{color:var(--orange)}.auth-card h1{margin:17px 0 11px;font-size:clamp(38px,4vw,55px);line-height:1;letter-spacing:-.05em}.auth-intro{margin:0;color:var(--muted);font-size:16px;line-height:1.5}
+    .auth-panel{display:grid;min-height:100vh;place-items:center;padding:54px 8vw}.auth-card{width:min(100%,520px);animation:auth-card-in .48s .08s both cubic-bezier(.2,.8,.2,1)}.auth-card>.eyebrow{color:var(--orange)}.auth-card h1{margin:17px 0 11px;font-size:clamp(38px,4vw,55px);line-height:1;letter-spacing:-.05em}.auth-intro{margin:0;color:var(--muted);font-size:16px;line-height:1.5}
+    .auth-choice{display:grid;gap:12px;margin-top:34px}.auth-choice button{display:flex;min-height:76px;align-items:center;justify-content:space-between;border:1px solid var(--line);background:#fff;padding:16px 18px;color:var(--graphite);font-weight:650;text-align:left;transition:border-color .18s,transform .18s}.auth-choice button:hover{border-color:var(--orange);transform:translateY(-2px)}.auth-choice button span{display:block;color:var(--muted);font-size:12px;font-weight:400}.auth-choice button b{color:var(--orange);font-size:22px}.auth-choice button:first-child{background:var(--graphite);color:var(--mineral);border-color:var(--graphite)}.auth-choice button:first-child span{color:var(--alloy)}
     .auth-tabs{display:grid;grid-template-columns:1fr 1fr;margin-top:34px;border:1px solid var(--line)}.auth-tabs button{min-height:52px;border:0;background:transparent;color:var(--muted);font-weight:650}.auth-tabs button+button{border-left:1px solid var(--line)}.auth-tabs button.active{background:var(--graphite);color:var(--mineral)}
     .auth-form{margin-top:25px}.auth-form label{margin-top:17px}.auth-form .field-label{margin:0 0 8px}.auth-form input{min-height:56px;background:#fff;border-color:var(--line)}.auth-submit{width:100%;min-height:54px;margin-top:24px}
     .auth-link{min-height:42px;margin-top:12px;border:0;background:transparent;padding:7px 0;color:var(--graphite);font-size:13px;font-weight:650;text-decoration:underline;text-underline-offset:4px}
     .auth-message{min-height:24px;margin:18px 0 0;color:var(--danger);font-size:13px;line-height:1.45}.auth-caption{margin-top:20px;color:var(--muted);font-size:11px;line-height:1.5}
     .auth-verify{margin-top:30px;border-top:1px solid var(--line);padding-top:26px}.auth-verify h2{margin:0;font-size:28px}.auth-verify p{color:var(--muted);line-height:1.5}.auth-verify-actions{display:flex;gap:10px;flex-wrap:wrap}.auth-verify-actions .button{min-height:50px}
+    @keyframes auth-page-in{from{opacity:0}to{opacity:1}}@keyframes auth-card-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
     @media(max-width:900px){.auth-page{grid-template-columns:1fr}.auth-brand{min-height:270px;padding:20px}.auth-brand-head{align-items:flex-start}.auth-wordmark{max-width:190px;font-size:13px}.auth-back{min-height:34px;padding:6px 8px;font-size:10px}.auth-brand-copy{margin:auto 0 20px}.auth-brand-copy h2{margin:10px 0 0;max-width:330px;font-size:34px}.auth-brand-copy p:last-child,.auth-security-note{display:none}.auth-brand::before{right:-90px;bottom:-180px;width:330px;height:330px}.auth-brand::after{right:45px;bottom:-38px;width:50px;height:130px}.auth-panel{min-height:auto;place-items:start center;padding:38px 20px 64px}.auth-card h1{font-size:41px}.auth-tabs{margin-top:28px}}
   `;
   document.head.append(style);
@@ -58,6 +62,7 @@
         <p class="eyebrow">Compte ORVECT</p>
         <h1 id="firebase-title">Connexion à ORVECT.</h1>
         <p class="auth-intro" data-auth-intro>Retrouvez vos diagnostics et votre espace atelier.</p>
+        <div class="auth-choice" data-auth-choice><button type="button" data-mode="login"><span>J’ai déjà un accès<br><small>Retrouvez votre espace atelier.</small></span><b aria-hidden="true">→</b></button><button type="button" data-mode="signup"><span>Je découvre ORVECT<br><small>Créez votre accès bêta.</small></span><b aria-hidden="true">→</b></button></div>
         <div class="auth-tabs" data-auth-tabs><button class="active" type="button" data-mode="login">Connexion</button><button type="button" data-mode="signup">Inscription</button></div>
         <form class="auth-form" id="firebase-form">
           <label><span class="field-label">E-mail</span><input name="email" type="email" autocomplete="username" required></label>
@@ -78,6 +83,7 @@
   const title = page.querySelector('#firebase-title');
   const intro = page.querySelector('[data-auth-intro]');
   const tabs = page.querySelector('[data-auth-tabs]');
+  const choice = page.querySelector('[data-auth-choice]');
   const passwordField = page.querySelector('[data-password-field]');
   const submit = page.querySelector('[data-submit]');
   const resetLink = page.querySelector('[data-action="reset-mode"]');
@@ -121,21 +127,21 @@
 
   function setMode(next) {
     mode = next; message.textContent = ''; message.style.color = ''; form.reset();
-    const login = mode === 'login', signup = mode === 'signup', reset = mode === 'reset', verify = mode === 'verify';
-    tabs.hidden = reset || verify; form.hidden = verify; passwordField.hidden = reset; verifyPanel.hidden = !verify;
-    resetLink.hidden = !login; loginLink.hidden = login || verify;
+    const login = mode === 'login', signup = mode === 'signup', reset = mode === 'reset', verify = mode === 'verify', welcome = mode === 'welcome';
+    choice.hidden = !welcome; tabs.hidden = reset || verify || welcome; form.hidden = verify || welcome; passwordField.hidden = reset; verifyPanel.hidden = !verify;
+    resetLink.hidden = !login; loginLink.hidden = login || verify || welcome;
     page.querySelectorAll('[data-mode]').forEach(button => button.classList.toggle('active', button.dataset.mode === mode));
-    title.textContent = login ? 'Connexion à ORVECT.' : signup ? 'Créer votre compte ORVECT.' : reset ? 'Réinitialiser le mot de passe.' : 'Vérifiez votre e-mail.';
-    intro.textContent = login ? 'Retrouvez vos diagnostics et votre espace atelier.' : signup ? 'Première visite ? Créez votre accès en quelques secondes.' : reset ? 'Indiquez votre e-mail pour recevoir un lien sécurisé.' : 'Votre compte sera accessible après vérification de l’adresse e-mail.';
+    title.textContent = welcome ? 'Bienvenue dans ORVECT.' : login ? 'Connexion à ORVECT.' : signup ? 'Créer votre compte ORVECT.' : reset ? 'Réinitialiser le mot de passe.' : 'Vérifiez votre e-mail.';
+    intro.textContent = welcome ? 'Choisissez comment vous souhaitez accéder à votre espace atelier.' : login ? 'Retrouvez vos diagnostics et votre espace atelier.' : signup ? 'Première visite ? Créez votre accès en quelques secondes.' : reset ? 'Indiquez votre e-mail pour recevoir un lien sécurisé.' : 'Votre compte sera accessible après vérification de l’adresse e-mail.';
     submit.textContent = login ? 'Se connecter' : signup ? 'Créer mon compte' : 'Envoyer le lien';
     form.elements.password.autocomplete = signup ? 'new-password' : 'current-password';
     form.elements.password.minLength = signup ? 6 : 0;
     form.elements.password.required = !reset;
     form.elements.password.disabled = reset;
-    if (!page.hidden) setTimeout(() => form.elements.email.focus(), 0);
+    if (!page.hidden && !welcome && !verify) setTimeout(() => form.elements.email.focus(), 0);
   }
 
-  function openPage(next = 'login') {
+  function openPage(next = 'welcome') {
     lastFocus = document.activeElement; page.hidden = false; document.body.classList.add('auth-open'); setMode(next);
   }
 
@@ -199,7 +205,7 @@
   page.addEventListener('keydown', event => { if (event.key === 'Escape') closePage(); });
   account.onclick = () => {
     if (window.ORVECT_WORKSPACE?.openAccount) { window.ORVECT_WORKSPACE.openAccount(); return; }
-    openPage('login');
+    openPage('welcome');
   };
 
   window.ORVECT_AUTH = {
@@ -209,7 +215,7 @@
       if (pending) return pending.promise;
       const promise = new Promise((resolve, reject) => { pending = { resolve, reject }; });
       pending.promise = promise;
-      openPage(api.session.currentUser ? 'verify' : 'login');
+      openPage(api.session.currentUser ? 'verify' : 'welcome');
       return promise;
     },
     async token() {
@@ -225,7 +231,7 @@
       return 'Un e-mail de réinitialisation du mot de passe vient d’être envoyé.';
     },
     async logout() { const api = await sdk(); await api.signOut(api.session); location.reload(); },
-    open: () => openPage('login')
+    open: () => openPage('welcome')
   };
 
   window.addEventListener('orvect:language', event => {
