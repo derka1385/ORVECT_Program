@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     firebase_check_revoked: bool = True
     demo_access_without_login: bool = True
     demo_admin_email: str = "admin@example.com"
+    # Verified Firebase identity that owns the seeded demonstration workspace.
+    owner_admin_email: str = "nolann.orvect@gmail.com"
     demo_admin_password: str = ""
     demo_technician_email: str = "technician@example.com"
     demo_technician_password: str = ""
@@ -58,6 +60,9 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model_fast: str = "gemini-3.1-flash-lite"
     gemini_model_reasoning: str = "gemini-3.5-flash"
+    # Exact IDs covered by the user-supplied Gemini price schedule (comma-separated).
+    # Empty until confirmed: never silently price every Gemini model identically.
+    ai_pricing_gemini_models: str = ""
     gemini_timeout_seconds: float = 45
     gemini_max_output_tokens: int = 8192
     gemini_rate_limit_per_minute: int = 10

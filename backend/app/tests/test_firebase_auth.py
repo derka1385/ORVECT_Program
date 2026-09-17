@@ -2,8 +2,9 @@ import pytest
 from fastapi import HTTPException
 from app import firebase_auth
 from app.core.config import settings
-from app.database.models import FirebaseIdentity
+from app.database.models import FirebaseIdentity, User
 from app.database.session import SessionLocal
+from app.seed import ADMIN_USER_ID
 
 
 def claims(monkeypatch, **values):
@@ -20,6 +21,18 @@ def test_verified_existing_account_binds_uid(monkeypatch):
         assert db.get(FirebaseIdentity, "firebase-admin-test").user_id == context.user_id
         claims(monkeypatch, email="changed@example.com")
         assert firebase_auth.firebase_context("valid", db).user_id == context.user_id
+
+
+def test_designated_owner_email_binds_to_seeded_admin_workspace(monkeypatch):
+    monkeypatch.setattr(settings, "firebase_self_signup_enabled", False)
+    claims(monkeypatch, uid="firebase-orvect-owner", email="nolann.orvect@gmail.com")
+    with SessionLocal() as db:
+        context = firebase_auth.firebase_context("valid", db)
+        owner = db.get(User, ADMIN_USER_ID)
+        assert context.user_id == ADMIN_USER_ID
+        assert context.role == "admin"
+        assert owner.email == "nolann.orvect@gmail.com"
+        assert db.get(FirebaseIdentity, "firebase-orvect-owner").user_id == ADMIN_USER_ID
 
 
 @pytest.mark.parametrize("values", [{"email_verified": False}, {"email": "stranger@example.com"}])

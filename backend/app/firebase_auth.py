@@ -11,6 +11,8 @@ from app.database.models import (
     VehicleProfile,
 )
 
+SEEDED_ADMIN_USER_ID = "00000000-0000-0000-0000-000000000006"
+
 
 def provision_isolated_workspace(claims, db):
     if not settings.firebase_self_signup_enabled:
@@ -99,6 +101,15 @@ def firebase_context(token, db):
         raise HTTPException(401, "Firebase identity is incomplete")
     identity = db.get(FirebaseIdentity, uid)
     user = db.get(User, identity.user_id) if identity else db.scalar(select(User).where(User.email == email))
+    # The existing seeded cases belong to this one owner workspace. Link it once
+    # after Firebase has verified ownership of the requested e-mail; never use a
+    # password or a browser-provided role as proof of access.
+    if not user and email == settings.owner_admin_email.strip().lower():
+        owner = db.get(User, SEEDED_ADMIN_USER_ID)
+        owner_identity = db.scalar(select(FirebaseIdentity).where(FirebaseIdentity.user_id == SEEDED_ADMIN_USER_ID))
+        if owner and owner.is_active and not owner_identity:
+            owner.email = email
+            user = owner
     if not user:
         user = provision_isolated_workspace(claims, db)
     if not user or not user.is_active:

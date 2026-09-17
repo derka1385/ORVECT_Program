@@ -35,10 +35,13 @@
   `;
   document.head.append(style);
 
-  const nav = document.createElement('nav'); nav.className = 'workspace-nav'; nav.setAttribute('aria-label', 'Espace ORVECT');
-  const actions = [['dashboard','Dashboard'],['new','Nouveau diagnostic'],['active','Diagnostics actifs'],['history','Historique'],['knowledge','Connaissances'],['suggest','Suggérer un DTC'],['account','Compte']];
-  for (const [key, text] of actions) { const button=document.createElement('button'); button.type='button'; button.dataset.workspace=key; button.textContent=text; nav.append(button); }
-  document.querySelector('main').prepend(nav);
+  // Le parcours de diagnostic reste concentré : une seule action est exposée
+  // dans l'en-tête. Les outils d'atelier sont regroupés dans l'espace Compte.
+  const headerActions = document.querySelector('[data-account-slot]');
+  const newDiagnostic = document.createElement('button');
+  newDiagnostic.className = 'header-new-diagnostic'; newDiagnostic.type = 'button';
+  newDiagnostic.textContent = 'Nouveau diagnostic';
+  headerActions?.prepend(newDiagnostic);
   const diagnosticShell = document.querySelector('.shell');
   const accountRoot = document.createElement('section');
   accountRoot.className = 'account-workspace'; accountRoot.hidden = true; accountRoot.setAttribute('aria-labelledby', 'account-title');
@@ -51,7 +54,6 @@
   async function authenticated() {
     await window.ORVECT_AUTH.ensure(); const me=await service.request('/auth/me');
     window.dispatchEvent(new CustomEvent('orvect:workspace-auth', { detail: { me } }));
-    if(me.role==='admin'&&!nav.querySelector('[data-workspace=review]')){const button=document.createElement('button');button.type='button';button.dataset.workspace='review';button.textContent='Revue admin';nav.append(button)}
     return me;
   }
   function failure(node, error) { const target=node.querySelector('.workspace-message') || node.querySelector('[role=status]'); if(target) target.textContent=error.message || 'Une erreur est survenue.'; }
@@ -136,6 +138,7 @@
           <button type="button" data-account-workspace="history">Historique</button>
           <button type="button" data-account-workspace="knowledge">Connaissances</button>
           <button type="button" data-account-workspace="suggest">Suggérer un DTC</button>
+          ${me?.role === 'admin' ? '<button type="button" data-account-workspace="review">Revue admin</button>' : ''}
           <button class="active" type="button" data-account-workspace="account">Compte</button>
         </nav>
         <p class="eyebrow account-breadcrumb">Mon espace / Compte</p>
@@ -165,11 +168,13 @@
     };
     accountRoot.querySelectorAll('[data-account-target]').forEach(button => button.onclick = () => selectAccountView(button.dataset.accountTarget));
     selectAccountView('overview');
-    accountRoot.querySelector('.account-workspace-tools').onclick = event => {
-      const key = event.target.dataset.accountWorkspace; if (!key) return;
-      if (key === 'account') { accountRoot.querySelector('#overview').scrollIntoView({behavior:'smooth', block:'start'}); return; }
-      runWorkspaceAction(key);
-    };
+    accountRoot.querySelectorAll('[data-account-workspace]').forEach(button => {
+      button.onclick = () => {
+        const key = button.dataset.accountWorkspace;
+        if (key === 'account') { accountRoot.querySelector('#overview').scrollIntoView({behavior:'smooth', block:'start'}); return; }
+        runWorkspaceAction(key);
+      };
+    });
     accountRoot.querySelector('[data-account-close]').onclick = () => { closeAccount(); window.ORVECT_UI.show(1); };
     if (loading) return;
     accountRoot.querySelector('[data-profile-info]').onclick = () => accountRoot.querySelector('[data-profile-status]').textContent = 'Adresse e-mail vérifiée et session protégée par Firebase.';
@@ -244,7 +249,7 @@
     if (!run) return;
     Promise.resolve().then(run).catch(error=>{if(error.code!=='AUTH_CANCELLED')dialog('Action indisponible',`<p>${escape(error.message)}</p>`)});
   }
-  nav.onclick=event=>{const key=event.target.dataset.workspace;if(key)runWorkspaceAction(key)};
+  newDiagnostic.onclick=()=>{closeAccount();window.ORVECT_UI?.show(1)};
   window.ORVECT_WORKSPACE = {
     closeAccount,
     openAccount: () => showSettings().catch(error => {if(error.code!=='AUTH_CANCELLED')dialog('Action indisponible', `<p>${escape(error.message)}</p>`)})
