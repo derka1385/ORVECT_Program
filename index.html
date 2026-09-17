@@ -210,22 +210,26 @@
       updateContext();renderDtcs();show(1);
       window.addEventListener('orvect:language',()=>{renderCatalogStatus();updateContext();renderDtcs()});
       const requestedDemo=new URLSearchParams(location.search).get('demo');
-      window.addEventListener('orvect:auth',event=>{
-        if(!event.detail?.user)state.adminDemoAccess=false;
-      });
-      window.addEventListener('orvect:workspace-auth',event=>{
-        const me=event.detail?.me;
-        state.adminDemoAccess=Boolean(me?.role==='admin'&&me.email?.toLowerCase()==='nolann.orvect@gmail.com');
+      const syncAdminDemoAccess=access=>{
+        state.adminDemoAccess=Boolean(access);
         const adminCases=$('#adminDemoCases');
         if(adminCases)adminCases.hidden=!state.adminDemoAccess;
         if(state.adminDemoAccess&&requestedDemo)loadDemo(requestedDemo);
+      };
+      window.addEventListener('orvect:auth',event=>{
+        const user=event.detail?.user;
+        syncAdminDemoAccess(user?.emailVerified&&user.email?.toLowerCase()==='nolann.orvect@gmail.com');
+      });
+      window.addEventListener('orvect:workspace-auth',event=>{
+        const me=event.detail?.me;
+        syncAdminDemoAccess(me?.email?.toLowerCase()==='nolann.orvect@gmail.com');
       });
     })();
   </script>
   <script src="./runtime-config.js"></script>
   <script src="./firebase-auth.js?v=auth-2"></script>
   <script src="./official-gemini.js?v=beta-1"></script>
-  <script src="./workspace.js?v=account-4"></script>
+  <script src="./workspace.js?v=account-5"></script>
   <script src="./i18n.js?v=account-1"></script>
 </body>
 </html>
