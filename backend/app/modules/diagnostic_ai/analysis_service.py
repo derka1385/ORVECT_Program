@@ -232,7 +232,10 @@ def _effective_context_hash(context: dict) -> str:
     return hashlib.sha256(canonical.encode()).hexdigest()
 
 
-async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False):
+RESPONSE_LANGUAGES = {"fr", "en", "sv", "de"}
+
+
+async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False, language="fr"):
     """Orchestrate the Orvect diagnostic pipeline.
 
     Deterministic context and DTC resolution, then the knowledge-first research
@@ -253,6 +256,9 @@ async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False):
     context["exploration_mode"] = settings.diagnostic_exploration_enabled and settings.llm_provider in {"gemini", "nebius"}
     context["diagnostic_engine"] = DiagnosticEngine().evaluate(context).as_dict()
 
+    # The site language is part of the analysis identity: switching it and
+    # re-running must produce a report in that language, never a cache hit.
+    context["response_language"] = language if language in RESPONSE_LANGUAGES else "fr"
     # Hashed before external evidence is merged: retrieval timestamps would
     # otherwise make every run a cache miss.
     context_hash = _effective_context_hash(context)

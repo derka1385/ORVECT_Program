@@ -13,10 +13,23 @@
   $('#reanalyze').textContent='Réévaluer le dossier';
   const footer=$('[data-screen="4"] .footer-note');if(footer)footer.textContent='Analyse réelle produite par le moteur de raisonnement configuré et des preuves techniques récupérées. Les pistes doivent être confirmées par les contrôles ; les décisions de sécurité restent distinctes.';
 
+  const t=key=>window.ORVECT_I18N?.t(key)??key;
+  const T=(key,vars)=>Object.entries(vars).reduce((text,[name,value])=>text.split('{'+name+'}').join(String(value)),t(key));
+  const plural=(n,one,many)=>T(n===1?one:many,{n});
+  // Server sentences that embed a count (« 3 sources externes … ») : look the {n} template up, then put the number back.
+  const tn=text=>{const m=String(text||'').match(/\d+/);if(!m)return t(String(text||''));const key=String(text).replace(/\d+/,'{n}');const out=t(key);return out===key?t(String(text)):out.split('{n}').join(m[0]);};
   const SOURCE_LABELS={oem_manufacturer:'Constructeur / OEM',safety_authority:'Autorité de sécurité',technical_documentation:'Documentation technique',repair_technical_resource:'Ressource technique réparation',specialist_community:'Communauté spécialisée',general_web:'Web généraliste'};
+  const STATUS_LABELS={likely:'probable',possible:'possible',unlikely:'peu probable',rejected:'écartée'};
+  const VERIFICATION_LABELS={verified:'vérifiée',partially_verified:'partiellement vérifiée',unverified:'non vérifiée'};
+  const DIFFICULTY_LABELS={easy:'facile',intermediate:'intermédiaire',advanced:'avancé'};
+  const DURATION_RE=/(?:Durée estimée|Estimated duration|Uppskattad tid|Geschätzte Dauer)\s*:\s*([^.\n]+)\.?\s*/i;
+  const MEANING_PREFIX='Approximation IA non vérifiée : ';
+  const meaningText=meaning=>String(meaning||'').startsWith(MEANING_PREFIX)?t('Approximation IA non vérifiée :')+' '+String(meaning).slice(MEANING_PREFIX.length):t(String(meaning||''));
+  const RELATION_LABELS={shared_root_cause:'cause racine commune',dependency:'dépendance',cascade:'cascade',contradiction:'contradiction',unresolved:'non résolu'};
   const SOURCE_RANK={oem_manufacturer:6,safety_authority:5,technical_documentation:4,repair_technical_resource:3,specialist_community:2,general_web:1};
   const CONFIDENCE_LABELS={low:'Faible',moderate:'Modérée',good:'Bonne',strong:'Élevée'};
-  const sourceLabel=type=>SOURCE_LABELS[type]||String(type||'').replaceAll('_',' ');
+  const sourceLabel=type=>t(SOURCE_LABELS[type]||String(type||'').replaceAll('_',' '));
+  const label=(map,value)=>t(map[value]||String(value||'').replaceAll('_',' '));
 
   function base(){
     if(!runtime.apiBase)throw Error('Le service ORVECT n’est pas encore raccordé. Aucun résultat simulé ne sera généré.');
@@ -30,7 +43,7 @@
     const response=await fetch(base()+path,{method:method||(payload===undefined?'GET':'POST'),headers,credentials:'omit',body:payload===undefined?undefined:JSON.stringify(payload),signal:AbortSignal.timeout(240000)});
     const body=await response.json().catch(()=>({}));
     if(response.status===401){token='';throw Error('Connexion expirée ou identifiants incorrects. Reconnectez-vous.');}
-    if(!response.ok)throw Error(typeof body.detail==='string'?body.detail:`Le service a répondu avec une erreur (${response.status}).`);
+    if(!response.ok)throw Error(typeof body.detail==='string'?body.detail:T('Le service a répondu avec une erreur ({status}).',{status:response.status}));
     return body;
   }
   async function upload(path,formData){
@@ -39,7 +52,7 @@
     const response=await fetch(base()+path,{method:'POST',headers,credentials:'omit',body:formData,signal:AbortSignal.timeout(120000)});
     const body=await response.json().catch(()=>({}));
     if(response.status===401){token='';throw Error('Connexion expirée ou identifiants incorrects. Reconnectez-vous.');}
-    if(!response.ok)throw Error(typeof body.detail==='string'?body.detail:`Le service a répondu avec une erreur (${response.status}).`);
+    if(!response.ok)throw Error(typeof body.detail==='string'?body.detail:T('Le service a répondu avec une erreur ({status}).',{status:response.status}));
     return body;
   }
   async function uploadPendingPhotos(){
@@ -65,25 +78,25 @@
   function list(parent,items){const ul=document.createElement('ul');for(const item of items||[])p(ul,item,'li');parent.append(ul);}
   function sourceNode(source){
     const box=el('div','ov-source');
-    if(source.url){const a=el('a','',`${source.title||source.domain||source.source_id} ↗`);a.href=source.url;a.target='_blank';a.rel='noopener noreferrer nofollow';box.append(a);box.append(el('span','',`${sourceLabel(source.source_type)} · ${source.domain||''} · preuve externe non vérifiée`));}
-    else{box.append(el('span','',`source_id: ${source.source_id}`));box.append(el('span','',`${source.source_type} · ${source.source_version} · ${source.verified?'VÉRIFIÉE':'NON VÉRIFIÉE'}`));}
+    if(source.url){const a=el('a','',`${source.title||source.domain||source.source_id} ↗`);a.href=source.url;a.target='_blank';a.rel='noopener noreferrer nofollow';box.append(a);box.append(el('span','',`${sourceLabel(source.source_type)} · ${source.domain||''} · ${t('preuve externe non vérifiée')}`));}
+    else{box.append(el('span','',`source_id: ${source.source_id}`));box.append(el('span','',`${source.source_type} · ${source.source_version} · ${t(source.verified?'VÉRIFIÉE':'NON VÉRIFIÉE')}`));}
     return box;
   }
 
   // --- live pipeline stages (screen 3) ------------------------------------
   function renderStages(progress){
     const panel=$('[data-analysis-stages]');if(!panel)return;panel.hidden=false;
-    $('[data-stage-label]').textContent=progress?.label||'Démarrage de l’analyse';
+    $('[data-stage-label]').textContent=t(progress?.label||'Démarrage de l’analyse');
     $('[data-stage-detail]').textContent=progress?.detail||'';
     const listNode=$('[data-stage-list]');listNode.replaceChildren();
     const index=progress?.index??0;
-    (progress?.stages||[]).forEach((stage,i)=>{const li=el('li',i<index?'done':i===index?'active':'');li.append(el('b','',i<index?'✓':String(i+1).padStart(2,'0')),document.createTextNode(' '+stage.label));listNode.append(li);});
-    $('[data-stage-elapsed]').textContent=progress?.elapsedMs?`${(progress.elapsedMs/1000).toFixed(1)} s écoulées`:'';
+    (progress?.stages||[]).forEach((stage,i)=>{const li=el('li',i<index?'done':i===index?'active':'');li.append(el('b','',i<index?'✓':String(i+1).padStart(2,'0')),document.createTextNode(' '+t(stage.label)));listNode.append(li);});
+    $('[data-stage-elapsed]').textContent=progress?.elapsedMs?T('{s} s écoulées',{s:(progress.elapsedMs/1000).toFixed(1)}):'';
   }
   async function analyzeWithProgress(path,showStages){
     if(showStages)renderStages(null);
     const timer=showStages?setInterval(async()=>{try{renderStages(await request('/diagnostics/'+activeCase+'/progress'))}catch{}},700):null;
-    try{return await request(path,{});}
+    try{return await request(path+'?language='+encodeURIComponent(window.ORVECT_I18N?.lang||document.documentElement.lang||'fr'),{});}
     finally{if(timer)clearInterval(timer);const panel=$('[data-analysis-stages]');if(panel)panel.hidden=true;}
   }
 
@@ -97,44 +110,44 @@
   function renderEvidence(analysis){
     const panel=$('[data-evidence]');if(!panel)return;panel.hidden=false;
     const evidence=collectEvidence(analysis);const research=analysis.researchMetadata||{};
-    $('[data-evidence-count]').textContent=`${evidence.length} source${evidence.length===1?'':'s'} citée${evidence.length===1?'':'s'}`;
+    $('[data-evidence-count]').textContent=plural(evidence.length,'{n} source citée','{n} sources citées');
     const grid=$('[data-evidence-list]');grid.replaceChildren();
     for(const source of evidence){
       const rank=SOURCE_RANK[source.source_type]||0;
       const card=el('article',`ov-evidence-card ${rank>=5?'rank-high':rank<=2?'rank-low':''}`);
       const head=el('div','ov-evidence-card-head');head.append(el('span','eyebrow muted',sourceLabel(source.source_type)),document.createTextNode(' '),el('span','ov-domain',source.domain||''));card.append(head);
       card.append(el('h4','',source.title||source.domain||source.source_id));
-      const foot=el('div','ov-foot');foot.append(el('span','',source.verified?'SOURCE VÉRIFIÉE':'NON VÉRIFIÉE'));
-      const a=el('a','','Ouvrir la source ↗');a.href=source.url;a.target='_blank';a.rel='noopener noreferrer nofollow';foot.append(a);card.append(foot);grid.append(card);
+      const foot=el('div','ov-foot');foot.append(el('span','',t(source.verified?'SOURCE VÉRIFIÉE':'NON VÉRIFIÉE')));
+      const a=el('a','',t('Ouvrir la source ↗'));a.href=source.url;a.target='_blank';a.rel='noopener noreferrer nofollow';foot.append(a);card.append(foot);grid.append(card);
     }
-    $('[data-evidence-note]').textContent=evidence.length
+    $('[data-evidence-note]').textContent=t(evidence.length
       ?'Classées par niveau de fiabilité : constructeur et autorités de sécurité d’abord, communautés spécialisées ensuite. Une preuve issue du web reste non vérifiée et ne vaut pas une procédure constructeur.'
-      :(research.researchTriggered?'Aucune source externe exploitable n’a été retenue pour ce dossier. Les pistes reposent sur la base interne ORVECT et restent à confirmer par les contrôles.':'La base interne ORVECT couvrait ce dossier : aucune recherche externe n’a été nécessaire.');
+      :(research.researchTriggered?'Aucune source externe exploitable n’a été retenue pour ce dossier. Les pistes reposent sur la base interne ORVECT et restent à confirmer par les contrôles.':'La base interne ORVECT couvrait ce dossier : aucune recherche externe n’a été nécessaire.'));
   }
   function renderConfidence(analysis){
     const panel=$('[data-confidence]');if(!panel)return;const c=analysis.confidence;panel.hidden=!c;const miniBox=$('[data-confidence-mini]');if(miniBox)miniBox.hidden=!c;if(!c)return;
     $('[data-confidence-score]').textContent=`${c.score} %`;
-    const mini=$('[data-confidence-mini]');if(mini){mini.hidden=false;$('[data-confidence-mini-score]').textContent=`${c.score} % · ${CONFIDENCE_LABELS[c.label]||c.label}`;$('[data-confidence-mini-bar]').style.width=`${c.score}%`;}
-    const label=$('[data-confidence-label]');label.replaceChildren(el('span','','Qualité de l’étayage :'),document.createTextNode(' '),el('span','',CONFIDENCE_LABELS[c.label]||c.label));
+    const mini=$('[data-confidence-mini]');if(mini){mini.hidden=false;$('[data-confidence-mini-score]').textContent=`${c.score} % · ${t(CONFIDENCE_LABELS[c.label]||c.label)}`;$('[data-confidence-mini-bar]').style.width=`${c.score}%`;}
+    const qualityLabel=$('[data-confidence-label]');qualityLabel.replaceChildren(el('span','',t('Qualité de l’étayage :')),document.createTextNode(' '),el('span','',t(CONFIDENCE_LABELS[c.label]||c.label)));
     $('[data-confidence-bar]').style.width=`${c.score}%`;
-    const factors=$('[data-confidence-factors]');factors.replaceChildren();for(const item of c.factors||[])p(factors,item,'li');
-    const improve=$('[data-confidence-improve]');improve.replaceChildren();for(const item of c.improvedBy||[])p(improve,item,'li');
+    const factors=$('[data-confidence-factors]');factors.replaceChildren();for(const item of c.factors||[])p(factors,tn(item),'li');
+    const improve=$('[data-confidence-improve]');improve.replaceChildren();for(const item of c.improvedBy||[])p(improve,tn(item),'li');
     improve.parentElement.hidden=!(c.improvedBy||[]).length;
   }
   function renderTransparency(analysis){
     const details=$('[data-transparency]');if(!details)return;const r=analysis.researchMetadata;details.hidden=!r;if(!r)return;
-    const codes=(analysis.interpretedFaultCodes||[]).length,hyp=(analysis.hypotheses||[]).length,s=n=>n>1?'s':'';
+    const codes=plural((analysis.interpretedFaultCodes||[]).length,'{n} code défaut','{n} codes défaut'),hyp=plural((analysis.hypotheses||[]).length,'{n} hypothèse','{n} hypothèses');
     $('[data-transparency-summary]').textContent=r.researchTriggered
-      ?`ORVECT a analysé ${codes} code${s(codes)} défaut, retenu ${hyp} hypothèse${s(hyp)}, lancé ${r.searchCount} recherche${s(r.searchCount)} technique${s(r.searchCount)} externe${s(r.searchCount)} et consulté ${r.externalSources} source${s(r.externalSources)}${r.fromCache?' (réutilisées depuis le cache)':''}.`
-      :`ORVECT a analysé ${codes} code${s(codes)} défaut et retenu ${hyp} hypothèse${s(hyp)} à partir de sa base interne, sans recherche externe.`;
+      ?T('ORVECT a analysé {codes}, retenu {hyp}, lancé {searches} et consulté {sources} {cache}.',{codes,hyp,searches:plural(r.searchCount,'{n} recherche technique externe','{n} recherches techniques externes'),sources:plural(r.externalSources,'{n} source','{n} sources'),cache:r.fromCache?t('(réutilisées depuis le cache)'):''}).replace(/\s+\./,'.')
+      :T('ORVECT a analysé {codes} et retenu {hyp} à partir de sa base interne, sans recherche externe.',{codes,hyp});
     const metrics=$('[data-transparency-metrics]');metrics.replaceChildren();
-    for(const [label,value] of [['Recherche externe',r.researchTriggered?'Déclenchée':'Non nécessaire'],['Sources internes',String(r.internalSources??0)],['Sources externes',String(r.externalSources??0)],['Moteur',r.provider==='nebius'?'Nebius Token Factory':(r.provider||'—')]]){const box=el('div');box.append(el('p','eyebrow',label),el('strong','',value));metrics.append(box);}
-    $('[data-transparency-model]').textContent=r.model?`modèle : ${r.model}${r.durationMs?` · ${(r.durationMs/1000).toFixed(1)} s`:''}${r.tokenUsage?.total_tokens?` · ${r.tokenUsage.total_tokens} tokens`:''}`:'';
+    for(const [name,value] of [['Recherche externe',t(r.researchTriggered?'Déclenchée':'Non nécessaire')],['Sources internes',String(r.internalSources??0)],['Sources externes',String(r.externalSources??0)],['Moteur',r.provider==='nebius'?'Nebius Token Factory':(r.provider||'—')]]){const box=el('div');box.append(el('p','eyebrow',t(name)),el('strong','',value));metrics.append(box);}
+    $('[data-transparency-model]').textContent=r.model?`${t('modèle')} : ${r.model}${r.durationMs?` · ${(r.durationMs/1000).toFixed(1)} s`:''}${r.tokenUsage?.total_tokens?` · ${r.tokenUsage.total_tokens} tokens`:''}`:'';
     const reasons=$('[data-transparency-reasons]');reasons.hidden=!(r.researchReasons||[]).length;const rl=$('[data-transparency-reasons-list]');rl.replaceChildren();for(const item of r.researchReasons||[])rl.append(el('span','',item));
     const queries=$('[data-transparency-queries]');queries.hidden=!(r.queries||[]).length;const ql=$('[data-transparency-queries-list]');ql.replaceChildren();for(const item of r.queries||[])p(ql,item,'li');
     const mix=Object.entries(r.sourceMix||{}).sort((a,b)=>(SOURCE_RANK[b[0]]||0)-(SOURCE_RANK[a[0]]||0));
     const mixBox=$('[data-transparency-mix]');mixBox.hidden=!mix.length;const ml=$('[data-transparency-mix-list]');ml.replaceChildren();for(const [type,count] of mix)ml.append(el('span','',`${sourceLabel(type)} · ${count}`));
-    const err=$('[data-transparency-error]');err.hidden=!r.researchError;err.textContent=r.researchError?`Vérification externe indisponible : ${r.researchError}. Le dossier s’appuie uniquement sur la base interne.`:'';
+    const err=$('[data-transparency-error]');err.hidden=!r.researchError;err.textContent=r.researchError?T('Vérification externe indisponible : {error}. Le dossier s’appuie uniquement sur la base interne.',{error:r.researchError}):'';
   }
   function renderTestPlan(analysis){
     const panel=$('[data-test-plan]');if(!panel)return;const checks=analysis.nextChecks||[];panel.hidden=!checks.length;
@@ -142,9 +155,9 @@
     checks.forEach((check,index)=>{
       const li=el('li',index===0?'is-current':'');li.append(el('div','ov-num',String(check.order||index+1).padStart(2,'0')));
       const body=el('div','ov-body');p(body,check.title,'h3');
-      const duration=(check.objective||'').match(/Durée estimée\s*:\s*([^.]+)\.?/i);const objective=(check.objective||'').replace(/Durée estimée\s*:\s*[^.]+\.?\s*/i,'').trim();
+      const duration=(check.objective||'').match(DURATION_RE);const objective=(check.objective||'').replace(DURATION_RE,'').trim();
       if(objective)p(body,objective).className='ov-meta';
-      const chips=el('div','ov-chips');if(duration)chips.append(el('span','time',`⏱ ${duration[1].trim()}`));for(const tool of check.requiredTools||[])chips.append(el('span','',tool));if(check.estimatedDifficulty)chips.append(el('span','',`difficulté ${check.estimatedDifficulty}`));body.append(chips);
+      const chips=el('div','ov-chips');if(duration)chips.append(el('span','time',`⏱ ${duration[1].trim()}`));for(const tool of check.requiredTools||[])chips.append(el('span','',tool));if(check.estimatedDifficulty)chips.append(el('span','',`${t('difficulté')} ${label(DIFFICULTY_LABELS,check.estimatedDifficulty)}`));body.append(chips);
       if((check.instructions||[]).length){const steps=el('ol','ov-steps');(check.instructions||[]).forEach((instruction,i)=>{const item=el('li');item.append(el('b','',String(i+1).padStart(2,'0')),document.createTextNode(instruction));steps.append(item);});body.append(steps);}
       if((check.expectedResults||[]).length){const outcomes=el('div','ov-outcomes');for(const expected of check.expectedResults||[]){const box=el('div','ov-outcome');box.append(el('strong','',expected.outcome),el('span','',expected.interpretation),el('span','',`→ ${expected.nextAction}`));outcomes.append(box);}body.append(outcomes);}
       for(const source of check.sources||[])body.append(sourceNode(source));
@@ -158,34 +171,39 @@
     const detail=await request('/diagnostics/'+encodeURIComponent(id));
     if(detail.analysis_status!=='current')throw Error('Le backend n’a pas produit de résultat exploitable pour ce dossier.');
     activeCase=id;currentStep=(detail.steps||[]).find(step=>step.status==='current')?.id||null;
+    lastReport={analysis,detail};paint(analysis,detail);
+  }
+  let lastReport=null;
+  window.addEventListener('orvect:language',()=>{if(lastReport)paint(lastReport.analysis,lastReport.detail);});
+  function paint(analysis,detail){
     ui.updateContext();ui.show(4);
     $('#diagSymptoms').textContent=analysis.caseSummary;
     const codes=$('#diagDtcList');codes.replaceChildren();
-    for(const code of analysis.interpretedFaultCodes||[]){const card=el('article','dtc-card');p(card,code.code,'h3');p(card,code.meaning);p(card,code.sourceStatus==='ai_general_knowledge_unverified'?'APPROXIMATION IA · NON VÉRIFIÉE':code.sourceStatus==='provided_by_database'?'DÉFINITION DU CATALOGUE · SOURCE CONSERVÉE':'DÉFINITION INDISPONIBLE','p').className='eyebrow muted';for(const source of code.sources||[])card.append(sourceNode(source));codes.append(card);}
+    for(const code of analysis.interpretedFaultCodes||[]){const card=el('article','dtc-card');p(card,code.code,'h3');p(card,meaningText(code.meaning));p(card,t(code.sourceStatus==='ai_general_knowledge_unverified'?'APPROXIMATION IA · NON VÉRIFIÉE':code.sourceStatus==='provided_by_database'?'DÉFINITION DU CATALOGUE · SOURCE CONSERVÉE':'DÉFINITION INDISPONIBLE'),'p').className='eyebrow muted';for(const source of code.sources||[])card.append(sourceNode(source));codes.append(card);}
     const correlationText=$('#correlationText');let tags=$('#ovCorrelationTags');if(!tags){tags=el('div','ov-tags');tags.id='ovCorrelationTags';correlationText.before(tags);}tags.replaceChildren();
-    for(const item of analysis.correlations||[]){for(const code of item.relatedCodes||[])tags.append(el('span','',code));tags.append(el('span','',String(item.relationshipType||'unresolved').replaceAll('_',' ')));}
-    correlationText.textContent=(analysis.correlations||[]).map(item=>item.explanation).join('\n\n')||'Aucune relation suffisamment étayée proposée.';
-    const hypotheses=$('#hypothesisContent');hypotheses.replaceChildren();$('#hypothesisCount').textContent=`${analysis.hypotheses.length} hypothèse${analysis.hypotheses.length>1?'s':''}`;
+    for(const item of analysis.correlations||[]){for(const code of item.relatedCodes||[])tags.append(el('span','',code));tags.append(el('span','',label(RELATION_LABELS,item.relationshipType||'unresolved')));}
+    correlationText.textContent=(analysis.correlations||[]).map(item=>item.explanation).join('\n\n')||t('Aucune relation suffisamment étayée proposée.');
+    const hypotheses=$('#hypothesisContent');hypotheses.replaceChildren();$('#hypothesisCount').textContent=plural(analysis.hypotheses.length,'{n} hypothèse','{n} hypothèses');
     const grid=el('div','ov-hyp-grid');hypotheses.append(grid);
     analysis.hypotheses.forEach((h,index)=>{
       const card=el('article',`ov-hyp${index===0?' is-lead':''}`);
-      const top=el('div','ov-hyp-top');top.append(el('span','ov-hyp-rank',index===0?'HYPOTHÈSE PRINCIPALE · 01':`HYPOTHÈSE · ${String(index+1).padStart(2,'0')}`),el('span','ov-hyp-pct',`${Math.round(h.confidence*100)} %`));card.append(top);
+      const top=el('div','ov-hyp-top');top.append(el('span','ov-hyp-rank',index===0?t('HYPOTHÈSE PRINCIPALE · 01'):T('HYPOTHÈSE · {n}',{n:String(index+1).padStart(2,'0')})),el('span','ov-hyp-pct',`${Math.round(h.confidence*100)} %`));card.append(top);
       p(card,h.label,'h3');
       const bar=el('div','ov-bar');const fill=el('div','ov-bar-fill');fill.style.width=`${Math.round(h.confidence*100)}%`;bar.append(fill);card.append(bar);
-      const meta=el('div','ov-hyp-meta');meta.append(el('span','',h.status),el('span','',String(h.verificationStatus).replaceAll('_',' ')));card.append(meta);
-      if((h.supportingEvidence||[]).length){card.append(el('strong','ov-h','Éléments favorables'));list(card,h.supportingEvidence);}
-      if((h.contradictingEvidence||[]).length){card.append(el('strong','ov-h','Contradictions ou limites'));list(card,h.contradictingEvidence);}
-      if((h.requiredConfirmation||[]).length){card.append(el('strong','ov-h','Contrôles nécessaires'));list(card,h.requiredConfirmation);}
+      const meta=el('div','ov-hyp-meta');meta.append(el('span','',label(STATUS_LABELS,h.status)),el('span','',label(VERIFICATION_LABELS,h.verificationStatus)));card.append(meta);
+      if((h.supportingEvidence||[]).length){card.append(el('strong','ov-h',t('Éléments favorables')));list(card,h.supportingEvidence);}
+      if((h.contradictingEvidence||[]).length){card.append(el('strong','ov-h',t('Contradictions ou limites')));list(card,h.contradictingEvidence);}
+      if((h.requiredConfirmation||[]).length){card.append(el('strong','ov-h',t('Contrôles nécessaires')));list(card,h.requiredConfirmation);}
       for(const source of h.sources||[])card.append(sourceNode(source));
       grid.append(card);
     });
     if(!analysis.hypotheses.length)p(hypotheses,analysis.finalConclusion.summary);
-    const check=analysis.nextChecks[0];$('#checkTitle').textContent=check?.title||'Informations complémentaires nécessaires';$('#checkObjective').textContent=check?.objective||analysis.finalConclusion.summary;
+    const check=analysis.nextChecks[0];$('#checkTitle').textContent=check?.title||t('Informations complémentaires nécessaires');$('#checkObjective').textContent=(check?.objective||analysis.finalConclusion.summary||'').replace(/Durée estimée\s*:/i,t('Durée estimée :'));
     const instructions=$('.process-panel .instructions');instructions.replaceChildren();for(const instruction of check?.instructions||[])p(instructions,instruction,'li');
     $('#recordResult').disabled=!currentStep;
     const missing=$('.case-panel .missing');missing.replaceChildren();for(const item of analysis.missingInformation||[])p(missing,`${item.field} : ${item.reason} — ${item.howToObtain}`,'li');
-    const safety=$('.hypothesis-panel .panel.dark');safety.replaceChildren();p(safety,'Évaluation de sécurité distincte','h3');p(safety,analysis.safetyAssessment.status);p(safety,analysis.safetyAssessment.explanation);p(safety,'Source : Safety Engine');
-    const label=$('.hypothesis-panel > .status');if(label)label.textContent='ANALYSE ORVECT / HYPOTHÈSES À CONFIRMER';
+    const safety=$('.hypothesis-panel .panel.dark');safety.replaceChildren();p(safety,t('Évaluation de sécurité distincte'),'h3');p(safety,t(analysis.safetyAssessment.status));p(safety,t(analysis.safetyAssessment.explanation));p(safety,t('Source : Safety Engine'));
+    const statusLabel=$('.hypothesis-panel > .status');if(statusLabel)statusLabel.textContent=t('ANALYSE ORVECT / HYPOTHÈSES À CONFIRMER');
     const measures=$('#diagMeasurements');if(measures){measures.replaceChildren();for(const m of (detail.observations||[]).filter(item=>item.observation_type==='measurement')){p(measures,m.key,'strong');p(measures,`${m.value?.value??''} ${m.unit||''}`);}}
     renderTestPlan(analysis);renderConfidence(analysis);renderEvidence(analysis);renderTransparency(analysis);
   }
@@ -215,7 +233,7 @@
     if(!activeCase)throw Error('Lancez une première analyse avant de joindre une photo.');
     const added=await uploadPendingPhotos();if(!added)throw Error('Choisissez d’abord une photo (JPEG, PNG ou WebP).');
     await render(await analyzeWithProgress('/diagnostics/'+activeCase+'/reanalyze',false),activeCase);
-    const notice=$('#diagnosticNotice');if(notice){notice.textContent=`${added} photo(s) ajoutée(s) au dossier et analyse réévaluée.`;notice.classList.remove('error');notice.classList.add('show');}
+    const notice=$('#diagnosticNotice');if(notice){notice.textContent=T('{n} photo(s) ajoutée(s) au dossier et analyse réévaluée.',{n:added});notice.classList.remove('error');notice.classList.add('show');}
   });
   intercept('#recordResult',async()=>{
     if(!activeCase||!currentStep)throw Error('Aucun contrôle courant dans ce dossier.');

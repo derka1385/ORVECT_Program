@@ -293,3 +293,18 @@ def test_gemini_provider_repairs_one_invalid_structured_response(monkeypatch):
     client=SimpleNamespace(aio=SimpleNamespace(models=Models()))
     result=asyncio.run(GeminiAutomotiveAIProvider(client).analyze_initial_case({"fault_codes":[{"code":"P1351"}]},[]))
     assert result.repaired is True and result.analysis.schemaVersion=="2.0" and not responses
+
+
+def test_site_language_reaches_the_model_and_keys_the_cache(client, monkeypatch):
+    seen = []
+    class RecordingProvider:
+        async def analyze_initial_case(self, context, images):
+            seen.append(context["response_language"])
+            return ProviderResult(_mock_analysis(context), settings.llm_provider, analysis_service.selected_model(context, False), 1)
+    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda: RecordingProvider())
+    case_id = create_case(client, ("P0301",))
+    assert client.post(f"/api/diagnostics/{case_id}/analyze").status_code == 200
+    assert client.post(f"/api/diagnostics/{case_id}/analyze?language=sv").status_code == 200
+    assert client.post(f"/api/diagnostics/{case_id}/analyze?language=sv").status_code == 200  # cached
+    assert client.post(f"/api/diagnostics/{case_id}/analyze?language=xx").status_code == 200  # unknown → fr, cached
+    assert seen == ["fr", "sv"]
