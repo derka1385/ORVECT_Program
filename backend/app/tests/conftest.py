@@ -33,3 +33,16 @@ def client():
     response=client.post("/api/auth/login",json={"email":"admin@example.com","password":"demo-change-me"})
     assert response.status_code==200
     return client
+
+@pytest.fixture
+def anyio_backend():
+    """Async tests run on asyncio only; no trio dependency is introduced."""
+    return "asyncio"
+
+@pytest.fixture
+def db_session():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

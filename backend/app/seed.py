@@ -13,6 +13,7 @@ USER_ID="00000000-0000-0000-0000-000000000002"
 ADMIN_USER_ID="00000000-0000-0000-0000-000000000006"
 VEHICLE_ID="00000000-0000-0000-0000-000000000003"
 GOLF_VEHICLE_ID="00000000-0000-0000-0000-000000000007"
+BMW_VEHICLE_ID="00000000-0000-0000-0000-000000000008"
 SOURCE_ID="00000000-0000-0000-0000-000000000004"
 CATALOG_SOURCE_ID="00000000-0000-0000-0000-000000000005"
 
@@ -96,6 +97,18 @@ def seed(db=None):
             golf_config=VehicleConfiguration(vehicle_id=GOLF_VEHICLE_ID)
             db.add(golf_config)
         golf_config.manufacturer="Volkswagen Group";golf_config.make="Volkswagen";golf_config.model="Golf VII";golf_config.generation="VII";golf_config.model_year=2018;golf_config.market="EU";golf_config.vehicle_type="passenger_car";golf_config.body_type="hatchback";golf_config.fuel_type="gasoline";golf_config.engine_family="EA211";golf_config.engine_name="1.4 TSI 92 kW";golf_config.engine_code="CZCA";golf_config.engine_code_confirmed_by_user="CZCA";golf_config.engine_displacement_cc=1395;golf_config.engine_power_kw=92;golf_config.transmission_type="manual";golf_config.drivetrain="FWD";golf_config.platform="MQB";golf_config.providers_used=["internal_demo"];golf_config.field_provenance={"scope":"synthetic_demo"};golf_config.precision_level="demo_fixture";golf_config.confidence_score=1.0;golf_config.confirmed_by_user=True;golf_config.confirmed_by_user_id=ADMIN_USER_ID
+        # Second demo vehicle: proves the pipeline is not tuned to one car.
+        bmw=db.get(VehicleProfile,BMW_VEHICLE_ID)
+        if not bmw:
+            bmw=VehicleProfile(id=BMW_VEHICLE_ID,garage_id=GARAGE_ID)
+            db.add(bmw)
+        bmw.make="BMW";bmw.model="320d (F30)";bmw.year=2011;bmw.market="EU";bmw.engine_name="2.0d 135 kW";bmw.engine_code="N47D20C";bmw.fuel_type="diesel";bmw.transmission="manual";bmw.notes="Véhicule de démonstration. Configuration synthétique à confirmer avant tout usage réel.";bmw.is_demo_vehicle=True
+        db.flush()
+        bmw_config=db.scalar(select(VehicleConfiguration).where(VehicleConfiguration.vehicle_id==BMW_VEHICLE_ID))
+        if not bmw_config:
+            bmw_config=VehicleConfiguration(vehicle_id=BMW_VEHICLE_ID)
+            db.add(bmw_config)
+        bmw_config.manufacturer="BMW AG";bmw_config.make="BMW";bmw_config.model="320d (F30)";bmw_config.generation="F30";bmw_config.model_year=2011;bmw_config.market="EU";bmw_config.vehicle_type="passenger_car";bmw_config.body_type="sedan";bmw_config.fuel_type="diesel";bmw_config.engine_family="N47";bmw_config.engine_name="2.0d 135 kW";bmw_config.engine_code="N47D20C";bmw_config.engine_code_confirmed_by_user="N47D20C";bmw_config.engine_displacement_cc=1995;bmw_config.engine_power_kw=135;bmw_config.transmission_type="manual";bmw_config.drivetrain="RWD";bmw_config.platform="F3x";bmw_config.providers_used=["internal_demo"];bmw_config.field_provenance={"scope":"synthetic_demo"};bmw_config.precision_level="demo_fixture";bmw_config.confidence_score=1.0;bmw_config.confirmed_by_user=True;bmw_config.confirmed_by_user_id=ADMIN_USER_ID
         namespaces = (
             ("sae_obd2", None, None, "SAE_OBD_II", "Generic standardized OBD-II diagnostic identifiers"),
             ("vag_uds", "Volkswagen Group", "VAG", "UDS_OEM", "VAG manufacturer diagnostic identifiers; definitions require licensed source data"),

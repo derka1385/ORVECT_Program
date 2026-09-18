@@ -3,12 +3,12 @@
 import Link from "next/link";
 import {useCallback,useEffect,useState} from "react";
 import {useParams} from "next/navigation";
-import {FlowProgress,ProductLayout,SectionIntro,SourceLabel,StatusLabel} from "@/components/OrvectProduct";
+import {ConfidencePanel,EvidenceCard,FlowProgress,ProductLayout,ResearchTransparency,SectionIntro,SourceLabel,StatusLabel,sourceTypeLabel,sourceTypeRank} from "@/components/OrvectProduct";
 import {API,api} from "@/services/api";
-import type {DiagnosticDetail,SourceReference} from "@/types";
+import type {DiagnosticDetail,DiagnosticOutcome,SourceReference} from "@/types";
 
 type ImageDraft={file:File;preview:string;category:string;description:string};
-const sourceStatus:Record<string,string>={provided_by_database:"DÉFINITION DU CATALOGUE · SOURCE CONSERVÉE",ai_general_knowledge_unverified:"CONNAISSANCE GÉNÉRALE NON VÉRIFIÉE",not_found:"DÉFINITION INDISPONIBLE"};
+const sourceStatus:Record<string,string>={provided_by_database:"DÉFINITION DU CATALOGUE · SOURCE CONSERVÉE",ai_general_knowledge_unverified:"APPROXIMATION IA · NON VÉRIFIÉE",not_found:"DÉFINITION INDISPONIBLE"};
 const imageUrl=(path:string)=>`${API}${path.replace(/^\/api(?=\/)/,"")}`;
 
 export default function AIDiagnosticConsole(){
@@ -31,11 +31,16 @@ export default function AIDiagnosticConsole(){
  if(!analysis)return <ProductLayout active={4}><div className="orvect-panel"><p className="orvect-label">04 / DIAGNOSTIC ASSISTÉ</p><h1 className="mt-5 text-4xl font-bold">{detail.analysis_status==="legacy_requires_review"?"Analyse historique conservée":"Analyse indisponible"}</h1><p className="mt-4 max-w-2xl text-slate-600">{detail.analysis_status==="legacy_requires_review"?"L’ancien résultat est conservé sans modification. Une revue humaine et une nouvelle analyse sont nécessaires.":"Le dossier existe, mais aucune sortie validée n’a été enregistrée."}</p>{error&&<Alert message={error}/>}<button className="orvect-button-primary mt-6" disabled={busy} onClick={reanalyze}>{busy?"Réévaluation…":"Relancer l’analyse"}</button></div></ProductLayout>;
  const unknown=analysis.safetyAssessment.status==="UNKNOWN"||analysis.safetyAssessment.humanReviewRequired;
  const analysisModel=detail.case.ai_model||"non enregistré";
- const wasGeneratedByGemini=analysisModel.startsWith("gemini-");
+ const research=analysis.researchMetadata??null;
+ const engineName=research?.provider==="nebius"?"NEBIUS TOKEN FACTORY":research?.provider==="gemini"?"GEMINI":null;
+ const isCurrentEngine=Boolean(engineName);
+ // Every distinct external source cited anywhere in the report, best first.
+ const evidence=Array.from(new Map([...analysis.hypotheses,...analysis.nextChecks,...analysis.correlations].flatMap(item=>item.sources).filter(source=>source.url).map(source=>[source.source_id,source])).values()).sort((a,b)=>sourceTypeRank(b.source_type)-sourceTypeRank(a.source_type));
  const dtcVerificationByCode=new Map(detail.observations.filter(item=>item.observation_type==="DTC").map(item=>[item.key,String(item.value?.technician_verification??"unconfirmed")]));
  return <ProductLayout active={4}>
   <div className="space-y-6"><SectionIntro label={`04 / RÉSULTATS DIAGNOSTIQUES · DOSSIER ${id.slice(0,8).toUpperCase()}`} title={<>Des hypothèses classées.<br/>Chaque lien reste explicable.</>} description="Tous les DTC confirmés, symptômes, observations et résultats informatifs sont analysés ensemble. Le LLM ne décide ni du danger, ni d’un remplacement."/><FlowProgress active={4}/>{error&&<Alert message={error}/>}<StatusLabel tone={unknown?"signal":"dark"}>{analysis.safetyAssessment.status.replaceAll("_"," ")}{analysis.safetyAssessment.humanReviewRequired?" / HUMAN REVIEW REQUIRED":" / RÈGLE DÉTERMINISTE"}</StatusLabel>
-   <section className={`border p-4 ${wasGeneratedByGemini?"border-emerald-700 bg-emerald-50":"border-orvect-orange bg-orange-50"}`} aria-label="Moteur ayant produit cette analyse"><p className="orvect-label">MOTEUR AYANT PRODUIT CETTE ANALYSE</p><div className="mt-2 flex flex-wrap items-center justify-between gap-3"><strong className="font-mono text-sm uppercase">{wasGeneratedByGemini?`GEMINI CONNECTÉ · ${analysisModel}`:`ANALYSE HISTORIQUE · ${analysisModel}`}</strong>{!wasGeneratedByGemini&&<button className="orvect-button-primary min-h-10" disabled={busy} onClick={reanalyze}>{busy?"Connexion à Gemini…":"Réévaluer avec Gemini"}</button>}</div><p className="mt-2 text-xs text-slate-600">{wasGeneratedByGemini?"Cette sortie a bien été générée par Gemini. Les décisions de sécurité restent calculées séparément par le Safety Engine.":"Cette sortie n’a pas été produite par Gemini. Relancez l’analyse pour créer un résultat actuel avec le fournisseur configuré."}</p></section>
+   <section className={`border p-4 ${isCurrentEngine?"border-emerald-700 bg-emerald-50":"border-orvect-orange bg-orange-50"}`} aria-label="Moteur ayant produit cette analyse"><p className="orvect-label">MOTEUR DE RAISONNEMENT</p><div className="mt-2 flex flex-wrap items-center justify-between gap-3"><strong className="font-mono text-sm uppercase">{isCurrentEngine?`${engineName} · ${analysisModel}`:`ANALYSE HISTORIQUE · ${analysisModel}`}</strong>{!isCurrentEngine&&<button className="orvect-button-primary min-h-10" disabled={busy} onClick={reanalyze}>{busy?"Réévaluation…":"Réévaluer maintenant"}</button>}</div><p className="mt-2 text-xs text-slate-600">{isCurrentEngine?"Raisonnement, synthèse des preuves et plan de contrôle produits par le moteur configuré. Les décisions de sécurité restent calculées séparément par le Safety Engine déterministe.":"Cette sortie provient d’une version antérieure du pipeline. Relancez l’analyse pour obtenir un résultat actuel."}</p></section>
+   {analysis.warnings.some(warning=>warning.includes("MODE EXPLORATOIRE"))&&<section className="border border-orvect-orange bg-orange-50 p-4" aria-label="Mode exploratoire"><p className="orvect-label">MODE EXPLORATOIRE · HYPOTHÈSES NON VÉRIFIÉES</p><p className="mt-2 text-sm">Le moteur peut proposer une interprétation approximative des codes absents du catalogue et raisonner à partir des symptômes. Ces pistes demandent confirmation ; les définitions du catalogue restent distinctes.</p></section>}
    <section className="orvect-panel"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="orvect-label text-slate-500">RELATIONS MULTI-SIGNAUX</p><h2 className="mt-2 text-3xl font-medium">Corrélation DTC + symptômes</h2></div><span className="text-xs text-slate-500">{analysis.correlations.length} relation{analysis.correlations.length===1?"":"s"} détectée{analysis.correlations.length===1?"":"s"}</span></div>{analysis.correlations.length?<div className="mt-5 grid gap-3 xl:grid-cols-2">{analysis.correlations.map((correlation,index)=><article key={`${correlation.relatedCodes.join("-")}-${index}`} className="border border-orvect-alloy p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div className="flex flex-wrap gap-2">{correlation.relatedCodes.map(code=><span key={code} className="border border-orvect-alloy px-2 py-1 font-mono text-xs">{code}</span>)}</div><span className="text-[10px] uppercase">{correlation.relationshipType.replaceAll("_"," ")} · {correlation.verificationStatus.replaceAll("_"," ")}</span></div><p className="mt-3 text-sm">{correlation.explanation}</p>{correlation.supportingSymptoms.length>0&&<p className="mt-3 text-xs"><strong>Symptômes associés :</strong> {correlation.supportingSymptoms.join(" · ")}</p>}{correlation.contradictingEvidence.length>0&&<p className="mt-2 text-xs text-slate-600"><strong>Contradictions :</strong> {correlation.contradictingEvidence.join(" · ")}</p>}{correlation.sources.map(source=><Source key={source.source_id} source={source}/>)}</article>)}</div>:<p className="mt-4 text-sm text-slate-600">Aucune relation fiable n’a été établie. Les codes ne sont pas artificiellement reliés.</p>}</section>
    <div className="grid items-start gap-6 xl:grid-cols-2">
     <section className="orvect-panel space-y-5 xl:order-1"><p className="orvect-label text-slate-500">CONTEXTE DU DOSSIER</p><h2 className="text-2xl font-medium">{detail.vehicle.make} {detail.vehicle.model}<br/><span className="text-slate-500">{detail.vehicle.engine_code?`Moteur ${detail.vehicle.engine_code}`:"Configuration partielle"}</span></h2><div className="text-sm leading-6"><p className="orvect-label">OBSERVÉ</p><p className="mt-2">{detail.case.customer_complaint||detail.case.current_summary||"Aucun symptôme documenté"}</p>{detail.case.appearance_circumstances&&<p>{detail.case.appearance_circumstances}</p>}</div>
@@ -51,6 +56,18 @@ export default function AIDiagnosticConsole(){
     </section>
    </div>
 
+   {analysis.confidence&&<ConfidencePanel confidence={analysis.confidence}/>}
+
+   <section className="orvect-panel"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="orvect-label text-slate-500">PREUVES TECHNIQUES EXTERNES</p><h2 className="mt-2 text-3xl font-medium">Sources consultées</h2></div><span className="text-xs text-slate-500">{evidence.length} source{evidence.length===1?"":"s"} citée{evidence.length===1?"":"s"}</span></div>
+    {evidence.length
+     ?<><div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{evidence.map(source=><EvidenceCard key={source.source_id} source={source}/>)}</div><p className="mt-4 text-xs leading-5 text-slate-500">Classées par niveau de fiabilité : constructeur et autorités de sécurité d’abord, communautés spécialisées ensuite. Une preuve issue du web reste non vérifiée et ne vaut pas une procédure constructeur.</p></>
+     :<p className="mt-4 text-sm text-slate-600">{research?.researchTriggered?"Aucune source externe exploitable n’a été retenue pour ce dossier. Les pistes reposent sur la base interne Orvect et restent à confirmer par les contrôles.":"La base interne Orvect couvrait ce dossier : aucune recherche externe n’a été nécessaire."}</p>}
+   </section>
+
+   {research&&<ResearchTransparency research={research} hypothesisCount={analysis.hypotheses.length} codeCount={analysis.interpretedFaultCodes.length}/>}
+
+   <OutcomeFeedback caseId={id} hypotheses={analysis.hypotheses.map(item=>({id:item.id,label:item.label}))}/>
+
    <details className="border border-orvect-alloy"><summary className="cursor-pointer p-5 font-medium">Ajouter une preuve au dossier</summary><div className="grid gap-5 border-t border-orvect-alloy p-5 lg:grid-cols-3"><section><p className="orvect-label">CODE DÉFAUT</p><p className="mt-2 text-xs text-slate-500">Tout DTC ajouté ici reste non confirmé et déclenche une revue humaine.</p><select className="orvect-field mt-3" value={newNamespace} onChange={event=>setNewNamespace(event.target.value)}><option value="sae_obd2">SAE / OBD-II</option><option value="vag_uds">VAG / UDS</option></select><input className="orvect-field mt-2 font-mono uppercase" value={newCode} onChange={event=>setNewCode(event.target.value)} placeholder="Identifiant"/><input className="orvect-field mt-2" value={newEcu} onChange={event=>setNewEcu(event.target.value)} placeholder="Calculateur"/><select className="orvect-field mt-2" value={newStatus} onChange={event=>setNewStatus(event.target.value as typeof newStatus)}><option value="unknown">Inconnu</option><option value="active">Actif</option><option value="intermittent">Intermittent</option><option value="stored">Mémorisé</option></select><button className="orvect-button-secondary mt-2 w-full" onClick={addFaultCode} disabled={busy}>Ajouter comme non confirmé</button></section><section><p className="orvect-label">MESURE</p><input className="orvect-field mt-3" value={measureName} onChange={event=>setMeasureName(event.target.value)} placeholder="Nom"/><input className="orvect-field mt-2" value={measureValue} onChange={event=>setMeasureValue(event.target.value)} placeholder="Valeur"/><input className="orvect-field mt-2" value={measureUnit} onChange={event=>setMeasureUnit(event.target.value)} placeholder="Unité"/><button className="orvect-button-secondary mt-2 w-full" onClick={addMeasurementQuick} disabled={busy}>Ajouter et réévaluer</button></section><section><p className="orvect-label">PHOTO</p><label htmlFor="more-images" className="mt-3 flex min-h-24 cursor-pointer items-center justify-center border border-dashed border-orvect-alloy p-4 text-center text-sm">JPEG, PNG ou WebP</label><input id="more-images" className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={event=>event.target.files&&addPendingImages(event.target.files)}/>{pendingImages.map((item,index)=><div key={item.preview} className="mt-2 flex justify-between text-xs"><span className="truncate">{item.file.name}</span><button onClick={()=>removePendingImage(index)}>Retirer</button></div>)}<button className="orvect-button-secondary mt-2 w-full" onClick={uploadPendingImages} disabled={busy||!pendingImages.length}>Ajouter et réévaluer</button></section></div></details>
    {detail.images.length>0&&<section><p className="orvect-label">PREUVES VISUELLES</p><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{detail.images.map(image=><figure key={image.id} className="border border-orvect-alloy"><img src={imageUrl(image.url)} alt={image.description||`Image technique ${image.category}`} className="aspect-video w-full object-cover"/><figcaption className="p-3 text-xs">{image.description||image.category}</figcaption></figure>)}</div></section>}
    <div className="flex flex-wrap items-center justify-end gap-3 border-t border-orvect-alloy pt-6"><Link href="/diagnostics/new" className="orvect-button-secondary min-h-12">Nouveau dossier</Link><button className="orvect-button-primary min-h-12 min-w-[220px]" disabled={busy} onClick={reanalyze}>{busy?"Réévaluation…":"Réévaluer le dossier"}</button></div>
@@ -58,5 +75,42 @@ export default function AIDiagnosticConsole(){
  </ProductLayout>
 }
 
-function Source({source}:{source:SourceReference}){return <div className="mt-3 border-t border-orvect-alloy pt-3 text-[10px] leading-4 text-slate-500"><span className="block">source_id: {source.source_id}</span><span className="block">{source.source_type} · {source.source_version} · {source.verified?"VÉRIFIÉE":"NON VÉRIFIÉE"}</span><span className="block">timestamp: {source.timestamp||"indisponible"}</span></div>}
+function Source({source}:{source:SourceReference}){
+ if(source.url)return <div className="mt-3 border-t border-orvect-alloy pt-3 text-[11px] leading-4"><a href={source.url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium text-orvect-graphite underline underline-offset-2 hover:text-orvect-orange">{source.title||source.domain} ↗</a><span className="mt-1 block text-slate-500">{sourceTypeLabel(source.source_type)} · {source.domain} · preuve externe non vérifiée</span></div>;
+ return <div className="mt-3 border-t border-orvect-alloy pt-3 text-[10px] leading-4 text-slate-500"><span className="block">source_id: {source.source_id}</span><span className="block">{source.source_type} · {source.source_version} · {source.verified?"VÉRIFIÉE":"NON VÉRIFIÉE"}</span><span className="block">timestamp: {source.timestamp||"indisponible"}</span></div>
+}
+function OutcomeFeedback({caseId,hypotheses}:{caseId:string;hypotheses:{id:string;label:string}[]}){
+ const [saved,setSaved]=useState<DiagnosticOutcome|null>(null),[open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState("");
+ const [choice,setChoice]=useState(""),[other,setOther]=useState(""),[repair,setRepair]=useState(""),[consent,setConsent]=useState(false);
+ useEffect(()=>{api.outcome(caseId).then(response=>setSaved(response.outcome)).catch(()=>{})},[caseId]);
+ async function submit(){
+  if(!choice&&!other.trim())return setError("Choisissez une hypothèse proposée ou décrivez la cause constatée.");
+  setBusy(true);setError("");
+  try{
+   await api.recordOutcome(caseId,{confirmed_hypothesis_id:choice||null,confirmed_root_cause:other,repair_performed:repair,sharing_consent:consent});
+   const response=await api.outcome(caseId);setSaved(response.outcome);setOpen(false);
+  }catch(value){setError(value instanceof Error?value.message:"Enregistrement impossible")}finally{setBusy(false)}
+ }
+ if(saved)return <section className="border border-emerald-700 bg-emerald-50 p-5"><p className="orvect-label">DIAGNOSTIC TERMINÉ · RÉSULTAT ENREGISTRÉ</p><p className="mt-2 text-sm"><strong>Cause confirmée :</strong> {saved.confirmed_root_cause||"non précisée"}</p>{saved.repair_performed&&<p className="mt-1 text-sm"><strong>Réparation :</strong> {saved.repair_performed}</p>}<p className="mt-2 text-xs text-slate-600">{saved.hypothesis_was_proposed?"Cette cause figurait parmi les hypothèses proposées par Orvect.":"Cette cause ne figurait pas parmi les hypothèses proposées."} {saved.sharing_consent?"Partage autorisé pour améliorer Orvect.":"Conservé uniquement dans votre atelier."}</p></section>;
+ return <section className="border border-orvect-alloy bg-white p-5">
+  <div className="flex flex-wrap items-center justify-between gap-3">
+   <div><p className="orvect-label text-slate-500">DIAGNOSTIC TERMINÉ ?</p><p className="mt-1 text-sm">Indiquez la cause réellement confirmée. Facultatif, et ce retour améliore les diagnostics suivants.</p></div>
+   <button className="orvect-button-secondary min-h-11" onClick={()=>setOpen(value=>!value)}>{open?"Annuler":"Renseigner le résultat"}</button>
+  </div>
+  {open&&<div className="mt-5 space-y-3 border-t border-orvect-alloy pt-5">
+   {error&&<Alert message={error}/>}
+   <label className="orvect-field-label" htmlFor="confirmed">Cause racine confirmée</label>
+   <select id="confirmed" className="orvect-field" value={choice} onChange={event=>setChoice(event.target.value)}>
+    <option value="">— Autre cause (à décrire) —</option>
+    {hypotheses.map(item=><option key={item.id} value={item.id}>{item.label}</option>)}
+   </select>
+   {!choice&&<input className="orvect-field" value={other} onChange={event=>setOther(event.target.value)} placeholder="Cause constatée"/>}
+   <label className="orvect-field-label" htmlFor="repair">Réparation effectuée</label>
+   <textarea id="repair" className="orvect-field min-h-20" value={repair} onChange={event=>setRepair(event.target.value)} placeholder="Ce qui a résolu le problème"/>
+   <label className="flex items-start gap-3 text-sm"><input type="checkbox" className="mt-1" checked={consent} onChange={event=>setConsent(event.target.checked)}/><span>J’autorise Orvect à utiliser ce résultat, au-delà de mon atelier, pour améliorer ses diagnostics. Sans cette case, le retour reste strictement interne.</span></label>
+   <button className="orvect-button-primary w-full" disabled={busy} onClick={submit}>{busy?"Enregistrement…":"Enregistrer le résultat"}</button>
+  </div>}
+ </section>
+}
+
 function Alert({message}:{message:string}){return <div role="alert" className="mt-5 border border-red-600 bg-red-50 p-4 text-sm text-red-800"><strong>Action impossible.</strong> {message}</div>}

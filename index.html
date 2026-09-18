@@ -200,10 +200,13 @@
       $('#recordResult').addEventListener('click',()=>{const value=$('#diagResult').value;const informative=value==='positive'||value==='negative';if(informative&&!$('#resultText').value.trim())return notice('#diagnosticNotice','Un résultat informatif doit décrire une observation réelle.',true);notice('#diagnosticNotice',informative?'Résultat informatif enregistré dans la démo. La cause reste non confirmée.':`${value.toUpperCase()} enregistré : l’état diagnostique n’est pas modifié.`)});
       $('#reanalyze').addEventListener('click',()=>{updateDiagnostic();notice('#diagnosticNotice','Réévaluation terminée. Aucune conclusion supplémentaire n’a été inventée.')});
       const catalog=window.ORVECT_DTC_CATALOG;$('#catalogStatus').innerHTML=catalog?`<strong>${catalog.meta.count.toLocaleString('fr-FR')} définitions génériques chargées</strong><span>Wal33D · MIT · commit ${catalog.meta.source_commit.slice(0,12)}</span><span>Catalogue communautaire non revu contre la version SAE sous licence.</span>`:'<strong>Catalogue indisponible</strong><span>Le fichier de données n’a pas pu être chargé.</span>';
+      window.ORVECT_UI={show,updateContext,context:()=>({dtcs:state.dtcs.map(item=>({...item})),measurements:state.measurements.map(item=>({...item})),symptoms:[$('#symptoms').value,$('#technicianNotes').value].filter(Boolean).join(' · '),circumstances:$('#conditions').value,mileage:Number($('#mileage').value)||null,vehicle:{make:$('#make').value,model:$('#model').value,engine:$('#engine').value,year:$('#year').value}})};
       updateContext();renderDtcs();show(1);
       const requestedDemo=new URLSearchParams(location.search).get('demo');if(requestedDemo)loadDemo(requestedDemo);
     })();
   </script>
+  <script src="./runtime-config.js"></script>
+  <script src="./official-gemini.js"></script>
   <script src="./i18n.js"></script>
 </body>
 </html>

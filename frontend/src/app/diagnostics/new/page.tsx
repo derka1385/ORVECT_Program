@@ -3,10 +3,10 @@
 import Link from "next/link";
 import {FormEvent,useEffect,useState} from "react";
 import {useRouter} from "next/navigation";
-import {FlowProgress,ProductLayout,SectionIntro,SourceLabel,StatusLabel} from "@/components/OrvectProduct";
+import {AnalysisStages,FlowProgress,ProductLayout,SectionIntro,SourceLabel,StatusLabel} from "@/components/OrvectProduct";
 import {api} from "@/services/api";
-import golfDemo from "../../../../public/demo/golf-misfire.json";
-import type {DTCPreview,Session,Vehicle,VehicleCandidate,VehicleConfiguration,VehicleResolveResult} from "@/types";
+import investorCases from "../../../../public/demo/investor-cases.json";
+import type {AnalysisProgress,DTCPreview,Session,Vehicle,VehicleCandidate,VehicleConfiguration,VehicleResolveResult} from "@/types";
 
 type Measurement={name:string;value:string;unit:string;conditions:string};
 type ImageDraft={file:File;preview:string;category:string;description:string};
@@ -30,24 +30,24 @@ export default function NewDiagnostic(){
  const [symptoms,setSymptoms]=useState(""),[circumstances,setCircumstances]=useState(""),[technicianNotes,setTechnicianNotes]=useState(""),[symptomTags,setSymptomTags]=useState<string[]>([]);
  const [dtcs,setDtcs]=useState<DTCDraft[]>([]),[dtcCode,setDtcCode]=useState(""),[dtcNamespace,setDtcNamespace]=useState("sae_obd2"),[dtcEcu,setDtcEcu]=useState(""),[dtcStatus,setDtcStatus]=useState<DTCDraft["status"]>("unknown"),[editDtc,setEditDtc]=useState<string|null>(null);
  const [measurements,setMeasurements]=useState<Measurement[]>([]),[measure,setMeasure]=useState<Measurement>({name:"",value:"",unit:"",conditions:""}),[images,setImages]=useState<ImageDraft[]>([]);
- const [busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState(""),[uploadProgress,setUploadProgress]=useState(0);
+ const [busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState(""),[uploadProgress,setUploadProgress]=useState(0),[progress,setProgress]=useState<AnalysisProgress|null>(null);
  const inputReady=Boolean(vehicleId&&dtcs.length&&dtcs.every(item=>item.technician_verification==="confirmed")&&(symptoms.trim()||symptomTags.length));
  const confirmedCount=dtcs.filter(item=>item.technician_verification==="confirmed").length;
  const contextTitle=vehicleForm.make&&vehicleForm.model?`${vehicleForm.make} ${vehicleForm.model}`:"Véhicule non confirmé";
  const savedDemo=sessions.find(item=>item.customer_complaint?.includes("DÉMONSTRATION SYNTHÉTIQUE")&&item.ai_model?.startsWith("gemini-"));
 
- async function loadGolfDemo(){
+ async function loadDemo(golfDemo:typeof investorCases[number]){ // demo fixture; the analysis itself always runs the real pipeline
   setBusy(true);resetMessages();
   try{
    const data=await api.vehicleConfiguration(golfDemo.vehicle_id);
-   if(!data.vehicle.is_demo_vehicle||data.vehicle.engine_code!=="CZCA")throw new Error("La Golf de démonstration doit être restaurée avant de charger cet exemple.");
+   if(!data.vehicle.is_demo_vehicle||data.vehicle.engine_code!==golfDemo.engine_code)throw new Error(`Le véhicule de démonstration ${golfDemo.engine_code} doit être restauré avant de charger cet exemple.`);
    const preview=await api.previewDTCs({vehicle_id:golfDemo.vehicle_id,fault_codes:golfDemo.fault_codes});
    setVehicleId(golfDemo.vehicle_id);setLookup(null);setCandidateId("");setVehicleForm(fromStored(data.vehicle,data.configuration));
    setMileage(String(golfDemo.mileage));setSymptoms(golfDemo.symptoms);setCircumstances(golfDemo.circumstances);setSymptomTags([]);setTechnicianNotes("");
    setDtcs(golfDemo.fault_codes.map((item,index)=>({...item,status:item.status as DTCDraft["status"],uid:crypto.randomUUID(),technician_verification:"unconfirmed",preview:preview.items[index]})));
    setMeasurements(golfDemo.measurements.map(item=>({...item,value:String(item.value)})));
    images.forEach(item=>URL.revokeObjectURL(item.preview));setImages([]);setEditDtc(null);setDtcCode("");setDtcEcu("");setDtcStatus("unknown");
-   setNotice("Exemple synthétique chargé : Golf VII, P0301 + P0351 et trois relevés. Relisez puis confirmez les deux codes avant de lancer Gemini.");setStep(3);
+   setNotice(`${golfDemo.title} : exemple synthétique chargé. Relisez puis confirmez chaque code avant de lancer l’analyse.`);setStep(3);
   }catch(value){setError(value instanceof Error?value.message:"Chargement de l’exemple impossible")}finally{setBusy(false)}
  }
 
@@ -67,14 +67,17 @@ export default function NewDiagnostic(){
  function addMeasurement(){if(!measure.name.trim()||!measure.value.trim())return setError("Indiquez le nom et la valeur de la mesure.");setMeasurements(current=>[...current,measure]);setMeasure({name:"",value:"",unit:"",conditions:""});setError("")}
  function addImages(files:FileList){const source=Array.from(files);const accepted=source.filter(file=>["image/jpeg","image/png","image/webp"].includes(file.type)&&file.size<=10*1024*1024);setImages(current=>[...current,...accepted.slice(0,8-current.length).map(file=>({file,preview:URL.createObjectURL(file),category:"engine_bay",description:""}))]);if(accepted.length!==source.length)setError("Fichier refusé : JPEG, PNG ou WebP, 10 Mio maximum.")}
  function removeImage(index:number){setImages(current=>{URL.revokeObjectURL(current[index].preview);return current.filter((_,itemIndex)=>itemIndex!==index)})}
- async function launchAnalysis(){if(!inputReady){if(dtcs.some(item=>item.technician_verification==="interpretation_mismatch"))return setError("Corrigez les DTC signalés comme discordants avant l’analyse.");return setError("Confirmez le véhicule, au moins un symptôme et l’interprétation de chaque DTC.")}setBusy(true);resetMessages();try{const observed=[...symptomTags,symptoms.trim(),technicianNotes.trim()].filter(Boolean).join(" · ");const created=await api.createDiagnostic({vehicle_id:vehicleId,mileage:mileage?Number(mileage):null,symptoms:observed,circumstances});await api.addFaultCodes(created.id,{fault_codes:dtcs.map(item=>({code:item.code,namespace:item.namespace,ecu:item.ecu||null,status:item.status,freeze_frame:{},technician_verification:item.technician_verification,technician_note:item.technician_note}))});for(const item of measurements){const numeric=Number(item.value);await api.addMeasurement(created.id,{name:item.name,value:Number.isFinite(numeric)&&item.value.trim()?numeric:item.value,unit:item.unit||null,conditions:item.conditions,source:"manual"})}for(let index=0;index<images.length;index++){const item=images[index];const data=new FormData();data.append("files",item.file);data.append("category",item.category);data.append("description",item.description);await api.uploadImages(created.id,data);setUploadProgress(Math.round(((index+1)/images.length)*100))}await api.analyzeDiagnostic(created.id);router.push(`/diagnostics/ai/${created.id}`)}catch(value){setError(value instanceof Error?value.message:"Analyse impossible");setBusy(false)}}
+ async function launchAnalysis(){if(!inputReady){if(dtcs.some(item=>item.technician_verification==="interpretation_mismatch"))return setError("Corrigez les DTC signalés comme discordants avant l’analyse.");return setError("Confirmez le véhicule, au moins un symptôme et l’interprétation de chaque DTC.")}setBusy(true);resetMessages();try{const observed=[...symptomTags,symptoms.trim(),technicianNotes.trim()].filter(Boolean).join(" · ");const created=await api.createDiagnostic({vehicle_id:vehicleId,mileage:mileage?Number(mileage):null,symptoms:observed,circumstances});await api.addFaultCodes(created.id,{fault_codes:dtcs.map(item=>({code:item.code,namespace:item.namespace,ecu:item.ecu||null,status:item.status,freeze_frame:{},technician_verification:item.technician_verification,technician_note:item.technician_note}))});for(const item of measurements){const numeric=Number(item.value);await api.addMeasurement(created.id,{name:item.name,value:Number.isFinite(numeric)&&item.value.trim()?numeric:item.value,unit:item.unit||null,conditions:item.conditions,source:"manual"})}for(let index=0;index<images.length;index++){const item=images[index];const data=new FormData();data.append("files",item.file);data.append("category",item.category);data.append("description",item.description);await api.uploadImages(created.id,data);setUploadProgress(Math.round(((index+1)/images.length)*100))}const poll=setInterval(()=>{api.analysisProgress(created.id).then(setProgress).catch(()=>{})},700);
+   try{await api.analyzeDiagnostic(created.id)}finally{clearInterval(poll)}
+   router.push(`/diagnostics/ai/${created.id}`)}catch(value){setError(value instanceof Error?value.message:"Analyse impossible");setProgress(null);setBusy(false)}}
 
  return <ProductLayout active={step}>
-  {step===1&&<section className="orvect-panel-dark mb-6" aria-label="Exemple pour la présentation">
-   <p className="orvect-label text-orvect-alloy">DÉMONSTRATION SYNTHÉTIQUE · PRÊTE À CHARGER</p>
-   <h2 className="mt-3 text-3xl font-medium">Golf VII · un cas concret à explorer.</h2>
-   <p className="mt-3 max-w-3xl text-sm leading-6 text-orvect-alloy">P0301 + P0351 · ralenti irrégulier · trois mesures préremplies. Lancez l’analyse, puis ajoutez une observation pour voir évoluer les hypothèses.</p>
-   <div className="mt-5 flex flex-wrap items-center gap-4"><button type="button" className="orvect-button-primary" disabled={busy} onClick={loadGolfDemo}>{busy?"Chargement…":"Charger l’exemple Golf"}</button>{savedDemo&&<Link className="text-sm underline underline-offset-4" href={`/diagnostics/ai/${savedDemo.id}`}>Ouvrir le résultat Gemini enregistré</Link>}</div>
+  {step===1&&<section className="orvect-panel-dark mb-6" aria-label="Cas de démonstration investisseurs">
+   <p className="orvect-label text-orvect-alloy">DÉMONSTRATION SYNTHÉTIQUE · 3 CAS PRÊTS À CHARGER</p>
+   <h2 className="mt-3 text-3xl font-medium">Trois situations pour explorer ORVECT.</h2>
+   <p className="mt-3 max-w-3xl text-sm leading-6 text-orvect-alloy">Données fictives préremplies. Choisissez un cas, relisez les codes, puis lancez l’analyse. Les résultats dépendent du fournisseur configuré.</p>
+   <div className="mt-6 grid gap-4 lg:grid-cols-3">{investorCases.map((demo,index)=><article key={demo.id} className="flex flex-col border border-orvect-alloy/30 p-5"><p className="orvect-label text-orvect-alloy">CAS 0{index+1}</p><h3 className="mt-3 text-xl font-medium">{demo.title}</h3><p className="mt-3 flex-1 text-sm leading-6 text-orvect-alloy">{demo.summary}</p><button type="button" className="orvect-button-primary mt-5" disabled={busy} onClick={()=>loadDemo(demo)} aria-label={`Charger ${demo.title}`}>{busy?"Chargement…":"Charger ce cas"}</button></article>)}</div>
+   {savedDemo&&<Link className="mt-5 inline-block text-sm underline underline-offset-4" href={`/diagnostics/ai/${savedDemo.id}`}>Ouvrir le dernier résultat Gemini enregistré</Link>}
   </section>}
   {step===1&&<div className="space-y-6"><SectionIntro label="01 / IDENTIFICATION DU VÉHICULE" title={<>Identifier par VIN<br/>OU par plaque.</>} description="Prototype actuellement limité aux marques du groupe Volkswagen. Les informations détectées doivent rester confirmées par le technicien."/><FlowProgress active={1}/>{error&&<Alert message={error}/>}<div className="grid gap-6 2xl:grid-cols-[minmax(560px,1.15fr)_minmax(420px,.85fr)]"><section className="orvect-panel"><div className="grid grid-cols-2 gap-2" role="tablist" aria-label="Méthode d’identification"><button type="button" role="tab" aria-selected={identifierMode==="registration"} className={identifierMode==="registration"?"orvect-button-primary":"orvect-button-secondary"} onClick={()=>{setIdentifierMode("registration");setVin("")}}>Plaque / immatriculation</button><button type="button" role="tab" aria-selected={identifierMode==="vin"} className={identifierMode==="vin"?"orvect-button-primary":"orvect-button-secondary"} onClick={()=>{setIdentifierMode("vin");setRegistration("")}}>VIN</button></div><form id="vehicle-identification-form" onSubmit={identify} className="mt-6 space-y-4">{identifierMode==="registration"?<><Field label="Numéro d’immatriculation"><input className="orvect-field uppercase" required value={registration} onChange={event=>setRegistration(event.target.value)} placeholder="AA-123-BB"/></Field><Field label="Pays"><select className="orvect-field" value={country} onChange={event=>setCountry(event.target.value)}><option>FR</option><option>BE</option><option>CH</option><option>LU</option></select></Field></>:<Field label="VIN / numéro de châssis"><input className="orvect-field uppercase" required minLength={11} maxLength={17} value={vin} onChange={event=>setVin(event.target.value)} placeholder="17 caractères"/><p className="mt-2 text-xs text-slate-500">Le VIN est chiffré côté serveur et toujours masqué à l’écran.</p></Field>}<button className="orvect-button-primary w-full sm:w-auto" disabled={busy}>{busy?"Identification…":"Identifier le véhicule"}</button></form><div className="mt-6 border border-orvect-alloy bg-orvect-mineral p-4 text-sm"><strong>VIN OU plaque</strong><p className="mt-2 text-slate-600">Jamais les deux. Aucun « code véhicule vide » n’est demandé.</p></div></section><section className="orvect-panel"><p className="orvect-label text-slate-500">PARC VAG DE DÉMONSTRATION</p><p className="mt-3 text-sm text-slate-600">La Volkswagen Golf est conservée comme véhicule d’exemple. Les véhicules hors groupe VAG sont masqués sans être supprimés.</p><div className="mt-4 space-y-2">{vehicles.map(item=><button key={item.id} type="button" className="flex w-full items-center justify-between gap-4 border border-orvect-alloy p-4 text-left hover:border-orvect-graphite" onClick={()=>selectExisting(item.id)}><span><strong className="block">{item.make} {item.model}</strong><small className="text-slate-500">{item.year??"année inconnue"} · {item.engine_code||"moteur à confirmer"}</small></span><span aria-hidden="true">→</span></button>)}</div>{sessions.length>0&&<div className="mt-7"><p className="orvect-label text-slate-500">DOSSIERS VAG RÉCENTS</p>{sessions.slice(0,3).map(item=><Link key={item.id} href={`/diagnostics/ai/${item.id}`} className="mt-2 block border-t border-orvect-alloy py-3 text-sm underline">Dossier {item.id.slice(0,8).toUpperCase()} · {item.status}</Link>)}</div>}</section></div></div>}
 
@@ -116,10 +119,12 @@ export default function NewDiagnostic(){
       <Field label="Notes technicien"><textarea className="orvect-field min-h-20" value={technicianNotes} onChange={event=>setTechnicianNotes(event.target.value)} placeholder="Constats complémentaires, sans conclusion prématurée"/></Field>
      </section>
      <EvidencePanel measure={measure} setMeasure={setMeasure} measurements={measurements} setMeasurements={setMeasurements} addMeasurement={addMeasurement} images={images} addImages={addImages} removeImage={removeImage}/>
+     {busy&&<AnalysisStages progress={progress}/>}
      <div className="flex flex-col gap-3 border-t border-orvect-alloy pt-6 sm:flex-row sm:items-center">
       <button type="button" className="orvect-button-primary min-w-[280px]" disabled={busy||!inputReady} onClick={launchAnalysis}>{busy?"Analyse en cours…":"Valider et générer les résultats"}</button>
       <p className="text-xs text-slate-500">{uploadProgress?(`Téléversement · ${uploadProgress}%`):"Chaque DTC doit être confirmé. Une interprétation signalée comme discordante bloque l’analyse."}</p>
      </div>
+     <p className="border-t border-orvect-alloy pt-4 text-xs leading-5 text-slate-500">Orvect fournit une aide à la décision diagnostique à partir des données véhicule et des preuves techniques disponibles. Le diagnostic final relève du technicien.</p>
     </div>
    </div>
   </div>}

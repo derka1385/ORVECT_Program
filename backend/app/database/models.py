@@ -227,3 +227,34 @@ class DiagnosticDatasetEvent(Base):
     reason: Mapped[str] = mapped_column(Text)
     details: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+# --- Orvect research & learning loop -------------------------------------
+# Tavily results are cached per vehicle+DTC signature so repeated technical
+# research on the same configuration is not paid for twice.
+class ResearchCache(Base):
+    __tablename__ = "research_cache"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    cache_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    queries: Mapped[list] = mapped_column(JSON, default=list)
+    evidence: Mapped[list] = mapped_column(JSON, default=list)
+    provider: Mapped[str] = mapped_column(String(40), default="tavily")
+    search_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+# Confirmed workshop outcomes. This is the dataset that makes Orvect
+# defensible over time; it is written only when a technician opts in.
+class DiagnosticOutcome(Base, Timestamps):
+    __tablename__ = "diagnostic_outcomes"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    session_id: Mapped[str] = mapped_column(ForeignKey("diagnostic_sessions.id"), index=True)
+    garage_id: Mapped[str] = mapped_column(ForeignKey("garages.id"), index=True)
+    confirmed_hypothesis_id: Mapped[str | None] = mapped_column(String(80))
+    confirmed_root_cause: Mapped[str] = mapped_column(Text, default="")
+    repair_performed: Mapped[str] = mapped_column(Text, default="")
+    hypothesis_was_proposed: Mapped[bool] = mapped_column(Boolean, default=False)
+    recommendations_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    context_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    sharing_consent: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -9,6 +9,8 @@ import type {
   VinResolution,
   VehicleConfigurationResponse,
   DTCPreview,
+  AnalysisProgress,
+  DiagnosticOutcome,
 } from "@/types";
 
 export const API = typeof window === "undefined"
@@ -81,4 +83,8 @@ export const api = {
   diagnostic: (id: string) => call<DiagnosticDetail>(`/diagnostics/${id}`),
   submitStepResult: (caseId: string, stepId: string, body: unknown) => call<Step>(`/diagnostics/${caseId}/steps/${stepId}/result`, { method: "POST", body: JSON.stringify(body) }),
   reanalyzeDiagnostic: (id: string) => call<DiagnosticAnalysis>(`/diagnostics/${id}/reanalyze`, { method: "POST" }),
+  analysisProgress: (id: string) => call<AnalysisProgress>(`/diagnostics/${id}/progress`),
+  recordOutcome: (id: string, body: { confirmed_hypothesis_id: string | null; confirmed_root_cause: string; repair_performed: string; sharing_consent: boolean }) =>
+    call<{ id: string; hypothesis_was_proposed: boolean }>(`/diagnostics/${id}/outcome`, { method: "POST", body: JSON.stringify(body) }),
+  outcome: (id: string) => call<{ outcome: DiagnosticOutcome | null }>(`/diagnostics/${id}/outcome`),
 };

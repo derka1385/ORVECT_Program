@@ -8,13 +8,14 @@ from sqlalchemy import func,select
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.auth import active_garage_id,authenticated_user_id
-from app.database.models import AICall,DiagnosticEvent,DiagnosticHypothesis,DiagnosticImage,DiagnosticObservation,DiagnosticSession,DiagnosticStep,VehicleConfiguration,VehicleProfile,now
+from app.database.models import AICall,DiagnosticEvent,DiagnosticHypothesis,DiagnosticImage,DiagnosticObservation,DiagnosticOutcome,DiagnosticSession,DiagnosticStep,VehicleConfiguration,VehicleProfile,now
 from app.database.session import get_db
 from app.modules.diagnostic_data.resolver import DiagnosticDataResolver,build_vehicle_context
+from . import progress as progress_store
 from .analysis_service import AnalysisInProgress,analyze_case
 from .image_service import InvalidImage,cleanup_expired_images,process_image,safe_unlink
 from .providers import AIInvalidResponse,AIProviderUnavailable
-from .schemas import DTCPreviewInput,DiagnosticAnalysis,DiagnosticCreate,FaultCodesInput,MeasurementInput,StepResultInput
+from .schemas import DTCPreviewInput,DiagnosticAnalysis,DiagnosticCreate,FaultCodesInput,MeasurementInput,OutcomeFeedbackInput,StepResultInput
 
 router=APIRouter(prefix="/api/diagnostics",tags=["diagnostic-ai"]);calls=defaultdict(deque);diagnostic_data_resolver=DiagnosticDataResolver()
 def serialize(o):
@@ -83,7 +84,7 @@ def delete_case(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_ga
     for image in db.scalars(select(DiagnosticImage).where(DiagnosticImage.session_id==case.id)).all():
         for candidate in (image.storage_path,image.thumbnail_path):safe_unlink(candidate)
         db.delete(image)
-    for model in (AICall,DiagnosticEvent,DiagnosticHypothesis,DiagnosticStep,DiagnosticObservation):
+    for model in (AICall,DiagnosticEvent,DiagnosticHypothesis,DiagnosticOutcome,DiagnosticStep,DiagnosticObservation):
         for row in db.scalars(select(model).where(model.session_id==case.id)).all():db.delete(row)
     db.delete(case);db.commit();return Response(status_code=204)
 @router.post("/{case_id}/fault-codes",status_code=201)
@@ -154,3 +155,73 @@ async def reanalyze(case_id:str,db:Session=Depends(get_db),gid:str=Depends(activ
     except ValueError as exc:raise HTTPException(422,str(exc))
     except AIProviderUnavailable as exc:raise HTTPException(503,str(exc))
     except AIInvalidResponse as exc:raise HTTPException(502,str(exc))
+
+@router.get("/{case_id}/progress")
+def analysis_progress(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
+    """Live pipeline position. Reflects real backend stages, never a timer."""
+    case=owned_case(db,case_id,gid)
+    state=progress_store.read(case.id)
+    if not state:
+        return {"stage":"complete" if case.status!="analyzing" else "context","label":"","detail":"","index":0,"total":len(progress_store.STAGE_ORDER),"elapsedMs":0,"failed":False,"stages":[{"key":key,"label":label} for key,label in progress_store.STAGES],"running":case.status=="analyzing"}
+    return {**state,"running":case.status=="analyzing"}
+
+@router.post("/{case_id}/outcome",status_code=201)
+def record_outcome(case_id:str,data:OutcomeFeedbackInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
+    """Optional confirmed repair outcome reported by the technician.
+
+    Stored verbatim as reported; nothing here is anonymised, and the record is
+    only shared beyond this garage when sharing_consent is explicitly true.
+    """
+    case=owned_case(db,case_id,gid)
+    latest=db.scalar(select(AICall).where(AICall.session_id==case.id,AICall.status=="completed",AICall.schema_version=="2.0",AICall.output_payload.is_not(None)).order_by(AICall.created_at.desc()))
+    payload=latest.output_payload if latest else {}
+    proposed=[item for item in (payload.get("hypotheses") or [])]
+    matched=next((item for item in proposed if item.get("id")==data.confirmed_hypothesis_id),None)
+    if data.confirmed_hypothesis_id and not matched:raise HTTPException(422,"Hypothèse inconnue pour ce dossier")
+    row=DiagnosticOutcome(
+        session_id=case.id,garage_id=gid,
+        confirmed_hypothesis_id=data.confirmed_hypothesis_id,
+        confirmed_root_cause=data.confirmed_root_cause or (matched or {}).get("label",""),
+        repair_performed=data.repair_performed,
+        hypothesis_was_proposed=bool(matched),
+        recommendations_snapshot={"hypotheses":proposed,"nextChecks":payload.get("nextChecks") or [],"confidence":payload.get("confidence"),"model":latest.model if latest else None},
+        context_snapshot={"vehicle":{"make":case.vehicle.make,"model":case.vehicle.model,"year":case.vehicle.year,"engine_code":case.vehicle.engine_code},"mileage":case.mileage,"dtcs":[x.key for x in db.scalars(select(DiagnosticObservation).where(DiagnosticObservation.session_id==case.id,DiagnosticObservation.observation_type=="DTC")).all()]},
+        sharing_consent=data.sharing_consent)
+    db.add(row)
+    case.completed_at=now()
+    db.add(DiagnosticEvent(session_id=case.id,event_type="diagnostic_outcome_recorded",payload={"hypothesis_was_proposed":row.hypothesis_was_proposed,"sharing_consent":row.sharing_consent},actor_type="user",actor_id=None))
+    db.commit()
+    return {"id":row.id,"hypothesis_was_proposed":row.hypothesis_was_proposed,"sharing_consent":row.sharing_consent}
+
+@router.get("/{case_id}/outcome")
+def read_outcome(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
+    case=owned_case(db,case_id,gid)
+    row=db.scalar(select(DiagnosticOutcome).where(DiagnosticOutcome.session_id==case.id).order_by(DiagnosticOutcome.created_at.desc()))
+    if not row:return {"outcome":None}
+    return {"outcome":{"id":row.id,"confirmed_hypothesis_id":row.confirmed_hypothesis_id,"confirmed_root_cause":row.confirmed_root_cause,"repair_performed":row.repair_performed,"hypothesis_was_proposed":row.hypothesis_was_proposed,"sharing_consent":row.sharing_consent,"created_at":row.created_at}}
+
+@router.get("/stats/usage")
+def usage_stats(db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
+    """Aggregate AI/research usage for this garage. Never exposes keys or prompts."""
+    cases=select(DiagnosticSession.id).where(DiagnosticSession.garage_id==gid)
+    runs=db.scalars(select(AICall).where(AICall.session_id.in_(cases))).all()
+    done=[r for r in runs if r.status=="completed"]
+    tokens=sum((r.token_usage or {}).get("total_tokens") or 0 for r in done)
+    latencies=sorted(r.latency_ms for r in done if r.latency_ms)
+    events=db.scalars(select(DiagnosticEvent).where(DiagnosticEvent.session_id.in_(cases),DiagnosticEvent.event_type=="ai_explanation_completed")).all()
+    searches=sum((e.payload or {}).get("search_count") or 0 for e in events)
+    researched=sum(1 for e in events if (e.payload or {}).get("research_triggered"))
+    cached=sum(1 for e in events if (e.payload or {}).get("from_cache"))
+    outcomes=db.scalars(select(DiagnosticOutcome).where(DiagnosticOutcome.garage_id==gid)).all()
+    return {
+        "diagnostics_run":db.scalar(select(func.count()).select_from(DiagnosticSession).where(DiagnosticSession.garage_id==gid)) or 0,
+        "ai_calls":{"total":len(runs),"completed":len(done),"failed":len(runs)-len(done),
+                    "repaired":sum(1 for r in done if r.validation_status=="repaired")},
+        "models_used":sorted({r.model for r in done if r.model and r.model!="unavailable"}),
+        "tokens_total":tokens,
+        "latency_ms":{"median":latencies[len(latencies)//2] if latencies else 0,"max":max(latencies,default=0)},
+        "research":{"analyses_with_research":researched,"tavily_searches":searches,"served_from_cache":cached},
+        "outcomes":{"recorded":len(outcomes),
+                    "matched_a_proposed_hypothesis":sum(1 for o in outcomes if o.hypothesis_was_proposed),
+                    "shared_with_consent":sum(1 for o in outcomes if o.sharing_consent)},
+    }

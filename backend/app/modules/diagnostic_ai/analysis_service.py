@@ -8,11 +8,15 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.database.models import AICall, DiagnosticEvent, DiagnosticHypothesis, DiagnosticSession, DiagnosticStep, now
 
+from app.modules.research.retriever import build_evidence
+
+from . import progress
+from .confidence import assess as assess_confidence
 from .context_builder import DiagnosticContextBuilder
 from .diagnostic_engine import DiagnosticEngine
-from .providers import AIInvalidResponse, AIProviderUnavailable, PROMPT_VERSION, get_ai_provider, selected_model, validate_provider_sources
+from .providers import AIInvalidResponse, AIProviderUnavailable, EXPLORATORY_MEANING_PREFIX, PROMPT_VERSION, canonical_source, get_ai_provider, selected_model, validate_provider_sources
 from .safety_engine import SafetyEngine
-from .schemas import DiagnosticAnalysis, LLMDiagnosticAnalysis, NON_INFORMATIVE_RESULT_STATES
+from .schemas import DiagnosticAnalysis, LLMDiagnosticAnalysis, NON_INFORMATIVE_RESULT_STATES, ResearchMetadata
 
 
 class AnalysisInProgress(Exception):
@@ -46,8 +50,14 @@ def _validate_dtc_interpretations(analysis: LLMDiagnosticAnalysis, context: dict
         raise AIInvalidResponse("The explanation layer must return each input DTC exactly once")
     for identity, definition in expected.items():
         item = actual[identity]
+        if (context.get("exploration_mode") and not definition["documented"]
+            and item.sourceStatus == "ai_general_knowledge_unverified"):
+            if (item.definitionType != definition["definition_type"] or item.sources
+                or not item.meaning.startswith(EXPLORATORY_MEANING_PREFIX)):
+                raise AIInvalidResponse("An exploratory DTC meaning must remain explicitly unverified and source-free")
+            continue
         expected_status = "provided_by_database" if definition["documented"] else "not_found"
-        expected_sources = [definition["source"]] if definition["documented"] else []
+        expected_sources = [canonical_source(definition["source"])] if definition["documented"] else []
         if (
             item.definitionType != definition["definition_type"]
             or item.meaning != definition["description"]
@@ -59,11 +69,26 @@ def _validate_dtc_interpretations(analysis: LLMDiagnosticAnalysis, context: dict
             )
 
 
-def _persist(db, case, result, safety, context, context_hash, operation):
+def _persist(db, case, result, safety, context, context_hash, operation, research=None):
     validate_provider_sources(result.analysis, context)
     _validate_dtc_interpretations(result.analysis, context)
+    research = research or {}
+    telemetry = ResearchMetadata.model_validate(
+        {
+            **{key: value for key, value in research.items() if key in ResearchMetadata.model_fields},
+            "provider": result.provider,
+            "model": result.model,
+            "durationMs": result.latency_ms,
+            "tokenUsage": result.token_usage,
+        }
+    )
     analysis = DiagnosticAnalysis.model_validate(
-        {**result.analysis.model_dump(mode="json"), "safetyAssessment": safety.model_dump(mode="json")}
+        {
+            **result.analysis.model_dump(mode="json"),
+            "safetyAssessment": safety.model_dump(mode="json"),
+            "confidence": assess_confidence(result.analysis, context, research).model_dump(mode="json"),
+            "researchMetadata": telemetry.model_dump(mode="json"),
+        }
     )
     payload = analysis.model_dump(mode="json")
     body = json.dumps(payload, sort_keys=True, ensure_ascii=False)
@@ -79,7 +104,7 @@ def _persist(db, case, result, safety, context, context_hash, operation):
         input_hash=context_hash,
         output_hash=hashlib.sha256(body.encode()).hexdigest(),
         output_payload=payload,
-        validation_status="repaired" if result.repaired else "valid",
+        validation_status="repaired" if result.repaired else "normalized" if result.normalized else "valid",
         error_safe=None,
         latency_ms=result.latency_ms,
         token_usage=result.token_usage,
@@ -174,6 +199,12 @@ def _persist(db, case, result, safety, context, context_hash, operation):
             "operation": operation,
             "validation_status": run.validation_status,
             "safety_decision_source": "safety_engine",
+            "research_triggered": telemetry.researchTriggered,
+            "search_count": telemetry.searchCount,
+            "external_sources": telemetry.externalSources,
+            "from_cache": telemetry.fromCache,
+            "latency_ms": result.latency_ms,
+            "token_usage": result.token_usage,
         },
     )
     db.commit()
@@ -202,12 +233,28 @@ def _effective_context_hash(context: dict) -> str:
 
 
 async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False):
+    """Orchestrate the Orvect diagnostic pipeline.
+
+    Deterministic context and DTC resolution, then the knowledge-first research
+    gate, then one strong Nebius reasoning call over internal + external
+    evidence. Stages are published as they actually happen.
+    """
     if case.status == "analyzing":
         raise AnalysisInProgress("Une analyse est déjà en cours")
+    progress.start(case.id)
+    progress.set_stage(case.id, "context")
     context, images = DiagnosticContextBuilder().build(db, case)
     if not context["fault_codes"]:
+        progress.clear(case.id)
         raise ValueError("Ajoutez au moins un code défaut")
+    progress.set_stage(
+        case.id, "codes", f"{len(context['fault_codes'])} code(s) défaut"
+    )
+    context["exploration_mode"] = settings.diagnostic_exploration_enabled and settings.llm_provider in {"gemini", "nebius"}
     context["diagnostic_engine"] = DiagnosticEngine().evaluate(context).as_dict()
+
+    # Hashed before external evidence is merged: retrieval timestamps would
+    # otherwise make every run a cache miss.
     context_hash = _effective_context_hash(context)
     if follow_up and _latest_result_is_non_informative(db, case) and case.analysis_context_hash == context_hash:
         latest = db.scalar(
@@ -221,6 +268,7 @@ async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False):
             .order_by(AICall.created_at.desc())
         )
         if latest:
+            progress.finish(case.id)
             return DiagnosticAnalysis.model_validate(latest.output_payload).model_dump(mode="json")
     operation = "follow_up" if follow_up else "initial_analysis"
     cached = db.scalar(
@@ -239,26 +287,53 @@ async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False):
         .order_by(AICall.created_at.desc())
     )
     if cached:
+        progress.finish(case.id)
         return DiagnosticAnalysis.model_validate(cached.output_payload).model_dump(mode="json")
+
     previous = case.status
     case.status = "analyzing"
     case.analysis_started_at = now()
     db.commit()
-    provider = get_ai_provider()
     try:
+        progress.set_stage(case.id, "knowledge", f"{len(context['technical_excerpts'])} élément(s) interne(s)")
+        progress.set_stage(case.id, "research_decision")
+        excerpts, research = await build_evidence(db, context, context["technical_excerpts"])
+        if research["researchTriggered"]:
+            progress.set_stage(
+                case.id,
+                "research",
+                f"{research['externalSources']} source(s) externe(s)"
+                + (" (cache)" if research["fromCache"] else ""),
+            )
+        context["technical_excerpts"] = excerpts
+        # Tell the model what the research layer decided, so it can say so too.
+        context["research_status"] = {
+            "external_research_performed": research["researchTriggered"],
+            "external_research_available": research["externalResearchAvailable"],
+            "external_source_count": research["externalSources"],
+            "source_mix": research["sourceMix"],
+            "note": research["researchError"] or "",
+        }
+
+        progress.set_stage(case.id, "reasoning")
+        provider = get_ai_provider()
         result = await (
             provider.analyze_follow_up(context, images)
             if follow_up
             else provider.analyze_initial_case(context, images)
         )
+        progress.set_stage(case.id, "test_plan", f"{len(result.analysis.nextChecks)} contrôle(s)")
         safety = SafetyEngine().assess(context)
-        return _persist(db, case, result, safety, context, context_hash, operation)
+        payload = _persist(db, case, result, safety, context, context_hash, operation, research)
+        progress.finish(case.id)
+        return payload
     except Exception as exc:
         db.rollback()
         fresh = db.get(DiagnosticSession, case.id)
         fresh.status = previous if previous != "analyzing" else "draft"
         fresh.analysis_started_at = None
         safe = str(exc) if isinstance(exc, (AIProviderUnavailable, AIInvalidResponse, ValueError)) else "Erreur interne du fournisseur IA"
+        progress.fail(case.id, safe[:200])
         db.add(
             AICall(
                 session_id=case.id,
