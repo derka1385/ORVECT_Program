@@ -1,5 +1,131 @@
 window.ORVECT_INVESTOR_CASES = [
   {
+    "id": "golf-p0301-epc",
+    "title": "Golf VII 1.4 TSI · P0301 + EPC",
+    "synthetic": true,
+    "vehicle_id": "00000000-0000-0000-0000-000000000007",
+    "vehicle": {
+      "make": "Volkswagen",
+      "model": "Golf VII",
+      "year": "2018",
+      "engine": "CZCA",
+      "fuel": "Essence",
+      "gearbox": "Manuelle",
+      "platform": "MQB"
+    },
+    "mileage": 112000,
+    "summary": "P0301 · ralenti irrégulier · voyant EPC intermittent. Le cas de référence Orvect.",
+    "symptoms": "Ralenti irrégulier et vibrations à l’arrêt. Voyant EPC qui s’allume par intermittence. Aucun composant n’a encore été contrôlé ou remplacé.",
+    "circumstances": "Symptômes plus marqués moteur froid, véhicule immobilisé à l’atelier. Aucune réparation récente signalée par le client.",
+    "fault_codes": [
+      {
+        "code": "P0301",
+        "namespace": "sae_obd2",
+        "ecu": "ECU moteur",
+        "status": "active",
+        "freeze_frame": {},
+        "technician_verification": "confirmed",
+        "technician_note": "Relevé au scanner puis confirmé par le technicien."
+      }
+    ],
+    "measurements": []
+  },
+  {
+    "id": "golf-multi-dtc",
+    "title": "Golf VII 1.4 TSI · trois codes corrélés",
+    "synthetic": true,
+    "vehicle_id": "00000000-0000-0000-0000-000000000007",
+    "vehicle": {
+      "make": "Volkswagen",
+      "model": "Golf VII",
+      "year": "2018",
+      "engine": "CZCA",
+      "fuel": "Essence",
+      "gearbox": "Manuelle",
+      "platform": "MQB"
+    },
+    "mileage": 124500,
+    "summary": "P0301 + P0171 + P0507 · rechercher la cause racine commune plutôt que trois explications.",
+    "symptoms": "Ralenti instable et anormalement élevé, légère perte de puissance en charge, voyant moteur allumé. Le client signale une consommation en hausse.",
+    "circumstances": "Symptômes permanents depuis environ deux semaines. Aucune intervention récente sur le moteur.",
+    "fault_codes": [
+      {
+        "code": "P0301",
+        "namespace": "sae_obd2",
+        "ecu": "ECU moteur",
+        "status": "active",
+        "freeze_frame": {},
+        "technician_verification": "confirmed",
+        "technician_note": "Relevé au scanner puis confirmé par le technicien."
+      },
+      {
+        "code": "P0171",
+        "namespace": "sae_obd2",
+        "ecu": "ECU moteur",
+        "status": "stored",
+        "freeze_frame": {},
+        "technician_verification": "confirmed",
+        "technician_note": "Relevé au scanner puis confirmé par le technicien."
+      },
+      {
+        "code": "P0507",
+        "namespace": "sae_obd2",
+        "ecu": "ECU moteur",
+        "status": "active",
+        "freeze_frame": {},
+        "technician_verification": "confirmed",
+        "technician_note": "Relevé au scanner puis confirmé par le technicien."
+      }
+    ],
+    "measurements": [
+      {
+        "name": "Régime de ralenti",
+        "value": 1150,
+        "unit": "tr/min",
+        "conditions": "Moteur chaud, sans consommateur électrique",
+        "source": "manual"
+      },
+      {
+        "name": "Correction long terme carburant banc 1",
+        "value": 18.7,
+        "unit": "%",
+        "conditions": "Ralenti moteur chaud",
+        "source": "manual"
+      }
+    ]
+  },
+  {
+    "id": "bmw-320d-power-loss",
+    "title": "BMW 320d N47 · ralenti et perte de puissance",
+    "synthetic": true,
+    "vehicle_id": "00000000-0000-0000-0000-000000000008",
+    "vehicle": {
+      "make": "BMW",
+      "model": "320d (F30)",
+      "year": "2011",
+      "engine": "N47D20C",
+      "fuel": "Diesel",
+      "gearbox": "Manuelle",
+      "platform": "F3x"
+    },
+    "mileage": 185000,
+    "summary": "P0401 · diesel haut kilométrage · vérifier que le raisonnement n’est pas calé sur un seul véhicule.",
+    "symptoms": "Ralenti irrégulier et perte de puissance progressive à l’accélération. Fumée noire occasionnelle signalée par le client.",
+    "circumstances": "Véhicule diesel à haut kilométrage, usage majoritairement urbain. Symptômes accentués à froid.",
+    "fault_codes": [
+      {
+        "code": "P0401",
+        "namespace": "sae_obd2",
+        "ecu": "ECU moteur",
+        "status": "active",
+        "freeze_frame": {},
+        "technician_verification": "confirmed",
+        "technician_note": "Relevé au scanner puis confirmé par le technicien."
+      }
+    ],
+    "measurements": []
+  },
+  {
     "title": "Golf VII · ratés et circuit d’allumage",
     "synthetic": true,
     "vehicle_id": "00000000-0000-0000-0000-000000000007",
@@ -137,6 +263,33 @@ window.ORVECT_INVESTOR_CASES = [
 ];
 
 window.ORVECT_INVESTOR_CASES_DE = {
+  "golf-p0301-epc": {
+    "title": "Golf VII 1.4 TSI · P0301 + EPC",
+    "symptoms": "Unruhiger Leerlauf und Vibrationen im Stand. EPC-Leuchte geht sporadisch an. Bisher wurde kein Bauteil geprüft oder ersetzt.",
+    "circumstances": "Symptome bei kaltem Motor deutlicher, Fahrzeug steht in der Werkstatt. Keine kürzliche Reparatur gemeldet.",
+    "measurements": []
+  },
+  "golf-multi-dtc": {
+    "title": "Golf VII 1.4 TSI · drei zusammenhängende Codes",
+    "symptoms": "Instabiler und ungewöhnlich hoher Leerlauf, leichter Leistungsverlust unter Last, Motorkontrollleuchte an. Der Kunde meldet einen erhöhten Verbrauch.",
+    "circumstances": "Dauerhafte Symptome seit etwa zwei Wochen. Kein kürzlicher Eingriff am Motor.",
+    "measurements": [
+      {
+        "name": "Leerlaufdrehzahl",
+        "unit": "U/min"
+      },
+      {
+        "name": "Langzeit-Kraftstoffkorrektur Bank 1",
+        "unit": "%"
+      }
+    ]
+  },
+  "bmw-320d-power-loss": {
+    "title": "BMW 320d N47 · Leerlauf und Leistungsverlust",
+    "symptoms": "Unruhiger Leerlauf und zunehmender Leistungsverlust beim Beschleunigen. Gelegentlich schwarzer Rauch laut Kunde.",
+    "circumstances": "Diesel mit hoher Laufleistung, überwiegend Stadtverkehr. Symptome bei kaltem Motor stärker.",
+    "measurements": []
+  },
   "golf-misfire": {
     "title": "Golf VII · Fehlzündungen und Zündstromkreis",
     "symptoms": "SYNTHETISCHE DEMONSTRATION. Unruhiger Leerlauf, Vibrationen und Motorkontrollleuchte. Die beobachteten Fehlzündungen konzentrieren sich auf Zylinder 1. Es wurde noch kein Bauteil geprüft.",

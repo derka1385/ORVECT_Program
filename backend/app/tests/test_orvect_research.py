@@ -478,3 +478,22 @@ def test_a_normal_ranking_still_passes():
 
     analysis = LLMDiagnosticAnalysis.model_validate(_valid_payload(with_source=False, expanded=True))
     validate_provider_sources(analysis, _context())
+
+
+def test_citation_ids_are_scrubbed_from_prose():
+    """Ids belong in `sources`; the exact phrasing seen in a live run is tidied."""
+    from app.modules.diagnostic_ai.providers import strip_source_ids
+
+    live = ("Symptômes typiques de misfire : ralenti irrégulier, vibrations à l’arrêt "
+            "(sources externes non vérifiées, ex. tavily:ebee7e9b45367ff0, tavily:5caf748950c71f01).")
+    assert strip_source_ids(live) == "Symptômes typiques de misfire : ralenti irrégulier, vibrations à l’arrêt (sources externes non vérifiées)."
+    assert strip_source_ids("Voir tavily:0123456789ab pour le détail.") == "Voir pour le détail."
+    assert strip_source_ids("Aucun identifiant ici.") == "Aucun identifiant ici."
+    # The sources array itself is untouched: only free text is scrubbed.
+    payload = _valid_payload()
+    payload["hypotheses"][0]["supportingEvidence"] = ["Raté isolé (tavily:abc123def456)"]
+    from app.modules.diagnostic_ai.providers import _normalize_provider_payload
+    normalized, changed = _normalize_provider_payload(payload, _context())
+    assert changed is True
+    assert normalized["hypotheses"][0]["supportingEvidence"] == ["Raté isolé"]
+    assert normalized["hypotheses"][0]["sources"][0]["source_id"] == EXTERNAL_SOURCE["source_id"]

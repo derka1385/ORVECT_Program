@@ -12,7 +12,7 @@ from app.modules.dtc.service import UNAVAILABLE_DEFINITION
 from .schemas import LLMDiagnosticAnalysis
 
 
-PROMPT_VERSION = "automotive-v4.3-evidence"
+PROMPT_VERSION = "automotive-v4.4-evidence"
 SYSTEM_INSTRUCTION = Path(__file__).with_name("prompts").joinpath("automotive_v1.txt").read_text()
 PROHIBITED_EXPLANATION_PHRASES = (
     "safe to drive",
@@ -49,6 +49,25 @@ NEGATED_REPLACEMENT = re.compile(
     r"(?:ne\s+(?:pas\s+)?remplac\w*|ne\s+remplacez\s+pas|sans\s+remplac\w*|avant\s+(?:de\s+|tout\s+)?remplac\w*|éviter\s+de\s+remplac\w*|pas\s+à\s+remplacer"
     r"|do\s+not\s+replace|don.t\s+replace|never\s+replace|before\s+replacing|avoid\s+replacing|without\s+replacing|no\s+part\s+replacement)"
 )
+
+
+# Internal citation ids belong in `sources`, never in prose. Models keep
+# pasting them into evidence sentences regardless of instructions, so the
+# server removes them and tidies the parenthetical they usually sit in.
+SOURCE_ID_IN_PROSE = re.compile(r"\b(?:tavily|catalog|source)[:_-][0-9a-f]{6,}\b")
+
+
+def strip_source_ids(text: str) -> str:
+    cleaned = SOURCE_ID_IN_PROSE.sub("", text)
+    if cleaned == text:
+        return text
+    cleaned = re.sub(r",?\s*(?:ex\.|p\.\s*ex\.|e\.g\.)\s*(?=[,)])", "", cleaned)
+    cleaned = re.sub(r"\(\s*[,;\s]*\)", "", cleaned)          # empty parenthetical
+    cleaned = re.sub(r"\(\s*[,;]\s*", "(", cleaned)             # "( , foo)" -> "(foo)"
+    cleaned = re.sub(r"[,;]\s*(?=\))", "", cleaned)              # "(foo, )" -> "(foo)"
+    cleaned = re.sub(r"\s+([,;.)])", r"\1", cleaned)
+    cleaned = re.sub(r"(,\s*){2,}", ", ", cleaned)
+    return re.sub(r"[ \t]{2,}", " ", cleaned).strip()
 
 
 def boundary_violation(text: str) -> str | None:
@@ -269,15 +288,24 @@ def _normalize_provider_payload(payload: dict, context: dict) -> tuple[dict, boo
         normalized["hypotheses"] = ranked
         changed = True
 
+    # Identifiers and canonical source objects are data, not prose: the
+    # boundary and citation scrubs must never rewrite them.
+    structural = {"sources", "source_id", "id", "imageId"}
+
     def scrub(value):
         nonlocal changed
         if isinstance(value, dict):
-            return {key: scrub(item) for key, item in value.items()}
+            return {key: (item if key in structural else scrub(item)) for key, item in value.items()}
         if isinstance(value, list):
             return [scrub(item) for item in value]
         if isinstance(value, str) and boundary_violation(value):
             changed = True
             return BOUNDARY_REVIEW_MESSAGE
+        if isinstance(value, str):
+            stripped = strip_source_ids(value)
+            if stripped != value:
+                changed = True
+            return stripped
         return value
 
     # A report that ranks hypotheses has not found the evidence insufficient.
