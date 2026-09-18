@@ -12,7 +12,7 @@ from app.modules.dtc.service import UNAVAILABLE_DEFINITION
 from .schemas import LLMDiagnosticAnalysis
 
 
-PROMPT_VERSION = "automotive-v4.4-evidence"
+PROMPT_VERSION = "automotive-v4.5-evidence"
 SYSTEM_INSTRUCTION = Path(__file__).with_name("prompts").joinpath("automotive_v1.txt").read_text()
 PROHIBITED_EXPLANATION_PHRASES = (
     "safe to drive",
