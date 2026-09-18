@@ -11,6 +11,7 @@ from app.auth import active_garage_id,authenticated_user_id
 from app.database.models import AICall,DiagnosticDataConsent,DiagnosticEvent,DiagnosticHypothesis,DiagnosticImage,DiagnosticObservation,DiagnosticSession,DiagnosticStep,ProductAnalyticsEvent,VehicleConfiguration,VehicleProfile,now
 from app.database.session import get_db
 from app.modules.diagnostic_data.resolver import DiagnosticDataResolver,build_vehicle_context
+from . import progress as progress_store
 from .analysis_service import AnalysisInProgress,analyze_case
 from .image_service import InvalidImage,cleanup_expired_images,process_image,safe_unlink
 from .providers import AIInvalidResponse,AIProviderUnavailable
@@ -157,3 +158,12 @@ async def reanalyze(case_id:str,db:Session=Depends(get_db),gid:str=Depends(activ
     except ValueError as exc:raise HTTPException(422,str(exc))
     except AIProviderUnavailable as exc:raise HTTPException(503,str(exc))
     except AIInvalidResponse as exc:raise HTTPException(502,str(exc))
+
+@router.get("/{case_id}/progress")
+def analysis_progress(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
+    """Live pipeline position. Reflects real backend stages, never a timer."""
+    case=owned_case(db,case_id,gid)
+    state=progress_store.read(case.id)
+    if not state:
+        return {"stage":"complete" if case.status!="analyzing" else "context","label":"","detail":"","index":0,"total":len(progress_store.STAGE_ORDER),"elapsedMs":0,"failed":False,"stages":[{"key":key,"label":label} for key,label in progress_store.STAGES],"running":case.status=="analyzing"}
+    return {**state,"running":case.status=="analyzing"}

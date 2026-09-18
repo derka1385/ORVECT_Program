@@ -14,6 +14,11 @@ class SourceReference(Strict):
     vehicle_compatibility: dict
     timestamp: str = Field(min_length=1)
     verified: bool
+    # Populated for external research evidence only. A citation without a real
+    # retrieved URL stays None; the system never invents one.
+    url: str | None = None
+    title: str | None = None
+    domain: str | None = None
 
 
 class InterpretedFaultCode(Strict):
@@ -162,8 +167,39 @@ class LLMDiagnosticAnalysis(Strict):
         return value
 
 
+class DiagnosticConfidence(Strict):
+    """Heuristic diagnostic confidence — never a probability that a repair works."""
+
+    score: int = Field(ge=0, le=100)
+    label: Literal["low", "moderate", "good", "strong"]
+    factors: list[str]
+    improvedBy: list[str]
+    decisionSource: Literal["confidence_heuristic"] = "confidence_heuristic"
+
+
+class ResearchMetadata(Strict):
+    researchTriggered: bool
+    researchReasons: list[str] = Field(default_factory=list)
+    queries: list[str] = Field(default_factory=list)
+    searchCount: int = 0
+    fromCache: bool = False
+    externalSources: int = 0
+    internalSources: int = 0
+    externalResearchAvailable: bool = False
+    failedQueries: list[str] = Field(default_factory=list)
+    researchError: str | None = None
+    sourceMix: dict = Field(default_factory=dict)
+    provider: str | None = None
+    model: str | None = None
+    durationMs: int | None = None
+    tokenUsage: dict | None = None
+
+
 class DiagnosticAnalysis(LLMDiagnosticAnalysis):
     safetyAssessment: SafetyAssessment
+    # Optional so analyses stored before this revision still validate.
+    confidence: DiagnosticConfidence | None = None
+    researchMetadata: ResearchMetadata | None = None
 
 
 class DiagnosticCreate(Strict):

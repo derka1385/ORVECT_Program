@@ -1,6 +1,6 @@
 import pytest
 from app.modules.diagnostic_ai.diagnostic_engine import DiagnosticEngine
-from app.modules.diagnostic_ai.providers import _mock_analysis, _normalize_provider_payload
+from app.modules.diagnostic_ai.providers import EXPLORATORY_MEANING_PREFIX, _mock_analysis, _normalize_provider_payload
 from app.modules.diagnostic_ai.analysis_service import _validate_dtc_interpretations
 from app.modules.diagnostic_ai.schemas import LLMDiagnosticAnalysis
 
@@ -37,7 +37,7 @@ def test_tentative_meaning_is_preserved_only_in_exploration_and_never_claims_a_s
     normalized,_=_normalize_provider_payload(payload,data)
     analysis=LLMDiagnosticAnalysis.model_validate(normalized)
     _validate_dtc_interpretations(analysis,data)
-    assert analysis.interpretedFaultCodes[0].meaning.startswith('Approximation Gemini non vérifiée : ')
+    assert analysis.interpretedFaultCodes[0].meaning.startswith(EXPLORATORY_MEANING_PREFIX)
     assert analysis.interpretedFaultCodes[0].sources==[]
     assert any('MODE EXPLORATOIRE' in warning for warning in analysis.warnings)
     strict,_=_normalize_provider_payload(payload,context(False))

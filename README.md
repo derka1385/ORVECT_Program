@@ -1,4 +1,205 @@
-# ORVECT — prototype de diagnostic automobile assisté
+# Orvect
+
+**Orvect is an evidence-backed automotive diagnostic intelligence platform that helps workshops move from fault codes to prioritized diagnostic actions.**
+
+Powered by **Nebius Token Factory** for diagnostic reasoning and **Tavily** for real-time technical evidence.
+
+---
+
+## Problem
+
+Modern diagnostic tools expose codes but technicians still spend significant time researching root causes and testing possibilities.
+
+A scanner says `P0301 — Cylinder 1 Misfire Detected`. It does not say what is most likely causing it *on this vehicle*, what to test first, what not to replace blindly, or how confident anyone should be. That research gap is billable hours, and it is where parts get replaced on a guess.
+
+## Solution
+
+Orvect combines:
+
+- **structured vehicle data** — make, model, year, engine code, mileage, ECU, VIN
+- **internal diagnostic knowledge** — a versioned DTC catalogue with per-record provenance
+- **Nebius-powered reasoning** — hypothesis generation, evidence synthesis, ranking, test-plan construction
+- **Tavily-powered technical research** — OEM bulletins, recall databases, technical documentation
+
+into a prioritized technician workflow: ranked hypotheses, a cheapest-and-fastest-first test sequence, linked evidence, and an explicit confidence heuristic.
+
+## Architecture
+
+```
+            Vehicle + DTC(s) + symptoms + measurements
+                              |
+                              v
+                 Orvect diagnostic orchestrator
+                              |
+              +---------------+----------------+
+              |                                |
+              v                                v
+    Diagnostic Data Resolver          internal knowledge base
+    (authoritative DTC identity)      (compatibility-scoped)
+              |                                |
+              +---------------+----------------+
+                              |
+                              v
+                    Diagnostic Engine (gate)
+                  deterministic evidence check
+                              |
+                              v
+                      research decision
+              "would external evidence change this?"
+                              |
+                   no <-------+-------> yes
+                   |                     |
+                   |                     v
+                   |                  Tavily
+                   |            1-3 focused queries
+                   |                     |
+                   |                     v
+                   |          external evidence + ranking
+                   |          OEM > authority > docs >
+                   |          repair resource > forum
+                   |                     |
+                   +---------+-----------+
+                             |
+                             v
+                   Nebius Token Factory
+              one structured reasoning call over
+              internal + external evidence
+                             |
+                             v
+                 provenance validation layer
+            (citations rebuilt server-side; invented
+             sources dropped; boundaries enforced)
+                             |
+              +--------------+--------------+
+              |              |              |
+              v              v              v
+        hypothesis      diagnostic     confidence
+         ranking         test plan      heuristic
+              |              |              |
+              +--------------+--------------+
+                             |
+                             v
+          Safety Engine (deterministic, never the LLM)
+                             |
+                             v
+                    Technician report
+                             |
+                             v
+                confirmed outcome feedback
+              (optional, consented) -> Orvect dataset
+```
+
+## Why Nebius
+
+Nebius Token Factory is the reasoning layer. Every diagnostic runs one structured Nebius call that:
+
+- interprets the confirmed fault codes **as one case**, not as independent code lookups
+- generates and ranks root-cause hypotheses with supporting and contradicting evidence
+- synthesizes internal knowledge and external technical evidence, weighting by source quality
+- builds the technician test sequence, ordered cheapest / fastest / least invasive / most informative first
+
+It is called server-side only (`backend/app/modules/diagnostic_ai/nebius.py`), over the OpenAI-compatible
+`/chat/completions` endpoint with JSON-schema structured output, falling back to JSON mode and then to
+`NEBIUS_FALLBACK_MODEL`. Model choice is entirely environment-driven.
+
+## Why Tavily
+
+Tavily supplies the external automotive evidence the internal knowledge base does not have: manufacturer
+bulletins, recall databases, engine-family failure patterns, technician discussions.
+
+Queries are generated from the diagnostic context and are always vehicle-specific — never the bare code:
+
+```
+2018 Volkswagen Golf VII 1.4 TSI 92 kW P0301 common causes diagnosis
+Volkswagen CZCA P0301 rough idle EPC light technical service bulletin
+2018 Volkswagen Golf VII 1.4 TSI 92 kW P0301 recall technical service bulletin
+```
+
+Results are classified onto an evidence hierarchy — OEM, safety authority, technical documentation,
+repair resource, specialist community, general web — and a forum thread is never weighted like a
+manufacturer bulletin. Every externally derived claim keeps its title, domain and clickable URL.
+
+## Cost-efficient architecture
+
+**Orvect does not blindly query the web.** A deterministic research-decision layer runs first and searches
+only when external evidence would materially change the diagnosis:
+
+| Search | Because |
+|---|---|
+| yes | manufacturer-specific code, missing internal definition, multiple codes needing a shared cause, thin internal evidence, engine-specific failure pattern |
+| no | internal knowledge already covers the case, or research is disabled |
+
+Searches are capped (`TAVILY_MAX_QUERIES`, default 3), run in parallel, deduplicated by URL, and cached by
+`make + model + year + engine + DTC set` for `TAVILY_CACHE_TTL_HOURS`. Repeated research on the same vehicle
+configuration costs nothing. Completed analyses are additionally cached per context hash, so re-opening a
+case spends no tokens at all.
+
+## Trust model
+
+The LLM is the *explanation layer*, not the authority. Enforced in code, not in the prompt:
+
+- **DTC definitions** are rebuilt server-side from the Diagnostic Data Resolver. The model cannot alter,
+  omit or invent one.
+- **Citations** are emitted by the model as a bare `source_id`; the server rebuilds every other field. A
+  `source_id` that was never in the context is dropped and the claim falls back to `unverified`.
+- **No fabricated URLs** — a Tavily result without a real URL is discarded before the model ever sees it.
+- **Safety decisions** come from a deterministic `SafetyEngine`. The model never decides whether a vehicle
+  can be driven or how dangerous a fault is.
+- **No blind part replacement** — affirmative "replace X" recommendations are blocked; "do *not* replace X
+  before the simple checks" is a first-class output.
+- **Confidence** is a server-side heuristic over evidence quality, labelled *diagnostic confidence*, never
+  a probability that a repair will work.
+- **Zero hypotheses is a valid answer.** When evidence is insufficient the Diagnostic Engine says so and
+  the model is not allowed to fill the gap.
+
+## Future
+
+Confirmed workshop outcomes feed a proprietary Orvect diagnostic dataset. After a repair, a technician can
+optionally record the confirmed root cause and what actually fixed the vehicle, alongside the original
+context and Orvect's recommendations (`diagnostic_outcomes`). Sharing beyond the garage requires an explicit
+consent checkbox. Over time this says which hypotheses proved correct for specific vehicles, engines,
+mileages and symptom combinations — data no general-purpose model has. No ML is trained on it today; the
+data model is built to make that possible.
+
+## Quickstart
+
+```bash
+cp .env.example .env          # then fill NEBIUS_API_KEY and TAVILY_API_KEY
+cd backend && python -m venv .venv && .venv/bin/pip install -e ".[test]"
+DATABASE_URL=sqlite:///./orvect.db .venv/bin/python -c "from app.seed import seed; seed()"
+DATABASE_URL=sqlite:///./orvect.db .venv/bin/python -m uvicorn app.main:app --port 8000
+# in another shell
+cd frontend && npm install && npm run dev      # http://localhost:3000/diagnostics/new
+```
+
+Runs anonymously in development — no account needed to reach the diagnostic flow. `LLM_PROVIDER=mock`
+gives a fully deterministic run with no API keys and no network.
+
+**Demo:** open `/diagnostics/new`, pick **Golf VII 1.4 TSI · P0301 + EPC** from the demo cases, confirm the
+codes, and launch. The demo only prefills the intake form — the diagnosis itself always runs the real
+pipeline. `Golf VII · trois codes corrélés` shows multi-DTC shared-root-cause analysis; `BMW 320d N47`
+shows a different make, engine and fault.
+
+## Environment variables
+
+| Variable | Purpose |
+|---|---|
+| `LLM_PROVIDER` | `nebius` (primary), `gemini`, or `mock` |
+| `NEBIUS_API_KEY` | Nebius Token Factory key — **server-side only** |
+| `NEBIUS_MODEL` / `NEBIUS_FALLBACK_MODEL` | benchmarked on the live catalog: `openai/gpt-oss-120b` (~26 s), fallback `deepseek-ai/DeepSeek-V4.1-Flash` |
+| `TAVILY_API_KEY` | Tavily key — **server-side only** |
+| `TAVILY_MAX_QUERIES` | hard cap on searches per diagnostic (default 3) |
+| `TAVILY_CACHE_TTL_HOURS` | research cache lifetime (default 168) |
+| `RESEARCH_ENABLED` | `false` disables all external research |
+
+No key is ever sent to the browser: the frontend talks only to `/backend-api`, and every provider call is
+made from the FastAPI process. Provider errors are mapped to safe messages before they reach a user.
+
+---
+
+# Documentation technique (FR)
+
+## ORVECT — prototype de diagnostic automobile assisté
 
 ORVECT aide un mécanicien à transformer un DTC en parcours de contrôle guidé, sourcé et traçable. Ce dépôt est une fondation fonctionnelle et un **prototype technique à ne pas utiliser sur un véhicule réel**. Un DTC n’est jamais présenté comme la preuve d’une pièce défectueuse.
 
@@ -22,7 +223,7 @@ La vérification DTC de la page statique charge localement les 8 920 définition
 - parcours générique sûr pour tout code DTC syntaxiquement valide, y compris les codes constructeur non définis comme P1351 ;
 - hypothèses éventuellement vides, états d’insuffisance explicites, preuves/contradictions, étape courante, événements immuables et rapport ;
 - mock LLM strictement validé et désactivable sans casser le moteur ;
-- interface ORVECT responsive et pleine largeur en quatre étapes — identification VIN ou plaque, vérification technique éditable, DTC multiples/symptômes et résultats — plus rapport Next.js ;
+- interface ORVECT responsive en quatre étapes — entrée, identification, problème/preuves et diagnostic assisté — plus rapport Next.js ;
 - authentification par session opaque, rôles `admin`/`technician` et isolation du garage dérivée côté serveur ;
 - résolution VIN avec mock hors ligne, adaptateur NHTSA vPIC optionnel, cache HMAC, confirmation technicien et rapprochement ECU/DTC.
 - diagnostic multimodal avec codes multiples, mesures, photos privées, sortie JSON stricte et provider Gemini interchangeable ;
@@ -108,7 +309,7 @@ Pour activer Gemini, renseigner `GEMINI_API_KEY` dans `.env` et passer `LLM_PROV
 
 ## Identification du véhicule
 
-`/diagnostics/new` ouvre l’identification : le technicien choisit strictement un VIN ou une plaque, puis relit et corrige la configuration détectée avant de saisir les DTC. Chaque DTC peut être ajouté, édité, supprimé, confirmé ou signalé comme discordant ; l’analyse reste bloquée tant que tous les codes ne sont pas confirmés. `DEMO123` reste disponible pour les tests hors ligne. Pour une plaque réelle, utilisez un fournisseur professionnel autorisé qui retourne au minimum un VIN :
+`/` ouvre l’entrée atelier : création d’un dossier, reprise d’un diagnostic récent, sélection d’un véhicule existant ou identification par plaque/VIN. `DEMO123` reste disponible pour les tests hors ligne. Pour une plaque réelle, utilisez un fournisseur professionnel autorisé qui retourne au minimum un VIN :
 
 ```env
 REGISTRATION_PROVIDER=http

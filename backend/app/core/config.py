@@ -57,6 +57,26 @@ class Settings(BaseSettings):
     vehicle_confidence_reliable: float = .90
     vehicle_confidence_recommended: float = .70
     vehicle_confidence_ambiguous: float = .40
+    # --- Nebius Token Factory (primary reasoning engine) ---
+    nebius_api_key: str = ""
+    nebius_base_url: str = "https://api.tokenfactory.nebius.com/v1"
+    # Measured on the live catalog: gpt-oss-120b ~26 s vs ~158 s for the 235B
+    # Qwen on the same case, with equivalent output quality.
+    nebius_model: str = "openai/gpt-oss-120b"
+    nebius_fallback_model: str = "deepseek-ai/DeepSeek-V4.1-Flash"
+    nebius_timeout_seconds: float = 90
+    nebius_max_output_tokens: int = 8192
+    nebius_temperature: float = 0.15
+
+    # --- Tavily (external technical evidence) ---
+    tavily_api_key: str = ""
+    tavily_base_url: str = "https://api.tavily.com"
+    tavily_timeout_seconds: float = 20
+    tavily_max_queries: int = 3
+    tavily_results_per_query: int = 5
+    tavily_cache_ttl_hours: int = 168
+    research_enabled: bool = True
+
     gemini_api_key: str = ""
     gemini_model_fast: str = "gemini-3.1-flash-lite"
     gemini_model_reasoning: str = "gemini-3.5-flash"
