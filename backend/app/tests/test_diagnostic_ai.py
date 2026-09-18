@@ -9,7 +9,7 @@ from app.database.models import AICall,DiagnosticImage,VehicleProfile
 from app.database.session import SessionLocal
 from app.modules.diagnostic_ai import analysis_service
 from app.modules.diagnostic_ai.context_builder import DiagnosticContextBuilder
-from app.modules.diagnostic_ai.providers import GeminiAutomotiveAIProvider,ProviderResult,_gemini_response_schema,_mock_analysis,_normalize_provider_payload,validate_provider_sources
+from app.modules.diagnostic_ai.providers import GeminiAutomotiveAIProvider,ProviderResult,_gemini_response_schema,_mock_analysis,_normalize_provider_payload,canonical_source,validate_provider_sources
 from app.modules.diagnostic_ai.schemas import DiagnosticAnalysis,LLMDiagnosticAnalysis
 from app.seed import VEHICLE_ID
 
@@ -112,7 +112,7 @@ def test_provider_payload_restores_canonical_source_and_removes_critical_decisio
     analysis=LLMDiagnosticAnalysis.model_validate(normalized)
     validate_provider_sources(analysis,context)
     assert changed is True
-    assert normalized["interpretedFaultCodes"][0]["sources"][0]==source
+    assert normalized["interpretedFaultCodes"][0]["sources"][0]==canonical_source(source)
     assert normalized["correlations"][0]["verificationStatus"]=="unverified"
     assert normalized["warnings"]==["Décision réservée au moteur déterministe ou à une validation humaine."]
 
@@ -128,7 +128,7 @@ def test_provider_payload_rebuilds_dtc_facts_and_drops_invented_sources_and_code
     validate_provider_sources(analysis,context)
     assert changed is True
     assert normalized["interpretedFaultCodes"][0]["meaning"]=="Cylinder 1 misfire"
-    assert normalized["interpretedFaultCodes"][0]["sources"]==[source]
+    assert normalized["interpretedFaultCodes"][0]["sources"]==[canonical_source(source)]
     assert normalized["hypotheses"][0]["sources"]==[]
     assert normalized["hypotheses"][0]["verificationStatus"]=="unverified"
     assert normalized["correlations"][0]["relatedCodes"]==["P0301"]
@@ -293,3 +293,18 @@ def test_gemini_provider_repairs_one_invalid_structured_response(monkeypatch):
     client=SimpleNamespace(aio=SimpleNamespace(models=Models()))
     result=asyncio.run(GeminiAutomotiveAIProvider(client).analyze_initial_case({"fault_codes":[{"code":"P1351"}]},[]))
     assert result.repaired is True and result.analysis.schemaVersion=="2.0" and not responses
+
+
+def test_site_language_reaches_the_model_and_keys_the_cache(client, monkeypatch):
+    seen = []
+    class RecordingProvider:
+        async def analyze_initial_case(self, context, images):
+            seen.append(context["response_language"])
+            return ProviderResult(_mock_analysis(context), settings.llm_provider, analysis_service.selected_model(context, False), 1)
+    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda: RecordingProvider())
+    case_id = create_case(client, ("P0301",))
+    assert client.post(f"/api/diagnostics/{case_id}/analyze").status_code == 200
+    assert client.post(f"/api/diagnostics/{case_id}/analyze?language=sv").status_code == 200
+    assert client.post(f"/api/diagnostics/{case_id}/analyze?language=sv").status_code == 200  # cached
+    assert client.post(f"/api/diagnostics/{case_id}/analyze?language=xx").status_code == 200  # unknown → fr, cached
+    assert seen == ["fr", "sv"]

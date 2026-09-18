@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -11,7 +12,7 @@ from app.modules.dtc.service import UNAVAILABLE_DEFINITION
 from .schemas import LLMDiagnosticAnalysis
 
 
-PROMPT_VERSION = "automotive-v3.2-explore"
+PROMPT_VERSION = "automotive-v4.6-multilingual"
 SYSTEM_INSTRUCTION = Path(__file__).with_name("prompts").joinpath("automotive_v1.txt").read_text()
 PROHIBITED_EXPLANATION_PHRASES = (
     "safe to drive",
@@ -37,6 +38,47 @@ PROHIBITED_EXPLANATION_PHRASES = (
     "clear fault codes",
 )
 BOUNDARY_REVIEW_MESSAGE = "Décision réservée au moteur déterministe ou à une validation humaine."
+# Provider-neutral: the same exploratory wording whichever engine produced it.
+EXPLORATORY_MEANING_PREFIX = "Approximation IA non vérifiée : "
+
+# Telling a technician NOT to replace a part before cheap checks is the opposite
+# of the recommendation this boundary exists to block, and is a deliberate
+# Orvect feature. These negated forms are removed before the phrase check so a
+# "do not replace" warning is never mistaken for a replacement recommendation.
+NEGATED_REPLACEMENT = re.compile(
+    r"(?:ne\s+(?:pas\s+)?remplac\w*|ne\s+remplacez\s+pas|sans\s+remplac\w*|avant\s+(?:de\s+|tout\s+)?remplac\w*|éviter\s+de\s+remplac\w*|pas\s+à\s+remplacer"
+    r"|do\s+not\s+replace|don.t\s+replace|never\s+replace|before\s+replacing|avoid\s+replacing|without\s+replacing|no\s+part\s+replacement)"
+)
+
+
+# Internal citation ids belong in `sources`, never in prose. Models keep
+# pasting them into evidence sentences regardless of instructions, so the
+# server removes them and tidies the parenthetical they usually sit in.
+SOURCE_ID_IN_PROSE = re.compile(r"\b(?:tavily|catalog|source)[:_-][0-9a-f]{6,}\b")
+
+
+# Models also prefix a source *title* with the retrieval namespace
+# ("tavily:01-16-13 - Engine…"); the title is useful, the prefix is not.
+SOURCE_PREFIX_IN_PROSE = re.compile(r"\b(?:tavily|catalog)\s*:\s*(?=\S)", re.IGNORECASE)
+
+
+def strip_source_ids(text: str) -> str:
+    cleaned = SOURCE_PREFIX_IN_PROSE.sub("", SOURCE_ID_IN_PROSE.sub("", text))
+    if cleaned == text:
+        return text
+    cleaned = re.sub(r",?\s*(?:ex\.|p\.\s*ex\.|e\.g\.)\s*(?=[,)])", "", cleaned)
+    cleaned = re.sub(r"\(\s*[,;\s]*\)", "", cleaned)          # empty parenthetical
+    cleaned = re.sub(r"\(\s*[,;]\s*", "(", cleaned)             # "( , foo)" -> "(foo)"
+    cleaned = re.sub(r"[,;]\s*(?=\))", "", cleaned)              # "(foo, )" -> "(foo)"
+    cleaned = re.sub(r"\s+([,;.)])", r"\1", cleaned)
+    cleaned = re.sub(r"(,\s*){2,}", ", ", cleaned)
+    return re.sub(r"[ \t]{2,}", " ", cleaned).strip()
+
+
+def boundary_violation(text: str) -> str | None:
+    """The prohibited phrase in `text`, ignoring explicitly negated replacements."""
+    folded = NEGATED_REPLACEMENT.sub(" ", str(text).casefold())
+    return next((phrase for phrase in PROHIBITED_EXPLANATION_PHRASES if phrase in folded), None)
 
 
 class AIProviderUnavailable(Exception):
@@ -48,6 +90,8 @@ class AIInvalidResponse(Exception):
 
 
 def selected_model(context: dict, follow_up: bool = False) -> str:
+    if settings.llm_provider == "nebius":
+        return settings.nebius_model
     if settings.llm_provider == "gemini":
         return settings.gemini_model_reasoning if follow_up or context.get("exploration_mode") or len(context.get("fault_codes", [])) > 1 else settings.gemini_model_fast
     return "deterministic-explanation-v2" if settings.llm_provider == "mock" else "unavailable"
@@ -60,7 +104,10 @@ class ProviderResult:
     model: str
     latency_ms: int
     token_usage: dict | None = None
+    # True only when the first response failed validation and a second call was
+    # needed. Routine server-side canonicalization is `normalized`, not a repair.
     repaired: bool = False
+    normalized: bool = False
 
 
 class AutomotiveAIProvider(ABC):
@@ -112,16 +159,29 @@ def _gemini_response_payload(response):
     return payload
 
 
+def canonical_source(raw: dict) -> dict:
+    """One canonical shape for a source, whichever side it came from.
+
+    Context sources are plain dicts built by the resolver or the research layer
+    and may omit the optional citation fields; model output is dumped from the
+    schema and always carries them. Both are compared for identity, so both go
+    through here first.
+    """
+    from .schemas import SourceReference
+
+    return SourceReference.model_validate(raw).model_dump(mode="json")
+
+
 def _available_source_references(context: dict) -> dict[str, list[dict]]:
     references: dict[str, list[dict]] = {}
     for definition in context.get("technical_definitions", []):
         source = definition.get("source")
         if source:
-            references.setdefault(source["source_id"], []).append(source)
+            references.setdefault(source["source_id"], []).append(canonical_source(source))
     for excerpt in context.get("technical_excerpts", []):
         source = excerpt.get("source")
         if source:
-            references.setdefault(source["source_id"], []).append(source)
+            references.setdefault(source["source_id"], []).append(canonical_source(source))
     return references
 
 
@@ -178,7 +238,7 @@ def _normalize_provider_payload(payload: dict, context: dict) -> tuple[dict, boo
             and provider_code.get("sourceStatus") == "ai_general_knowledge_unverified"
             and isinstance(candidate, str) and candidate.strip()
             and candidate.strip() != UNAVAILABLE_DEFINITION)
-        prefix = "Approximation Gemini non vérifiée : "
+        prefix = EXPLORATORY_MEANING_PREFIX
         meaning = (prefix + candidate.removeprefix(prefix).strip()) if approximate else (
             definition.get("description") if documented else UNAVAILABLE_DEFINITION)
         canonical_codes.append(
@@ -189,7 +249,7 @@ def _normalize_provider_payload(payload: dict, context: dict) -> tuple[dict, boo
                 "meaning": meaning,
                 "definitionType": definition.get("definition_type", "unknown"),
                 "sourceStatus": "provided_by_database" if source else ("ai_general_knowledge_unverified" if approximate else "not_found"),
-                "sources": [source] if source else [],
+                "sources": [canonical_source(source)] if source else [],
                 "relevance": provider_code.get("relevance")
                 if provider_code.get("relevance") in {"primary", "secondary", "consequence", "unknown"}
                 else ("primary" if index == 0 else "secondary"),
@@ -200,7 +260,7 @@ def _normalize_provider_payload(payload: dict, context: dict) -> tuple[dict, boo
         changed = True
 
     if context.get("exploration_mode"):
-        warning = "MODE EXPLORATOIRE GEMINI : interprétations et pistes non vérifiées, à confirmer par des contrôles et une documentation compatible."
+        warning = "MODE EXPLORATOIRE IA : interprétations et pistes non vérifiées, à confirmer par des contrôles et une documentation compatible."
         warnings = normalized.setdefault("warnings", [])
         if warning not in warnings:
             warnings.append(warning)
@@ -233,18 +293,49 @@ def _normalize_provider_payload(payload: dict, context: dict) -> tuple[dict, boo
         normalized["hypotheses"] = ranked
         changed = True
 
+    # Identifiers and canonical source objects are data, not prose: the
+    # boundary and citation scrubs must never rewrite them.
+    structural = {"sources", "source_id", "id", "imageId"}
+
     def scrub(value):
         nonlocal changed
         if isinstance(value, dict):
-            return {key: scrub(item) for key, item in value.items()}
+            return {key: (item if key in structural else scrub(item)) for key, item in value.items()}
         if isinstance(value, list):
-            return [scrub(item) for item in value]
-        if isinstance(value, str) and any(phrase in value.casefold() for phrase in PROHIBITED_EXPLANATION_PHRASES):
+            items = [scrub(item) for item in value]
+            kept = [item for item in items if not (isinstance(item, str) and not item.strip())]
+            if len(kept) != len(items):
+                changed = True
+            return kept
+        if isinstance(value, str) and boundary_violation(value):
             changed = True
             return BOUNDARY_REVIEW_MESSAGE
+        if isinstance(value, str):
+            stripped = strip_source_ids(value)
+            if stripped != value:
+                changed = True
+            return stripped
         return value
 
-    return scrub(normalized), changed
+    # A report that ranks hypotheses has not found the evidence insufficient.
+    # The gate's stop statuses are handled above and are never rewritten here.
+    gate = context.get("diagnostic_engine", {})
+    if (
+        normalized.get("hypotheses")
+        and gate.get("hypotheses_allowed", True)
+        and not gate.get("required_status")
+        and normalized.get("finalConclusion", {}).get("status") == "insufficient_evidence"
+    ):
+        normalized["finalConclusion"]["status"] = "testing_required"
+        changed = True
+
+    scrubbed = scrub(normalized)
+    # Several warnings can collapse onto the same boundary message once scrubbed.
+    warnings = list(dict.fromkeys(scrubbed.get("warnings", [])))
+    if warnings != scrubbed.get("warnings"):
+        scrubbed["warnings"] = warnings
+        changed = True
+    return scrubbed, changed
 
 
 def validate_provider_sources(analysis: LLMDiagnosticAnalysis, context: dict) -> None:
@@ -262,8 +353,8 @@ def validate_provider_sources(analysis: LLMDiagnosticAnalysis, context: dict) ->
         expected = available.get(source.source_id, [])
         if source.model_dump(mode="json") not in expected:
             raise AIInvalidResponse(f"Unknown or altered source reference: {source.source_id}")
-    serialized = json.dumps(analysis.model_dump(mode="json"), ensure_ascii=False).casefold()
-    matched = next((phrase for phrase in PROHIBITED_EXPLANATION_PHRASES if phrase in serialized), None)
+    serialized = json.dumps(analysis.model_dump(mode="json"), ensure_ascii=False)
+    matched = boundary_violation(serialized)
     if matched:
         raise AIInvalidResponse(f"Explanation layer exceeded its decision boundary: {matched}")
     gate = context.get("diagnostic_engine", {})
@@ -273,6 +364,11 @@ def validate_provider_sources(analysis: LLMDiagnosticAnalysis, context: dict) ->
         required = gate.get("required_status")
         if required and analysis.finalConclusion.status != required:
             raise AIInvalidResponse("The explanation layer altered the Diagnostic Engine stop status")
+    # A degenerate all-zero ranking is a model failure, not a judgement: the
+    # report would show every cause at 0 % and rank nothing. Reject it so the
+    # single repair attempt runs.
+    if analysis.hypotheses and all(item.confidence <= 0 for item in analysis.hypotheses):
+        raise AIInvalidResponse("Every proposed hypothesis was scored at zero relevance")
     submitted_codes={item.get("code") for item in context.get("fault_codes", [])}
     for correlation in analysis.correlations:
         if not set(correlation.relatedCodes).issubset(submitted_codes):
@@ -504,6 +600,11 @@ class GeminiAutomotiveAIProvider(AutomotiveAIProvider):
 
 
 def get_ai_provider():
+    if settings.llm_provider == "nebius":
+        # Imported here: nebius imports this module for the shared validators.
+        from .nebius import NebiusAutomotiveAIProvider
+
+        return NebiusAutomotiveAIProvider()
     if settings.llm_provider == "gemini":
         return GeminiAutomotiveAIProvider()
     if settings.llm_provider == "mock":

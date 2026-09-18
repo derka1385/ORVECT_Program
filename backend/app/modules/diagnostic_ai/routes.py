@@ -1,7 +1,7 @@
 from collections import defaultdict,deque
 from datetime import datetime,timedelta,timezone
 from pathlib import Path
-from fastapi import APIRouter,Depends,File,Form,HTTPException,Response,UploadFile
+from fastapi import APIRouter,Depends,File,Form,HTTPException,Response,UploadFile,Query
 from fastapi.responses import FileResponse
 from pydantic import ValidationError
 from sqlalchemy import func,select
@@ -11,6 +11,7 @@ from app.auth import active_garage_id,authenticated_user_id
 from app.database.models import AICall,DiagnosticDataConsent,DiagnosticEvent,DiagnosticHypothesis,DiagnosticImage,DiagnosticObservation,DiagnosticSession,DiagnosticStep,ProductAnalyticsEvent,VehicleConfiguration,VehicleProfile,now
 from app.database.session import get_db
 from app.modules.diagnostic_data.resolver import DiagnosticDataResolver,build_vehicle_context
+from . import progress as progress_store
 from .analysis_service import AnalysisInProgress,analyze_case
 from .image_service import InvalidImage,cleanup_expired_images,process_image,safe_unlink
 from .providers import AIInvalidResponse,AIProviderUnavailable
@@ -135,9 +136,9 @@ def image_file(case_id:str,image_id:str,thumbnail:bool=True,db:Session=Depends(g
     if not Path(path).exists():raise HTTPException(410,"Image supprimée")
     return FileResponse(path,media_type=row.mime_type,headers={"Cache-Control":"private, max-age=300"})
 @router.post("/{case_id}/analyze")
-async def analyze(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
+async def analyze(case_id:str,language:str=Query("fr"),db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
     rate_limit(gid);case=owned_case(db,case_id,gid);track(db,"analysis_requested",gid,uid,case.id);db.commit()
-    try:return await analyze_case(db,case,False)
+    try:return await analyze_case(db,case,False,language=language)
     except AnalysisInProgress as exc:raise HTTPException(409,str(exc))
     except ValueError as exc:raise HTTPException(422,str(exc))
     except AIProviderUnavailable as exc:raise HTTPException(503,str(exc))
@@ -150,10 +151,19 @@ def step_result(case_id:str,step_id:str,data:StepResultInput,db:Session=Depends(
     if step.status!="current":raise HTTPException(409,"Seule l’étape courante non terminée peut recevoir un résultat")
     step.status="completed" if data.state in {"positive","negative"} else "blocked";step.result=data.model_dump();step.technician_comment=data.comment;step.completed_at=now();track(db,"test_recorded",gid,uid,case.id,{"state":data.state});db.commit();return serialize(step)
 @router.post("/{case_id}/reanalyze")
-async def reanalyze(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
+async def reanalyze(case_id:str,language:str=Query("fr"),db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
     rate_limit(gid);case=owned_case(db,case_id,gid);track(db,"diagnostic_reassessed",gid,uid,case.id);db.commit()
-    try:return await analyze_case(db,case,True)
+    try:return await analyze_case(db,case,True,language=language)
     except AnalysisInProgress as exc:raise HTTPException(409,str(exc))
     except ValueError as exc:raise HTTPException(422,str(exc))
     except AIProviderUnavailable as exc:raise HTTPException(503,str(exc))
     except AIInvalidResponse as exc:raise HTTPException(502,str(exc))
+
+@router.get("/{case_id}/progress")
+def analysis_progress(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
+    """Live pipeline position. Reflects real backend stages, never a timer."""
+    case=owned_case(db,case_id,gid)
+    state=progress_store.read(case.id)
+    if not state:
+        return {"stage":"complete" if case.status!="analyzing" else "context","label":"","detail":"","index":0,"total":len(progress_store.STAGE_ORDER),"elapsedMs":0,"failed":False,"stages":[{"key":key,"label":label} for key,label in progress_store.STAGES],"running":case.status=="analyzing"}
+    return {**state,"running":case.status=="analyzing"}

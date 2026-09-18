@@ -316,3 +316,18 @@ class DiagnosticDatasetEvent(Base):
     reason: Mapped[str] = mapped_column(Text)
     details: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+# --- Orvect research & learning loop -------------------------------------
+# Tavily results are cached per vehicle+DTC signature so repeated technical
+# research on the same configuration is not paid for twice.
+class ResearchCache(Base):
+    __tablename__ = "research_cache"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    cache_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    queries: Mapped[list] = mapped_column(JSON, default=list)
+    evidence: Mapped[list] = mapped_column(JSON, default=list)
+    provider: Mapped[str] = mapped_column(String(40), default="tavily")
+    search_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
