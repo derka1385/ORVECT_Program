@@ -33,6 +33,22 @@
     if(!response.ok)throw Error(typeof body.detail==='string'?body.detail:`Le service a répondu avec une erreur (${response.status}).`);
     return body;
   }
+  async function upload(path,formData){
+    token=await window.ORVECT_AUTH.token();
+    const headers={};if(token)headers.Authorization='Bearer '+token;
+    const response=await fetch(base()+path,{method:'POST',headers,credentials:'omit',body:formData,signal:AbortSignal.timeout(120000)});
+    const body=await response.json().catch(()=>({}));
+    if(response.status===401){token='';throw Error('Connexion expirée ou identifiants incorrects. Reconnectez-vous.');}
+    if(!response.ok)throw Error(typeof body.detail==='string'?body.detail:`Le service a répondu avec une erreur (${response.status}).`);
+    return body;
+  }
+  async function uploadPendingPhotos(){
+    const input=$('#checkPhoto');const files=[...(input?.files||[])];if(!files.length)return 0;
+    const bad=files.find(file=>!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024);
+    if(bad)throw Error('Photo refusée : JPEG, PNG ou WebP, 8 Mo maximum.');
+    for(const file of files){const data=new FormData();data.append('files',file);data.append('category',$('#checkPhotoCategory')?.value||'other');data.append('description',($('#checkPhotoNote')?.value||'').slice(0,500));await upload('/diagnostics/'+activeCase+'/images',data);}
+    input.value='';if($('#checkPhotoNote'))$('#checkPhotoNote').value='';return files.length;
+  }
   window.ORVECT_SERVICE={request,activeCase:()=>activeCase};
 
   async function login(){
@@ -96,8 +112,9 @@
       :(research.researchTriggered?'Aucune source externe exploitable n’a été retenue pour ce dossier. Les pistes reposent sur la base interne ORVECT et restent à confirmer par les contrôles.':'La base interne ORVECT couvrait ce dossier : aucune recherche externe n’a été nécessaire.');
   }
   function renderConfidence(analysis){
-    const panel=$('[data-confidence]');if(!panel)return;const c=analysis.confidence;panel.hidden=!c;if(!c)return;
+    const panel=$('[data-confidence]');if(!panel)return;const c=analysis.confidence;panel.hidden=!c;const miniBox=$('[data-confidence-mini]');if(miniBox)miniBox.hidden=!c;if(!c)return;
     $('[data-confidence-score]').textContent=`${c.score} %`;
+    const mini=$('[data-confidence-mini]');if(mini){mini.hidden=false;$('[data-confidence-mini-score]').textContent=`${c.score} % · ${CONFIDENCE_LABELS[c.label]||c.label}`;$('[data-confidence-mini-bar]').style.width=`${c.score}%`;}
     const label=$('[data-confidence-label]');label.replaceChildren(el('span','','Qualité de l’étayage :'),document.createTextNode(' '),el('span','',CONFIDENCE_LABELS[c.label]||c.label));
     $('[data-confidence-bar]').style.width=`${c.score}%`;
     const factors=$('[data-confidence-factors]');factors.replaceChildren();for(const item of c.factors||[])p(factors,item,'li');
@@ -123,13 +140,15 @@
     const panel=$('[data-test-plan]');if(!panel)return;const checks=analysis.nextChecks||[];panel.hidden=!checks.length;
     const listNode=$('[data-test-plan-list]');listNode.replaceChildren();
     checks.forEach((check,index)=>{
-      const li=el('li');const h3=el('h3');h3.append(el('span','ov-step',String(check.order||index+1).padStart(2,'0')),document.createTextNode(check.title));li.append(h3);
-      p(li,check.objective);
-      p(li,`Outillage : ${(check.requiredTools||[]).join(', ')||'—'} · difficulté ${check.estimatedDifficulty||'—'} · ${String(check.verificationStatus||'unverified').replaceAll('_',' ')}`,'p').className='ov-meta';
-      if((check.instructions||[]).length)list(li,check.instructions);
-      for(const expected of check.expectedResults||[]){const box=el('div','ov-outcome');box.append(el('strong','',expected.outcome),el('span','',expected.interpretation),el('span','',`→ ${expected.nextAction}`));li.append(box);}
-      for(const source of check.sources||[])li.append(sourceNode(source));
-      listNode.append(li);
+      const li=el('li',index===0?'is-current':'');li.append(el('div','ov-num',String(check.order||index+1).padStart(2,'0')));
+      const body=el('div','ov-body');p(body,check.title,'h3');
+      const duration=(check.objective||'').match(/Durée estimée\s*:\s*([^.]+)\.?/i);const objective=(check.objective||'').replace(/Durée estimée\s*:\s*[^.]+\.?\s*/i,'').trim();
+      if(objective)p(body,objective).className='ov-meta';
+      const chips=el('div','ov-chips');if(duration)chips.append(el('span','time',`⏱ ${duration[1].trim()}`));for(const tool of check.requiredTools||[])chips.append(el('span','',tool));if(check.estimatedDifficulty)chips.append(el('span','',`difficulté ${check.estimatedDifficulty}`));body.append(chips);
+      if((check.instructions||[]).length){const steps=el('ol','ov-steps');(check.instructions||[]).forEach((instruction,i)=>{const item=el('li');item.append(el('b','',String(i+1).padStart(2,'0')),document.createTextNode(instruction));steps.append(item);});body.append(steps);}
+      if((check.expectedResults||[]).length){const outcomes=el('div','ov-outcomes');for(const expected of check.expectedResults||[]){const box=el('div','ov-outcome');box.append(el('strong','',expected.outcome),el('span','',expected.interpretation),el('span','',`→ ${expected.nextAction}`));outcomes.append(box);}body.append(outcomes);}
+      for(const source of check.sources||[])body.append(sourceNode(source));
+      li.append(body);listNode.append(li);
     });
     const warnings=(analysis.warnings||[]).filter(w=>/remplac|replace/i.test(w)&&!/Décision réservée/.test(w));
     const box=$('[data-warnings]');box.hidden=!warnings.length;const wl=$('[data-warnings-list]');wl.replaceChildren();for(const item of warnings)p(wl,item,'li');
@@ -147,7 +166,19 @@
     for(const item of analysis.correlations||[]){for(const code of item.relatedCodes||[])tags.append(el('span','',code));tags.append(el('span','',String(item.relationshipType||'unresolved').replaceAll('_',' ')));}
     correlationText.textContent=(analysis.correlations||[]).map(item=>item.explanation).join('\n\n')||'Aucune relation suffisamment étayée proposée.';
     const hypotheses=$('#hypothesisContent');hypotheses.replaceChildren();$('#hypothesisCount').textContent=`${analysis.hypotheses.length} hypothèse${analysis.hypotheses.length>1?'s':''}`;
-    analysis.hypotheses.forEach((h,index)=>{const card=el('article','dtc-card');p(card,`Hypothèse ${index+1} · pertinence ${Math.round(h.confidence*100)} %`,'p').className='eyebrow';p(card,h.label,'h3');const meta=el('div','ov-hyp-meta');meta.append(el('span','',h.status),el('span','',String(h.verificationStatus).replaceAll('_',' ')));card.append(meta);if((h.supportingEvidence||[]).length){p(card,'Éléments favorables','strong');list(card,h.supportingEvidence);}if((h.contradictingEvidence||[]).length){p(card,'Contradictions ou limites','strong');list(card,h.contradictingEvidence);}if((h.requiredConfirmation||[]).length){p(card,'Contrôles nécessaires','strong');list(card,h.requiredConfirmation);}for(const source of h.sources||[])card.append(sourceNode(source));hypotheses.append(card);});
+    const grid=el('div','ov-hyp-grid');hypotheses.append(grid);
+    analysis.hypotheses.forEach((h,index)=>{
+      const card=el('article',`ov-hyp${index===0?' is-lead':''}`);
+      const top=el('div','ov-hyp-top');top.append(el('span','ov-hyp-rank',index===0?'HYPOTHÈSE PRINCIPALE · 01':`HYPOTHÈSE · ${String(index+1).padStart(2,'0')}`),el('span','ov-hyp-pct',`${Math.round(h.confidence*100)} %`));card.append(top);
+      p(card,h.label,'h3');
+      const bar=el('div','ov-bar');const fill=el('div','ov-bar-fill');fill.style.width=`${Math.round(h.confidence*100)}%`;bar.append(fill);card.append(bar);
+      const meta=el('div','ov-hyp-meta');meta.append(el('span','',h.status),el('span','',String(h.verificationStatus).replaceAll('_',' ')));card.append(meta);
+      if((h.supportingEvidence||[]).length){card.append(el('strong','ov-h','Éléments favorables'));list(card,h.supportingEvidence);}
+      if((h.contradictingEvidence||[]).length){card.append(el('strong','ov-h','Contradictions ou limites'));list(card,h.contradictingEvidence);}
+      if((h.requiredConfirmation||[]).length){card.append(el('strong','ov-h','Contrôles nécessaires'));list(card,h.requiredConfirmation);}
+      for(const source of h.sources||[])card.append(sourceNode(source));
+      grid.append(card);
+    });
     if(!analysis.hypotheses.length)p(hypotheses,analysis.finalConclusion.summary);
     const check=analysis.nextChecks[0];$('#checkTitle').textContent=check?.title||'Informations complémentaires nécessaires';$('#checkObjective').textContent=check?.objective||analysis.finalConclusion.summary;
     const instructions=$('.process-panel .instructions');instructions.replaceChildren();for(const instruction of check?.instructions||[])p(instructions,instruction,'li');
@@ -180,10 +211,17 @@
     const analysis=await analyzeWithProgress('/diagnostics/'+activeCase+'/analyze',true);await render(analysis,activeCase);
   });
   intercept('#reanalyze',async()=>{if(!activeCase)throw Error('Lancez une première analyse.');await render(await analyzeWithProgress('/diagnostics/'+activeCase+'/reanalyze',false),activeCase);});
+  intercept('#attachPhoto',async()=>{
+    if(!activeCase)throw Error('Lancez une première analyse avant de joindre une photo.');
+    const added=await uploadPendingPhotos();if(!added)throw Error('Choisissez d’abord une photo (JPEG, PNG ou WebP).');
+    await render(await analyzeWithProgress('/diagnostics/'+activeCase+'/reanalyze',false),activeCase);
+    const notice=$('#diagnosticNotice');if(notice){notice.textContent=`${added} photo(s) ajoutée(s) au dossier et analyse réévaluée.`;notice.classList.remove('error');notice.classList.add('show');}
+  });
   intercept('#recordResult',async()=>{
     if(!activeCase||!currentStep)throw Error('Aucun contrôle courant dans ce dossier.');
     const state=$('#diagResult').value,outcome=$('#resultText').value;
     if(['positive','negative'].includes(state)&&!outcome.trim())throw Error('Décrivez l’observation informative.');
+    await uploadPendingPhotos();
     await request('/diagnostics/'+activeCase+'/steps/'+currentStep+'/result',{state,outcome,comment:'Résultat saisi depuis le site officiel.'});
     await render(await analyzeWithProgress('/diagnostics/'+activeCase+'/reanalyze',false),activeCase);
   });

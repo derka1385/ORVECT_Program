@@ -240,6 +240,30 @@
     "Contrôles nécessaires":"Erforderliche Prüfungen",
     "APPROXIMATION IA · NON VÉRIFIÉE":"KI-NÄHERUNG · NICHT VERIFIZIERT"
   });
+  Object.assign(en, {
+    "Détecté automatiquement.":"Detected automatically.",
+    "Confirmé humainement.":"Confirmed by a human.",
+    "Joindre une photo du relevé (facultatif)":"Attach a photo of the reading (optional)",
+    "Ce que montre la photo (relevé, connecteur, bougie…)":"What the photo shows (reading, connector, plug…)",
+    "Ajouter la photo au dossier":"Add the photo to the case",
+    "Détail ↓":"Details ↓",
+    "HYPOTHÈSE PRINCIPALE · 01":"LEADING HYPOTHESIS · 01",
+    "Type de photo":"Photo type","Relevé / outil de diagnostic":"Reading / diagnostic tool","Pièce ou connecteur":"Part or connector","Compartiment moteur":"Engine bay","Tableau de bord / voyant":"Dashboard / warning light","Autre":"Other"
+  });
+  Object.assign(sv, {
+    "Détecté automatiquement.":"Upptäckt automatiskt.",
+    "Confirmé humainement.":"Bekräftat av en människa."
+  });
+  Object.assign(de, {
+    "Détecté automatiquement.":"Automatisch erkannt.",
+    "Confirmé humainement.":"Von einem Menschen bestätigt.",
+    "Joindre une photo du relevé (facultatif)":"Foto der Messung anhängen (optional)",
+    "Ce que montre la photo (relevé, connecteur, bougie…)":"Was das Foto zeigt (Messwert, Stecker, Zündkerze…)",
+    "Ajouter la photo au dossier":"Foto zum Fall hinzufügen",
+    "Détail ↓":"Details ↓",
+    "HYPOTHÈSE PRINCIPALE · 01":"HAUPTHYPOTHESE · 01",
+    "Type de photo":"Fototyp","Relevé / outil de diagnostic":"Messwert / Diagnosegerät","Pièce ou connecteur":"Bauteil oder Stecker","Compartiment moteur":"Motorraum","Tableau de bord / voyant":"Armaturenbrett / Warnleuchte","Autre":"Sonstiges"
+  });
   const dictionaries = {fr:{},en,sv,de};
   const originals = new WeakMap();
   const attributeOriginals = new WeakMap();

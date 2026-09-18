@@ -489,11 +489,15 @@ def test_citation_ids_are_scrubbed_from_prose():
     assert strip_source_ids(live) == "Symptômes typiques de misfire : ralenti irrégulier, vibrations à l’arrêt (sources externes non vérifiées)."
     assert strip_source_ids("Voir tavily:0123456789ab pour le détail.") == "Voir pour le détail."
     assert strip_source_ids("Aucun identifiant ici.") == "Aucun identifiant ici."
+    # A namespace prefix glued to a source title keeps the title.
+    assert strip_source_ids("tavily:01-16-13 - Engine, Misfire Diagnostic Aid") == "01-16-13 - Engine, Misfire Diagnostic Aid"
+    assert strip_source_ids("Voir la source : bulletin constructeur.") == "Voir la source : bulletin constructeur."
     # The sources array itself is untouched: only free text is scrubbed.
     payload = _valid_payload()
-    payload["hypotheses"][0]["supportingEvidence"] = ["Raté isolé (tavily:abc123def456)"]
+    payload["hypotheses"][0]["supportingEvidence"] = ["Raté isolé (tavily:abc123def456)", "tavily:0123456789ab"]
     from app.modules.diagnostic_ai.providers import _normalize_provider_payload
     normalized, changed = _normalize_provider_payload(payload, _context())
     assert changed is True
+    # An entry that was nothing but an id disappears instead of leaving an empty bullet.
     assert normalized["hypotheses"][0]["supportingEvidence"] == ["Raté isolé"]
     assert normalized["hypotheses"][0]["sources"][0]["source_id"] == EXTERNAL_SOURCE["source_id"]

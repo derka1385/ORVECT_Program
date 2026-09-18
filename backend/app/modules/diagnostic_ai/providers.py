@@ -57,8 +57,13 @@ NEGATED_REPLACEMENT = re.compile(
 SOURCE_ID_IN_PROSE = re.compile(r"\b(?:tavily|catalog|source)[:_-][0-9a-f]{6,}\b")
 
 
+# Models also prefix a source *title* with the retrieval namespace
+# ("tavily:01-16-13 - Engine…"); the title is useful, the prefix is not.
+SOURCE_PREFIX_IN_PROSE = re.compile(r"\b(?:tavily|catalog)\s*:\s*(?=\S)", re.IGNORECASE)
+
+
 def strip_source_ids(text: str) -> str:
-    cleaned = SOURCE_ID_IN_PROSE.sub("", text)
+    cleaned = SOURCE_PREFIX_IN_PROSE.sub("", SOURCE_ID_IN_PROSE.sub("", text))
     if cleaned == text:
         return text
     cleaned = re.sub(r",?\s*(?:ex\.|p\.\s*ex\.|e\.g\.)\s*(?=[,)])", "", cleaned)
@@ -297,7 +302,11 @@ def _normalize_provider_payload(payload: dict, context: dict) -> tuple[dict, boo
         if isinstance(value, dict):
             return {key: (item if key in structural else scrub(item)) for key, item in value.items()}
         if isinstance(value, list):
-            return [scrub(item) for item in value]
+            items = [scrub(item) for item in value]
+            kept = [item for item in items if not (isinstance(item, str) and not item.strip())]
+            if len(kept) != len(items):
+                changed = True
+            return kept
         if isinstance(value, str) and boundary_violation(value):
             changed = True
             return BOUNDARY_REVIEW_MESSAGE

@@ -12,3 +12,4 @@ frontend/.next/
 frontend/*.tsbuildinfo
 .DS_Store
 .local/
+backend/private_images/
