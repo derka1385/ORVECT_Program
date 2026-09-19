@@ -20,7 +20,7 @@ from .context_builder import DiagnosticContextBuilder
 from .diagnostic_engine import DiagnosticEngine
 from .providers import AIInvalidResponse, AIProviderUnavailable, EXPLORATORY_MEANING_PREFIX, PROMPT_VERSION, canonical_source, get_ai_provider, selected_model, validate_provider_sources
 from .safety_engine import SafetyEngine
-from .schemas import DiagnosticAnalysis, LLMDiagnosticAnalysis, NON_INFORMATIVE_RESULT_STATES, NextBestCheck, ResearchMetadata
+from .schemas import CARRIED_OUT_STEP_STATES, DiagnosticAnalysis, LLMDiagnosticAnalysis, NON_INFORMATIVE_RESULT_STATES, NextBestCheck, ResearchMetadata
 
 
 class AnalysisInProgress(Exception):
@@ -196,7 +196,7 @@ def _persist(db, case, result, safety, context, context_hash, operation, researc
             row.title
             for row in db.scalars(
                 select(DiagnosticStep).where(
-                    DiagnosticStep.session_id == case.id, DiagnosticStep.result.is_not(None)
+                    DiagnosticStep.session_id == case.id, DiagnosticStep.status.in_(CARRIED_OUT_STEP_STATES)
                 )
             ).all()
         },
@@ -225,6 +225,10 @@ def _persist(db, case, result, safety, context, context_hash, operation, researc
                     for result_index, expected in enumerate(check.expectedResults)
                 ],
                 safety_notes=check.safetyWarnings,
+                # Persisted so the check can be re-ranked later without asking
+                # the reasoning layer again.
+                estimated_difficulty=check.estimatedDifficulty,
+                estimated_minutes=next_check.parse_minutes(check.objective),
                 source_ids=source_ids,
                 source_references=references,
                 verification_status=check.verificationStatus,

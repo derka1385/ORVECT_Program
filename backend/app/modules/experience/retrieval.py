@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.database.models import ExperienceCase, ExperiencePattern, now
 
-from . import aggregation, capture, compatibility, signature, trust
+from . import aggregation, capture, compatibility, signature, taxonomy, trust
 
 # Context budget. More evidence items cost tokens on every diagnosis and add
 # little once the strongest compatible patterns are present.
@@ -77,6 +77,7 @@ def _own_groups(db: Session, garage_id: str, signatures: list[str]) -> list[_Own
         select(ExperienceCase).where(
             ExperienceCase.garage_id == garage_id,
             ExperienceCase.duplicate_of.is_(None),
+            ExperienceCase.revoked_at.is_(None),
             ExperienceCase.outcome_class.in_(sorted(capture.PATTERN_ELIGIBLE_OUTCOMES)),
         )
     ).all()
@@ -144,6 +145,17 @@ def _own_groups(db: Session, garage_id: str, signatures: list[str]) -> list[_Own
     return groups
 
 
+def _cause_label(item) -> str:
+    """Readable cause for the report; the key itself stays a machine identifier."""
+    system, component, position = None, None, None
+    key = item.root_cause_component or ""
+    if key.count("/") >= 1:
+        pieces = key.split("/")
+        system, component = pieces[0], pieces[1]
+        position = pieces[2] if len(pieces) > 2 else None
+    return taxonomy.label(system, component, position, fallback=key)
+
+
 def _excerpt(item, scope: str) -> str:
     """Aggregate wording. No garage name, no date of intervention, no free text."""
     origin = (
@@ -152,7 +164,7 @@ def _excerpt(item, scope: str) -> str:
         else f"{item.case_count} cas ORVECT compatibles répartis sur {item.garage_count} ateliers indépendants"
     )
     parts = [
-        f"Cause racine constatée : {item.root_cause_component}.",
+        f"Cause racine constatée : {_cause_label(item)}.",
         f"Observation : {origin}.",
         f"Issues : {item.confirmed_count} confirmée(s), {item.supported_count} corroborée(s), "
         f"{item.contradicting_count} contredite(s).",
@@ -180,10 +192,15 @@ def _excerpt(item, scope: str) -> str:
 
 def _evidence_item(item, match: compatibility.Match, scope: str) -> dict:
     source_id = signature.field_source_id(item.pattern_key)
-    stamp = (item.last_seen_at or now()).isoformat()
+    seen = item.last_seen_at or now()
+    # Network evidence is coarsened to the month: an exact date would say when a
+    # specific vehicle passed through a specific workshop.
+    if scope == NETWORK:
+        seen = seen.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    stamp = seen.isoformat()
     return {
         "id": source_id,
-        "title": f"Expérience ORVECT · {item.root_cause_component}",
+        "title": f"Expérience ORVECT · {_cause_label(item)}",
         "excerpt": _excerpt(item, scope),
         "origin": "orvect_field_evidence",
         "trust_class": trust.ORVECT_FIELD,
@@ -225,7 +242,7 @@ def _evidence_item(item, match: compatibility.Match, scope: str) -> dict:
             # Field evidence is never verified documentation. This is what stops
             # it from unlocking a manufacturer procedure downstream.
             "verified": False,
-            "title": f"Expérience ORVECT · {item.root_cause_component}",
+            "title": f"Expérience ORVECT · {_cause_label(item)}",
             "domain": None,
             "url": None,
         },

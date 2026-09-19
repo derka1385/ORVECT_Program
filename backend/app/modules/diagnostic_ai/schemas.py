@@ -302,10 +302,22 @@ class MeasurementInput(Strict):
 
 ResultState = Literal["positive", "negative", "inconclusive", "unavailable", "invalid", "refused"]
 NON_INFORMATIVE_RESULT_STATES = {"inconclusive", "unavailable", "invalid", "refused"}
+# A check the workshop has carried out. Status is the reliable record: the
+# `result` column is JSON, and a JSON column set to None is stored as JSON null
+# rather than SQL NULL, so `result IS NOT NULL` matches every step ever created.
+CARRIED_OUT_STEP_STATES = ("completed", "blocked")
+# A hypothesis that no longer steers the diagnosis. Kept in the history, never
+# deleted, but excluded from deciding which check comes next.
+DEAD_HYPOTHESIS_STATES = ("superseded", "rejected")
 
 
 class StepResultInput(Strict):
     state: ResultState
+    # What this outcome means for the ranking, stated by the technician rather
+    # than guessed from free text. ORVECT applies it deterministically and
+    # records it; it never infers elimination from prose on its own.
+    excludes_hypothesis_ids: list[str] = Field(default_factory=list, max_length=20)
+    supports_hypothesis_ids: list[str] = Field(default_factory=list, max_length=20)
     outcome: str = Field(default="", max_length=500)
     measurement: float | None = None
     unit: str | None = Field(default=None, max_length=30)

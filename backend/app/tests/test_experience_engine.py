@@ -7,6 +7,8 @@ submissions, incompatible vehicles, and anything a language model claims about
 its own sources.
 """
 
+import json
+
 import pytest
 from sqlalchemy import select
 
@@ -39,6 +41,7 @@ from app.modules.experience import (
     next_check,
     retrieval,
     signature,
+    taxonomy,
     trust,
 )
 
@@ -720,6 +723,12 @@ def test_hypothesis_history_is_appended_never_overwritten(client, monkeypatch):
         f"/api/diagnostics/{case_id}/hypotheses/{hypothesis['id']}/verdict",
         json={"verdict": "rejected", "evidence_note": "Permutation sans effet"},
     ).status_code == 201
+    # The verdict re-selects the recommended check, so the current step is read
+    # again rather than reused from before.
+    current = next(
+        item for item in client.get(f"/api/diagnostics/{case_id}").json()["steps"]
+        if item["status"] == "current"
+    )
     assert client.post(
         f"/api/diagnostics/{case_id}/steps/{current['id']}/result",
         json={"state": "negative", "outcome": "Aucune variation constatée", "comment": ""},
@@ -1001,4 +1010,445 @@ def test_migrations_have_a_single_head(client):
     config = Config(str(root / "alembic.ini"))
     config.set_main_option("script_location", str(root / "alembic"))
     heads = ScriptDirectory.from_config(config).get_heads()
-    assert list(heads) == ["0013"], f"expected one head, found {heads}"
+    assert list(heads) == ["0014"], f"expected one head, found {heads}"
+
+
+# --- review 2: adaptive next check --------------------------------------------
+
+def _adaptive_provider(monkeypatch):
+    """Three checks, each tied to a different hypothesis, plus one generic.
+
+    Built so that eliminating a hypothesis genuinely changes which check is
+    worth doing next; otherwise the loop cannot be shown to be adaptive.
+    """
+    from app.modules.diagnostic_ai import analysis_service
+    from app.modules.diagnostic_ai.providers import ProviderResult, _mock_analysis
+    from app.modules.diagnostic_ai.schemas import Hypothesis, NextCheck
+
+    def hypothesis(identifier, label, component, score):
+        return Hypothesis(
+            id=identifier, label=label, component=component, confidence=score,
+            supportingEvidence=["Constat"], contradictingEvidence=[],
+            requiredConfirmation=["Contrôle"], status="likely",
+            verificationStatus="unverified", sources=[],
+        )
+
+    def check(identifier, order, title, difficulty, minutes, tools, mentions):
+        return NextCheck(
+            id=identifier, order=order, title=title,
+            objective=f"Durée estimée : {minutes} min. {mentions}",
+            prerequisites=[], instructions=["Étape"], safetyWarnings=[],
+            expectedResults=[
+                {"outcome": mentions, "interpretation": mentions, "nextAction": "Poursuivre"},
+            ],
+            requiredTools=tools, estimatedDifficulty=difficulty,
+            verificationStatus="unverified", manufacturerProcedure=False, sources=[],
+        )
+
+    class AdaptiveProvider:
+        async def analyze_initial_case(self, context, images):
+            analysis = _mock_analysis(context)
+            analysis.hypotheses = [
+                hypothesis("h-coil", "Bobine allumage cylindre 1", "bobine", 0.6),
+                hypothesis("h-plug", "Bougie encrassée cylindre 1", "bougie", 0.5),
+                hypothesis("h-inject", "Injecteur cylindre 1", "injecteur", 0.4),
+            ]
+            analysis.nextChecks = [
+                check("c-coil", 1, "Mesurer la bobine", "easy", 10, ["Multimètre"], "bobine"),
+                check("c-plug", 2, "Inspecter la bougie", "easy", 12, ["Clé"], "bougie"),
+                check("c-inject", 3, "Tester l’injecteur", "intermediate", 25,
+                      ["Manomètre", "Adaptateur"], "injecteur"),
+            ]
+            analysis.finalConclusion.status = "testing_required"
+            return ProviderResult(
+                analysis, settings_module.llm_provider,
+                analysis_service.selected_model(context, False), 1,
+            )
+
+        async def analyze_follow_up(self, context, images):
+            return await self.analyze_initial_case(context, images)
+
+    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda: AdaptiveProvider())
+
+
+def _adaptive_case(client, monkeypatch):
+    _adaptive_provider(monkeypatch)
+    response = client.post("/api/diagnostics", json={
+        "vehicle_id": client.get("/api/vehicles").json()["items"][0]["id"],
+        "mileage": 125000, "symptoms": "Ratés moteur", "circumstances": "Moteur chaud",
+    })
+    case_id = response.json()["id"]
+    client.post(f"/api/diagnostics/{case_id}/fault-codes", json={"fault_codes": [
+        {"code": "P0301", "ecu": "ECU moteur", "status": "active", "freeze_frame": {},
+         "technician_verification": "confirmed"}
+    ]})
+    assert client.post(f"/api/diagnostics/{case_id}/analyze").status_code == 200
+    return case_id
+
+
+def _current_step(client, case_id):
+    steps = client.get(f"/api/diagnostics/{case_id}").json()["steps"]
+    return next(item for item in steps if item["status"] == "current")
+
+
+def _hypothesis_id(client, case_id, needle):
+    for item in client.get(f"/api/diagnostics/{case_id}").json()["hypotheses"]:
+        if needle in item["title"].casefold():
+            return item["id"]
+    raise AssertionError(f"hypothesis {needle} not found")
+
+
+def test_next_check_reacts_to_what_the_result_eliminated(client, monkeypatch):
+    """The same first test, two readings, two different next actions."""
+    outcomes = {}
+    for excluded, label in (("h-plug", "bougie"), ("h-inject", "injecteur")):
+        case_id = _adaptive_case(client, monkeypatch)
+        current = _current_step(client, case_id)
+        target = _hypothesis_id(client, case_id, label)
+        response = client.post(
+            f"/api/diagnostics/{case_id}/steps/{current['id']}/result",
+            json={"state": "negative", "outcome": "Valeur hors plage",
+                  "excludes_hypothesis_ids": [target]},
+        )
+        assert response.status_code == 200, response.text
+        outcomes[excluded] = _current_step(client, case_id)["title"]
+    assert outcomes["h-plug"] != outcomes["h-inject"], outcomes
+    assert "bougie" not in outcomes["h-plug"].casefold()
+    assert "injecteur" not in outcomes["h-inject"].casefold()
+
+
+def test_a_completed_check_is_never_recommended_again(client, monkeypatch):
+    case_id = _adaptive_case(client, monkeypatch)
+    seen = set()
+    for _ in range(3):
+        current = _current_step(client, case_id)
+        assert current["id"] not in seen, "a completed check came back as current"
+        seen.add(current["id"])
+        response = client.post(
+            f"/api/diagnostics/{case_id}/steps/{current['id']}/result",
+            json={"state": "negative", "outcome": "Rien d’anormal"},
+        )
+        assert response.status_code == 200
+        if not response.json()["next_step_id"]:
+            break
+    steps = client.get(f"/api/diagnostics/{case_id}").json()["steps"]
+    assert all(item["status"] != "current" or not item["result"] for item in steps)
+
+
+def test_rejecting_a_hypothesis_changes_the_recommended_check(client, monkeypatch):
+    """A verdict outside the test loop still re-selects the next action."""
+    case_id = _adaptive_case(client, monkeypatch)
+    before = _current_step(client, case_id)
+    target = _hypothesis_id(client, case_id, before["title"].split()[-1].casefold()[:6])
+    response = client.post(
+        f"/api/diagnostics/{case_id}/hypotheses/{target}/verdict",
+        json={"verdict": "rejected", "evidence_note": "Écartée par mesure"},
+    )
+    assert response.status_code == 201, response.text
+    after = _current_step(client, case_id)
+    assert after["id"] != before["id"], "the check that targeted the rejected cause stayed current"
+    assert response.json()["current_step_id"] == after["id"]
+
+
+def test_an_irrelevant_check_sinks_below_a_discriminating_one(client):
+    """Scoring, in isolation: no live hypothesis to separate means not next."""
+    live = [{"label": "Bobine allumage cylindre 1", "component": "bobine"}]
+    relevant = _check("relevant", "Mesurer la bobine", "advanced", 120, ("A", "B", "C", "D"))
+    irrelevant = _check("irrelevant", "Contrôler le circuit de freinage", "easy", 5, ("A",))
+    ranked = next_check.rank([irrelevant, relevant], live, set())
+    assert ranked[0]["check"]["id"] == "relevant"
+    assert any("ne départage plus" in line for line in ranked[-1]["rationale"])
+
+
+def test_ranking_uses_the_persisted_cost_of_a_step(client, monkeypatch):
+    """Difficulty and duration survive persistence, so re-ranking stays honest."""
+    case_id = _adaptive_case(client, monkeypatch)
+    with SessionLocal() as db:
+        steps = db.scalars(
+            select(DiagnosticStep).where(DiagnosticStep.session_id == case_id)
+        ).all()
+        assert {item.estimated_difficulty for item in steps} == {"easy", "intermediate"}
+        assert all(item.estimated_minutes for item in steps)
+
+
+def test_hypothesis_elimination_is_recorded_and_reversible_in_history(client, monkeypatch):
+    case_id = _adaptive_case(client, monkeypatch)
+    current = _current_step(client, case_id)
+    target = _hypothesis_id(client, case_id, "injecteur")
+    client.post(
+        f"/api/diagnostics/{case_id}/steps/{current['id']}/result",
+        json={"state": "positive", "outcome": "Débit conforme",
+              "excludes_hypothesis_ids": [target],
+              "supports_hypothesis_ids": [_hypothesis_id(client, case_id, "bobine")]},
+    )
+    timeline = client.get(f"/api/diagnostics/{case_id}/evolution").json()["timeline"]
+    excluded = [item for item in timeline if item["event"] == "excluded_by_test"]
+    supported = [item for item in timeline if item["event"] == "supported_by_test"]
+    assert len(excluded) == 1 and excluded[0]["status_after"] == "rejected"
+    assert excluded[0]["strength_before"] is not None
+    assert len(supported) == 1
+    assert supported[0]["detail"]["verification_after"] == "partially_verified"
+    with SessionLocal() as db:
+        assert db.get(DiagnosticHypothesis, target).status == "rejected"
+        assert db.get(DiagnosticHypothesis, target).title
+
+
+def test_an_unknown_hypothesis_id_is_refused(client, monkeypatch):
+    case_id = _adaptive_case(client, monkeypatch)
+    current = _current_step(client, case_id)
+    response = client.post(
+        f"/api/diagnostics/{case_id}/steps/{current['id']}/result",
+        json={"state": "negative", "outcome": "x", "excludes_hypothesis_ids": ["not-a-real-id"]},
+    )
+    assert response.status_code == 422
+
+
+# --- review 2: canonical root causes ------------------------------------------
+
+@pytest.mark.parametrize("components,text", [
+    (["Injecteur cylindre 1"], "injecteur cylindre 1 défectueux"),
+    (["injecteur #1"], ""),
+    (["Fuel injector cylinder 1"], ""),
+    ([], "injector fault cyl. 1"),
+    (["Insprutare cylinder 1"], ""),
+    (["Einspritzventil Zylinder 1"], ""),
+])
+def test_equivalent_wordings_map_to_one_canonical_cause(client, components, text):
+    """Four languages, six wordings, one finding."""
+    resolved = taxonomy.resolve(components, text)
+    assert resolved.canonical is True
+    assert resolved.key == "fuel_system/injector/cylinder_1"
+
+
+def test_distinct_components_are_never_merged(client):
+    keys = {
+        taxonomy.resolve(["Bobine cylindre 1"], "").key,
+        taxonomy.resolve(["Bougie cylindre 1"], "").key,
+        taxonomy.resolve(["Injecteur cylindre 1"], "").key,
+        taxonomy.resolve(["Injecteur cylindre 2"], "").key,
+    }
+    assert len(keys) == 4
+
+
+def test_an_ambiguous_cause_stays_unmerged(client):
+    resolved = taxonomy.resolve(["Bobine cylindre 1", "Bougie cylindre 1"], "")
+    assert resolved.canonical is False
+    assert resolved.reason == taxonomy.AMBIGUOUS
+    assert resolved.component is None
+    assert resolved.key != taxonomy.resolve(["Bobine cylindre 1"], "").key
+
+
+def test_an_unknown_cause_stays_unknown(client):
+    resolved = taxonomy.resolve([], "quelque chose que le vocabulaire ne couvre pas")
+    assert resolved.canonical is False
+    assert resolved.reason == taxonomy.UNRESOLVED
+    other = taxonomy.resolve([], "une autre chose non couverte")
+    assert resolved.key != other.key, "two unknown causes must not merge with each other"
+
+
+def test_the_failure_mode_is_recorded_but_does_not_split_the_cause(client):
+    with_mode = taxonomy.resolve(["Injecteur cylindre 1"], "injecteur défectueux")
+    without = taxonomy.resolve(["Injecteur cylindre 1"], "")
+    assert with_mode.key == without.key
+    assert with_mode.failure_mode == "malfunction"
+    assert without.failure_mode is None
+
+
+def test_technician_wording_is_preserved_verbatim(client):
+    with SessionLocal() as db:
+        garage, user = make_garage(db, "Atelier")
+        _case, recorded = make_completed_case(
+            db, garage, user, GOLF, ["P0301"], cause="Injecteur cylindre 1 HS (constaté au banc)",
+        )
+        assert recorded.root_cause_text == "Injecteur cylindre 1 HS (constaté au banc)"
+        assert recorded.components_involved == ["Injecteur cylindre 1 HS (constaté au banc)"]
+        assert recorded.root_cause_component == "fuel_system/injector/cylinder_1"
+        assert recorded.cause_component == "injector"
+        assert recorded.cause_position == "cylinder_1"
+        assert recorded.cause_canonical is True
+
+
+def test_patterns_group_on_canonical_identity_not_wording(client):
+    """Two workshops, two languages, one pattern."""
+    with SessionLocal() as db:
+        first, first_user = make_garage(db, "Atelier FR")
+        make_completed_case(db, first, first_user, GOLF, ["P0301"],
+                            cause="Injecteur cylindre 1 défectueux")
+        second, second_user = make_garage(db, "Verkstad SE")
+        make_completed_case(db, second, second_user, GOLF, ["P0301"],
+                            cause="Insprutare cylinder 1")
+        patterns = db.scalars(
+            select(ExperiencePattern).where(ExperiencePattern.scope_level == "engine_ecu")
+        ).all()
+        assert len(patterns) == 1, "different wordings produced different patterns"
+        assert patterns[0].garage_count == 2
+        assert patterns[0].support_label == trust.CORROBORATED
+        assert patterns[0].root_cause_component == "fuel_system/injector/cylinder_1"
+
+
+def test_an_unresolved_cause_is_not_shareable(client):
+    with SessionLocal() as db:
+        garage, user = make_garage(db, "Atelier")
+        _case, recorded = make_completed_case(db, garage, user, GOLF, ["P0301"], cause="")
+        assert recorded.cause_canonical is False
+        assert recorded.shareable is False
+
+
+# --- review 3: cross-garage trust and authority -------------------------------
+
+def test_many_cases_from_one_workshop_are_not_many_workshops(client):
+    """Volume from a single garage can never look like independent corroboration."""
+    with SessionLocal() as db:
+        garage, user = make_garage(db, "Atelier prolifique")
+        for index in range(6):
+            make_completed_case(db, garage, user, GOLF, ["P0301"], mileage=100000 + index * 7000)
+        patterns = db.scalars(select(ExperiencePattern)).all()
+        assert patterns
+        assert {item.garage_count for item in patterns} == {1}
+        assert {item.support_label for item in patterns} == {trust.EMERGING}
+        other, _ = make_garage(db, "Atelier tiers")
+        assert retrieval.field_evidence(db, GOLF, [{"code": "P0301"}], other.id) == []
+
+
+def test_confirmations_must_exceed_contradictions_to_stay_shareable(client):
+    with SessionLocal() as db:
+        seeded_network(db, garages=2)
+        pattern = db.scalar(
+            select(ExperiencePattern).where(ExperiencePattern.scope_level == "engine_ecu")
+        )
+        assert trust.shareable_support(pattern.support_label)
+        for index in range(2):
+            garage, user = make_garage(db, f"Contre {index}")
+            make_completed_case(db, garage, user, GOLF, ["P0301"], outcome="contradicted")
+        db.refresh(pattern)
+        assert pattern.contradicting_count == 2 and pattern.confirmed_count == 2
+        assert not trust.shareable_support(pattern.support_label)
+        other, _ = make_garage(db, "Tiers")
+        assert retrieval.field_evidence(db, GOLF, [{"code": "P0301"}], other.id) == []
+
+
+def test_revoking_a_contribution_removes_what_was_learned(client):
+    with SessionLocal() as db:
+        cases = seeded_network(db, garages=3)
+        before = db.scalar(
+            select(ExperiencePattern).where(ExperiencePattern.scope_level == "engine_ecu")
+        )
+        assert before.confirmed_count == 3 and before.garage_count == 3
+        session_id = cases[0][0].id
+        assert capture.revoke(db, session_id) is True
+        db.commit()
+        after = db.scalar(
+            select(ExperiencePattern).where(ExperiencePattern.scope_level == "engine_ecu")
+        )
+        assert after.confirmed_count == 2 and after.garage_count == 2
+        revoked = db.scalar(select(ExperienceCase).where(ExperienceCase.session_id == session_id))
+        assert revoked.revoked_at is not None and revoked.shareable is False
+        assert revoked.root_cause_text, "the raw record is kept for audit"
+        assert db.scalars(
+            select(ExperiencePatternCase).where(ExperiencePatternCase.case_id == revoked.id)
+        ).all() == []
+
+
+def test_revocation_is_idempotent(client):
+    with SessionLocal() as db:
+        cases = seeded_network(db, garages=3)
+        session_id = cases[0][0].id
+        assert capture.revoke(db, session_id) is True
+        assert capture.revoke(db, session_id) is False
+
+
+def test_a_revoked_case_leaves_no_stale_field_evidence(client):
+    with SessionLocal() as db:
+        cases = seeded_network(db, garages=2)
+        other, _ = make_garage(db, "Tiers")
+        assert retrieval.field_evidence(db, GOLF, [{"code": "P0301"}], other.id)
+        capture.revoke(db, cases[0][0].id)
+        db.commit()
+        assert retrieval.field_evidence(db, GOLF, [{"code": "P0301"}], other.id) == []
+
+
+def test_shared_evidence_exposes_no_identifying_field(client):
+    """Nothing that could point at a vehicle, a workshop or a person."""
+    with SessionLocal() as db:
+        cases = seeded_network(db, garages=3)
+        vins = set()
+        for case, recorded in cases:
+            session = db.get(DiagnosticSession, case.id)
+            vehicle = db.get(VehicleProfile, session.vehicle_profile_id)
+            vins.update({vehicle.id, session.id, recorded.id, session.garage_id,
+                         session.technician_id})
+        evidence = retrieval.field_evidence(db, GOLF, [{"code": "P0301"}], garage_id=None)
+        blob = json.dumps(evidence, default=str)
+        for identifier in vins:
+            assert identifier not in blob
+        for banned in ("vin", "registration", "technician_notes", "user_id", "garage_id",
+                       "session_id"):
+            assert banned not in blob.casefold()
+        # The month is enough to date a pattern; the day would date a visit.
+        assert evidence[0]["source"]["source_version"].endswith("-01")
+
+
+def test_field_evidence_keeps_its_class_whatever_the_volume(client):
+    """A hundred agreeing workshops still do not make manufacturer evidence."""
+    with SessionLocal() as db:
+        seeded_network(db, garages=12)
+        evidence = retrieval.field_evidence(db, GOLF, [{"code": "P0301"}], garage_id=None)
+        assert evidence
+        detail = evidence[0]
+        assert detail["trust_class"] == trust.ORVECT_FIELD
+        assert detail["source"]["source_type"] == trust.FIELD_EVIDENCE_SOURCE_TYPE
+        assert detail["source"]["verified"] is False
+        assert trust.trust_class(detail["source"]["source_type"]) != trust.AUTHORITATIVE
+        pattern = db.scalar(
+            select(ExperiencePattern).where(ExperiencePattern.scope_level == "engine_ecu")
+        )
+        assert pattern.support_label == trust.ESTABLISHED
+        assert pattern.garage_count == 12
+
+
+def test_field_evidence_never_becomes_a_dtc_definition(client, monkeypatch):
+    """Even well-supported experience cannot fill a definition ORVECT lacks."""
+    from app.modules.research.decision import decide_research
+
+    monkeypatch.setattr(settings_module, "tavily_api_key", "test-key")
+    plan = decide_research(_research_context(
+        _strong_summary(confirmed_cases=40, independent_garages=12),
+        technical_definitions=[{"definition_type": "manufacturer_specific", "documented": False}],
+    ))
+    assert plan.needed is True
+    assert "internal_definition_missing" in plan.reasons
+
+
+def test_field_evidence_never_becomes_a_safety_rule(client):
+    from app.modules.diagnostic_ai.safety_engine import SafetyEngine
+
+    with SessionLocal() as db:
+        seeded_network(db, garages=12)
+        evidence = retrieval.field_evidence(db, GOLF, [{"code": "P0301"}], garage_id=None)
+    assessment = SafetyEngine().assess({
+        "fault_codes": [{"code": "P0301", "status": "active"}],
+        "untrusted_user_data": {"symptoms": "ralenti irregulier"},
+        "orvect_field_evidence": evidence,
+    })
+    assert assessment.status == "UNKNOWN"
+    assert assessment.ruleIds == ["safety-rules-v1:no-matching-rule"]
+
+
+def test_aggregation_is_reproducible_after_revocation(client):
+    with SessionLocal() as db:
+        cases = seeded_network(db, garages=4)
+        capture.revoke(db, cases[0][0].id)
+        db.commit()
+        snapshot = {
+            item.pattern_key: (item.case_count, item.confirmed_count, item.garage_count,
+                               item.contradicting_count, item.support_label)
+            for item in db.scalars(select(ExperiencePattern)).all()
+        }
+        aggregation.rebuild_all(db)
+        again = {
+            item.pattern_key: (item.case_count, item.confirmed_count, item.garage_count,
+                               item.contradicting_count, item.support_label)
+            for item in db.scalars(select(ExperiencePattern)).all()
+        }
+        assert again == snapshot
+        assert all(counts[2] == 3 for counts in again.values())

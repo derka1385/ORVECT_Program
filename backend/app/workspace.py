@@ -359,5 +359,10 @@ def review_item(kind: Literal["contribution", "dtc"], item_id: str, data: Review
     row = db.scalar(select(model).where(model.id == item_id, model.garage_id == auth.garage_id))
     if not row: raise HTTPException(404, "Contribution introuvable")
     row.status = data.status; row.review_notes = data.notes; row.reviewed_by_user_id = auth.user_id; row.reviewed_at = now()
+    # Withdrawing a contribution must also withdraw what ORVECT learned from it,
+    # otherwise the aggregate outlives the consent that allowed it.
+    revoked = False
+    if kind == "contribution" and data.status == "REVOKED":
+        revoked = experience_capture.revoke(db, row.session_id)
     db.commit(); db.refresh(row)
-    return serialize(row)
+    return {**serialize(row), "experience_revoked": revoked}

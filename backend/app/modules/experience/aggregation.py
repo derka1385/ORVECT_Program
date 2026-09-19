@@ -62,6 +62,8 @@ def index_case(db: Session, case: ExperienceCase) -> list[ExperiencePattern]:
     A case that is not shareable stays in its own workshop: it is recorded and
     counted for that garage's metrics, but it never reaches a shared pattern.
     """
+    if case.revoked_at:
+        return []
     if not case.shareable or case.outcome_class not in capture.PATTERN_ELIGIBLE_OUTCOMES:
         return []
     if not case.root_cause_component or not case.dtc_signature:
@@ -106,6 +108,21 @@ def index_case(db: Session, case: ExperienceCase) -> list[ExperiencePattern]:
     return touched
 
 
+def unindex_case(db: Session, case: ExperienceCase) -> int:
+    """Detach a revoked case and recompute every pattern it fed."""
+    links = db.scalars(
+        select(ExperiencePatternCase).where(ExperiencePatternCase.case_id == case.id)
+    ).all()
+    patterns = [db.get(ExperiencePattern, link.pattern_id) for link in links]
+    for link in links:
+        db.delete(link)
+    db.flush()
+    for pattern in patterns:
+        if pattern:
+            recompute(db, pattern)
+    return len(links)
+
+
 def recompute(db: Session, pattern: ExperiencePattern) -> ExperiencePattern:
     """Rebuild every counter of a pattern from its linked cases."""
     cases = db.scalars(
@@ -115,7 +132,8 @@ def recompute(db: Session, pattern: ExperiencePattern) -> ExperiencePattern:
     ).all()
     # A duplicate submission keeps its row but stops counting, so one workshop
     # cannot inflate a pattern by closing the same job repeatedly.
-    counted = [item for item in cases if not item.duplicate_of]
+    # A duplicate or revoked case keeps its row and stops counting.
+    counted = [item for item in cases if not item.duplicate_of and not item.revoked_at]
     outcomes = Counter(item.outcome_class for item in counted)
     garages = {item.garage_id for item in counted}
     mileages = [item.mileage for item in counted if item.mileage]

@@ -16,7 +16,7 @@ from . import progress as progress_store
 from .analysis_service import AnalysisInProgress,analyze_case
 from .image_service import InvalidImage,cleanup_expired_images,process_image,safe_unlink
 from .providers import AIInvalidResponse,AIProviderUnavailable
-from .schemas import DTCPreviewInput,DiagnosticAnalysis,DiagnosticCreate,FaultCodesInput,MeasurementInput,StepResultInput,NON_INFORMATIVE_RESULT_STATES
+from .schemas import CARRIED_OUT_STEP_STATES,DEAD_HYPOTHESIS_STATES,DTCPreviewInput,DiagnosticAnalysis,DiagnosticCreate,FaultCodesInput,MeasurementInput,StepResultInput,NON_INFORMATIVE_RESULT_STATES
 
 router=APIRouter(prefix="/api/diagnostics",tags=["diagnostic-ai"]);calls=defaultdict(deque);diagnostic_data_resolver=DiagnosticDataResolver()
 def serialize(o):
@@ -153,10 +153,61 @@ def step_result(case_id:str,step_id:str,data:StepResultInput,db:Session=Depends(
     step.status="completed" if data.state in {"positive","negative"} else "blocked"
     step.result=data.model_dump();step.technician_comment=data.comment;step.completed_at=now()
     track(db,"test_recorded",gid,uid,case.id,{"state":data.state})
+    _apply_result_to_hypotheses(db,case,step,data)
     _record_test_event(db,case,step,data)
+    # The session runs without autoflush, so the hypothesis states just changed
+    # are only visible to the next query once they are flushed. Without this the
+    # promotion would re-read the state from before the technician's result.
+    db.flush()
     promoted=_promote_next_step(db,case)
     db.commit();db.refresh(step)
     return {**serialize(step),"next_step_id":promoted.id if promoted else None}
+
+
+# A hypothesis still in play. Rejected ones are kept for the audit trail but
+# must stop driving which check comes next.
+
+
+
+def _apply_result_to_hypotheses(db,case,step,data):
+    """Turn the technician's reading of the result into hypothesis state.
+
+    Deterministic and explicit: only the ids the technician attached are acted
+    on. ORVECT never decides on its own that a free-text outcome killed a
+    hypothesis, and a rejected hypothesis is marked, never deleted.
+    """
+    wanted=set(data.excludes_hypothesis_ids)|set(data.supports_hypothesis_ids)
+    if not wanted:
+        return
+    rows={row.id:row for row in db.scalars(select(DiagnosticHypothesis).where(
+        DiagnosticHypothesis.session_id==case.id,DiagnosticHypothesis.id.in_(sorted(wanted)),
+    )).all()}
+    unknown=wanted-set(rows)
+    if unknown:
+        raise HTTPException(422,"Hypothèse inconnue pour ce dossier")
+    for identifier in data.excludes_hypothesis_ids:
+        row=rows[identifier];before=row.status
+        row.status="rejected"
+        db.add(HypothesisStateEvent(
+            session_id=case.id,hypothesis_id=row.id,hypothesis_label=row.title[:200],
+            event_type="excluded_by_test",step_id=step.id,result_state=data.state,
+            strength_before=row.probability_score,status_before=before,status_after="rejected",
+            decision_source="technician",detail={"outcome":data.outcome[:500]},
+        ))
+    for identifier in data.supports_hypothesis_ids:
+        row=rows[identifier];before=row.verification_status
+        # Supporting evidence raises the verification state, never the score:
+        # ORVECT does not invent a new probability from one observation.
+        if row.verification_status=="unverified":
+            row.verification_status="partially_verified"
+        db.add(HypothesisStateEvent(
+            session_id=case.id,hypothesis_id=row.id,hypothesis_label=row.title[:200],
+            event_type="supported_by_test",step_id=step.id,result_state=data.state,
+            strength_before=row.probability_score,status_before=row.status,status_after=row.status,
+            decision_source="technician",
+            detail={"outcome":data.outcome[:500],"verification_before":before,
+                    "verification_after":row.verification_status},
+        ))
 
 
 def _record_test_event(db,case,step,data):
@@ -189,8 +240,27 @@ def _step_as_check(step) -> dict:
             {"outcome":item.get("label",""),"interpretation":item.get("meaning",""),"nextAction":item.get("next_action","")}
             for item in (step.expected_results or [])
         ],
-        "estimatedDifficulty":(step.result or {}).get("estimatedDifficulty") or "intermediate",
+        "estimatedDifficulty":step.estimated_difficulty or "intermediate",
+        "estimatedMinutes":step.estimated_minutes,
     }
+
+
+def reselect_current_step(db,case):
+    """Re-choose the current check after the diagnostic state changed.
+
+    Used when a hypothesis is rejected outside the test loop: the check that
+    existed to eliminate it should not stay the recommended action.
+    """
+    current=db.scalar(select(DiagnosticStep).where(
+        DiagnosticStep.session_id==case.id,DiagnosticStep.status=="current",
+    ))
+    if current:
+        current.status="pending"
+    chosen=_promote_next_step(db,case)
+    if not chosen and current:
+        current.status="current"
+        return current
+    return chosen
 
 
 def _promote_next_step(db,case):
@@ -205,10 +275,14 @@ def _promote_next_step(db,case):
     if not pending:
         return None
     done={row.title for row in db.scalars(select(DiagnosticStep).where(
-        DiagnosticStep.session_id==case.id,DiagnosticStep.result.is_not(None),
+        DiagnosticStep.session_id==case.id,DiagnosticStep.status.in_(CARRIED_OUT_STEP_STATES),
     )).all()}
+    # Only live hypotheses steer the choice: a test whose whole purpose was to
+    # eliminate a hypothesis the technician just rejected is no longer the next
+    # best action.
     latest=db.scalars(select(DiagnosticHypothesis).where(
-        DiagnosticHypothesis.session_id==case.id,DiagnosticHypothesis.status!="superseded",
+        DiagnosticHypothesis.session_id==case.id,
+        DiagnosticHypothesis.status.notin_(DEAD_HYPOTHESIS_STATES),
     ).order_by(DiagnosticHypothesis.probability_score.desc())).all()
     hypotheses=[{"label":row.title,"component":row.suspected_component} for row in latest]
     ranked=next_check.rank([_step_as_check(row) for row in pending],hypotheses,done)

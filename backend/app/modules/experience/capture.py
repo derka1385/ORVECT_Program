@@ -22,11 +22,12 @@ from app.database.models import (
     ExperienceCase,
     VehicleConfiguration,
     VehicleProfile,
+    now,
 )
 from app.modules.diagnostic_ai.schemas import NON_INFORMATIVE_RESULT_STATES
 from app.modules.research.decision import keywords
 
-from . import signature
+from . import signature, taxonomy
 
 # Outcome classes, from strongest to weakest evidence value.
 CONFIRMED = "confirmed"          # repaired, verified resolved, codes did not come back
@@ -77,19 +78,14 @@ def classify_outcome(completion: DiagnosticCompletion) -> str:
     return UNKNOWN
 
 
-def root_cause_component(completion: DiagnosticCompletion) -> str:
-    """Stable key for what was actually found.
+def canonical_cause(completion: DiagnosticCompletion) -> taxonomy.CanonicalCause:
+    """Structured identity of what was actually found.
 
-    The structured component list wins. Free text is only used as a fallback,
-    reduced to its content words so two technicians writing the same finding
-    differently still land on the same key.
+    Delegated to the taxonomy so that four wordings of one finding, in four
+    languages, produce one key, while an unrecognised or ambiguous cause keeps
+    an identity of its own instead of being forced onto a neighbour.
     """
-    for component in completion.components_involved or []:
-        normalized = signature.normalize(component)
-        if normalized:
-            return normalized[:160]
-    fallback = " ".join(keywords(completion.confirmed_cause, 4))
-    return fallback[:160]
+    return taxonomy.resolve(completion.components_involved, completion.confirmed_cause or "")
 
 
 def _vehicle_dimensions(db: Session, vehicle: VehicleProfile | None) -> dict:
@@ -133,10 +129,16 @@ def _quality(case_fields: dict, outcome: str) -> tuple[int, list[str]]:
         score += 2
     else:
         flags.append("repair_outcome_not_observed")
-    if case_fields["root_cause_component"]:
+    if case_fields["root_cause_component"] and case_fields["root_cause_component"] != taxonomy.UNRESOLVED:
         score += 2
     else:
         flags.append("root_cause_not_identified")
+    if case_fields["cause_canonical"]:
+        score += 1
+    else:
+        # Still admissible: it simply groups with nothing else until the
+        # vocabulary covers it, which is the safe failure direction.
+        flags.append(f"cause_{case_fields['cause_resolution']}")
     if case_fields["dtc_after_repair"] != "not_checked":
         score += 1
     else:
@@ -209,6 +211,7 @@ def build_case(
                 confirmed_rank = position
                 break
 
+    cause = canonical_cause(completion)
     code_entries = [
         {"code": item.key, "namespace": (item.value or {}).get("namespace") or "sae_obd2"}
         for item in dtcs
@@ -228,8 +231,16 @@ def build_case(
         "symptom_keywords": keywords(f"{case.observed_symptoms} {case.appearance_circumstances}", 12),
         "measurement_names": sorted({signature.normalize(item.key)[:80] for item in measurements if item.key}),
         "had_freeze_frame": any((item.value or {}).get("freeze_frame") for item in dtcs),
-        "root_cause_component": root_cause_component(completion),
+        "root_cause_component": cause.key,
+        # The technician's own wording is never rewritten: it is the audit trail
+        # behind every canonical key.
         "root_cause_text": (completion.confirmed_cause or "")[:2000],
+        "cause_system": cause.system,
+        "cause_component": cause.component,
+        "cause_position": cause.position,
+        "cause_failure_mode": cause.failure_mode,
+        "cause_canonical": cause.canonical,
+        "cause_resolution": cause.reason,
         "repair_action_type": completion.repair_action_type,
         "components_involved": [str(item)[:120] for item in (completion.components_involved or [])][:50],
         "resolution_status": completion.resolution_status,
@@ -264,6 +275,7 @@ def build_case(
         and quality_score >= SHAREABLE_MIN_QUALITY
         and outcome in PATTERN_ELIGIBLE_OUTCOMES
         and fields["root_cause_component"]
+        and fields["root_cause_component"] != taxonomy.UNRESOLVED
         and fields["dtc_signature"]
     )
     row = ExperienceCase(
@@ -280,6 +292,26 @@ def build_case(
         **fields,
     )
     return row
+
+
+def revoke(db: Session, session_id: str) -> bool:
+    """Withdraw a case from the shared intelligence.
+
+    Called when a workshop revokes its contribution. The row is kept for audit
+    but stops counting anywhere, and every pattern it fed is recomputed at once
+    so no stale aggregate survives the withdrawal.
+    """
+    from . import aggregation
+
+    row = db.scalar(select(ExperienceCase).where(ExperienceCase.session_id == session_id))
+    if not row or row.revoked_at:
+        return False
+    row.revoked_at = now()
+    row.shareable = False
+    row.review_state = "revoked"
+    db.flush()
+    aggregation.unindex_case(db, row)
+    return True
 
 
 def capture(

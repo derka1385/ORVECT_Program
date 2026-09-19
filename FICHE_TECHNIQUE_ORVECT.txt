@@ -9,7 +9,7 @@ Date : 19 septembre 2026
 Périmètre : dépôt derka1385/ORVECT_Program, branche feat/nebius-on-bijou
 Version de prompt en vigueur : automotive-v4.7-field-evidence
 Version des règles de sécurité : safety-rules-v1
-Migration de base de données la plus récente : 0013
+Migration de base de données la plus récente : 0014
 Version du schéma de sortie IA : 2.0
 
 
@@ -771,6 +771,37 @@ Cent cas de terrain ne deviennent jamais une source constructeur. La preuve de
 terrain est marquée verified=false de façon permanente, ce qui l'empêche de
 déverrouiller une procédure constructeur.
 
+18.2 bis Identité canonique de la cause racine
+
+Une cause confirmée est résolue sur un vocabulaire structuré : système,
+composant, position, mode de défaillance. La résolution est un appariement de
+jetons exact, sans modèle et sans plongement vectoriel, sur un lexique
+multilingue (français, anglais, suédois, allemand).
+
+  « injecteur cylindre 1 défectueux »   ┐
+  « injecteur #1 »                      ├─> fuel_system/injector/cylinder_1
+  « fuel injector cylinder 1 »          │
+  « Insprutare cylinder 1 »             ┘
+
+Le mode de défaillance est enregistré mais volontairement exclu de la clé : il
+scinderait en deux un même constat selon que le technicien a écrit « défectueux »
+ou non. Ce qui sépare un injecteur nettoyé d'un injecteur remplacé est le type
+de réparation, champ structuré déjà présent dans la clé du motif.
+
+La liste structurée de composants prime sur le texte libre. Deux composants
+distincts dans un même constat rendent la cause AMBIGUË, aucun composant connu
+la rend NON RÉSOLUE : dans les deux cas elle conserve une identité propre et ne
+fusionne avec rien. Sous-fusionner coûte un peu de puissance statistique ;
+fusionner à tort placerait le défaut d'un véhicule sur le rapport d'un autre.
+Le texte du technicien est conservé mot pour mot pour l'audit.
+
+18.2 ter Révocation d'une contribution
+
+Le passage d'une contribution au statut REVOKED par la revue administrateur
+retire le cas de l'intelligence partagée : la ligne est conservée pour l'audit,
+horodatée comme révoquée, retirée de tous ses motifs, et chaque motif concerné
+est recalculé immédiatement. Aucun agrégat ne survit au retrait du consentement.
+
 18.3 Classification déterministe des issues
 
   confirmed ..... réparé, résolution vérifiée, codes non revenus, confiance
@@ -826,15 +857,25 @@ recherche externe. Elle ne le peut jamais lorsque le code est constructeur ou
 la définition manquante : l'expérience ne remplace pas une définition absente.
 Une expérience contradictoire ou divergente déclenche au contraire la recherche.
 
-18.8 Diagnostic itératif
+18.8 Diagnostic itératif et adaptatif
 
 Le plan complet reste produit par la couche de raisonnement. ORVECT choisit
 ensuite lui-même le prochain contrôle, par une heuristique déterministe sur le
 coût, la durée, le pouvoir discriminant, l'outillage et les contrôles déjà
 réalisés. La méthode est nommée explicitement dans la réponse
 (deterministic_heuristic_v1) : ce n'est pas un gain d'information optimisé.
-Chaque résultat saisi promeut immédiatement le contrôle suivant, sans appel de
-modèle.
+
+Le choix réagit à l'état diagnostique courant, pas à l'ordre initial du plan.
+Un résultat de contrôle peut porter les identifiants des hypothèses qu'il écarte
+ou qu'il appuie ; ORVECT les applique de façon déterministe, consigne chaque
+transition, puis recalcule le prochain contrôle sur les seules hypothèses encore
+vivantes. Un contrôle qui ne départage plus aucune hypothèse restante est
+fortement pénalisé et cesse d'être recommandé. L'interprétation du résultat reste
+au technicien : ORVECT ne déduit jamais d'un texte libre qu'une piste est morte.
+
+Un verdict d'hypothèse hors de la boucle de test déclenche la même
+re-sélection. Difficulté et durée estimées sont persistées avec l'étape, afin
+que le re-classement n'exige jamais un nouvel appel de modèle.
 
 18.9 Historique des hypothèses
 
@@ -916,6 +957,11 @@ dans le code lui-même.
     fait sur des dimensions structurées et sur les codes défaut, pas sur le
     texte des symptômes. C'est un choix : il rend la compatibilité explicable,
     au prix de ne pas rapprocher deux formulations différentes du même symptôme.
+
+11 quinquies. Lexique de causes volontairement étroit. Un composant absent du
+    vocabulaire reste non résolu et ne groupe avec rien. C'est la direction
+    d'échec sûre, au prix d'un apprentissage plus lent sur les pièces non
+    couvertes. Étendre le lexique est une modification de données.
 
 11 quater. Confiance non calibrée. La métrique exposée est explicitement
     `evidence_strength`, avec `calibrated: false`. Une probabilité diagnostique

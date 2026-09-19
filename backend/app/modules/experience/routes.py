@@ -112,12 +112,21 @@ def record_verdict(
         hypothesis.status = "rejected"
     elif data.verdict == "confirmed":
         hypothesis.verification_status = "verified"
+    # A verdict changes which hypotheses are live, so the recommended check is
+    # chosen again from the new state rather than left where it was.
+    promoted = None
+    if data.verdict in {"rejected", "confirmed"}:
+        from app.modules.diagnostic_ai.routes import reselect_current_step
+
+        db.flush()
+        promoted = reselect_current_step(db, case)
     db.commit()
     db.refresh(outcome)
     return {
         "hypothesis_id": hypothesis.id,
         "verdict": outcome.verdict,
         "recorded_at": outcome.recorded_at.isoformat(),
+        "current_step_id": promoted.id if promoted else None,
     }
 
 

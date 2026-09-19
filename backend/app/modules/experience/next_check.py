@@ -21,6 +21,11 @@ DURATION_WEIGHT = 2
 DISCRIMINATION_WEIGHT = 3
 TOOLING_WEIGHT = 1
 FIELD_EVIDENCE_WEIGHT = 3
+# A check that can no longer separate any live hypothesis is not the next best
+# action, whatever it costs. It stays in the plan but sinks below every check
+# that still discriminates, so rejecting a hypothesis really does re-order the
+# work rather than leaving a now-pointless test recommended.
+IRRELEVANT_PENALTY = 20
 
 # Matches the duration the reasoning layer puts at the head of `objective`,
 # in any of the four report languages.
@@ -30,11 +35,17 @@ DURATION = re.compile(
 )
 
 
-def _duration_score(objective: str) -> tuple[int, int | None]:
+def parse_minutes(objective: str) -> int | None:
+    """Estimated duration the reasoning layer put at the head of `objective`."""
     found = DURATION.search(str(objective or ""))
-    if not found:
+    return int(found.group(1)) if found else None
+
+
+def _duration_score(check: dict) -> tuple[int, int | None]:
+    # Prefer the value persisted with the step; fall back to the plan text.
+    minutes = check.get("estimatedMinutes") or parse_minutes(check.get("objective"))
+    if not minutes:
         return 2, None
-    minutes = int(found.group(1))
     return (3 if minutes <= 10 else 2 if minutes <= 30 else 1), minutes
 
 
@@ -89,7 +100,11 @@ def _field_support(check: dict, evidence: list[dict]) -> int:
 
 
 def rank(checks: list[dict], hypotheses: list[dict], completed_titles: set[str], evidence: list[dict] | None = None) -> list[dict]:
-    """Score every outstanding check, best first, with its reasoning attached."""
+    """Score every outstanding check, best first, with its reasoning attached.
+
+    `hypotheses` must be the LIVE ones only. Feeding rejected hypotheses back in
+    would keep recommending the test that was supposed to eliminate them.
+    """
     evidence = evidence or []
     done = {signature.normalize(title) for title in completed_titles}
     scored = []
@@ -97,7 +112,7 @@ def rank(checks: list[dict], hypotheses: list[dict], completed_titles: set[str],
         if signature.normalize(check.get("title", "")) in done:
             continue
         difficulty = DIFFICULTY_SCORE.get(check.get("estimatedDifficulty"), 2)
-        duration_score, minutes = _duration_score(check.get("objective"))
+        duration_score, minutes = _duration_score(check)
         discrimination = _discrimination(check, hypotheses)
         tools = len(check.get("requiredTools") or [])
         tooling_score = 3 if tools <= 1 else 2 if tools <= 3 else 1
@@ -117,6 +132,9 @@ def rank(checks: list[dict], hypotheses: list[dict], completed_titles: set[str],
         ]
         if field:
             rationale.append("contrôle discriminant déjà observé en atelier")
+        if hypotheses and not discrimination:
+            score -= IRRELEVANT_PENALTY
+            rationale.append("ne départage plus aucune hypothèse restante")
         scored.append(
             {
                 "check": check,

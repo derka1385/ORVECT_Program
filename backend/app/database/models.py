@@ -130,6 +130,10 @@ class DiagnosticObservation(Base):
 class DiagnosticHypothesis(Base, Timestamps):
     __tablename__="diagnostic_hypotheses"; id: Mapped[str]=mapped_column(String(36), primary_key=True, default=uid); session_id: Mapped[str]=mapped_column(ForeignKey("diagnostic_sessions.id"), index=True); title: Mapped[str]=mapped_column(String(200)); suspected_component: Mapped[str]=mapped_column(String(100)); probability_score: Mapped[float]=mapped_column(Float); confidence_label: Mapped[str]=mapped_column(String(20)); reasoning: Mapped[str]=mapped_column(Text); supporting_evidence: Mapped[list]=mapped_column(JSON); contradicting_evidence: Mapped[list]=mapped_column(JSON); source_ids: Mapped[list]=mapped_column(JSON); source_references: Mapped[list]=mapped_column(JSON,default=list); verification_status: Mapped[str]=mapped_column(String(30),default="unverified"); status: Mapped[str]=mapped_column(String(30), default="active")
 class DiagnosticStep(Base):
+    # Kept so the next check can be re-ranked from the stored plan alone:
+    # without them a completed step loses its cost and duration.
+    estimated_difficulty: Mapped[str|None]=mapped_column(String(20))
+    estimated_minutes: Mapped[int|None]=mapped_column(Integer)
     __tablename__="diagnostic_steps"; id: Mapped[str]=mapped_column(String(36), primary_key=True, default=uid); session_id: Mapped[str]=mapped_column(ForeignKey("diagnostic_sessions.id"), index=True); step_order: Mapped[int]=mapped_column(Integer); title: Mapped[str]=mapped_column(String(250)); objective: Mapped[str]=mapped_column(Text); instructions: Mapped[list]=mapped_column(JSON); required_tools: Mapped[list]=mapped_column(JSON); expected_results: Mapped[list]=mapped_column(JSON); safety_notes: Mapped[list]=mapped_column(JSON); source_ids: Mapped[list]=mapped_column(JSON); source_references: Mapped[list]=mapped_column(JSON,default=list); verification_status: Mapped[str]=mapped_column(String(30),default="unverified"); status: Mapped[str]=mapped_column(String(30), default="pending"); result: Mapped[dict|None]=mapped_column(JSON); technician_comment: Mapped[str|None]=mapped_column(Text); hypotheses_before: Mapped[list]=mapped_column(JSON,default=list); hypotheses_after: Mapped[list]=mapped_column(JSON,default=list); created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True), default=now); completed_at: Mapped[datetime|None]=mapped_column(DateTime(timezone=True))
 class DiagnosticEvent(Base):
     __tablename__="diagnostic_events"; id: Mapped[str]=mapped_column(String(36), primary_key=True, default=uid); session_id: Mapped[str]=mapped_column(ForeignKey("diagnostic_sessions.id"), index=True); event_type: Mapped[str]=mapped_column(String(60)); payload: Mapped[dict]=mapped_column(JSON); actor_type: Mapped[str]=mapped_column(String(30)); actor_id: Mapped[str|None]=mapped_column(String(36)); created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True), default=now)
@@ -417,8 +421,17 @@ class ExperienceCase(Base):
     measurement_names: Mapped[list] = mapped_column(JSON, default=list)
     had_freeze_frame: Mapped[bool] = mapped_column(Boolean, default=False)
     # Outcome.
+    # Canonical identity of the confirmed cause. `root_cause_component` holds
+    # the key patterns are grouped on; the parts below explain how it was
+    # obtained, and the technician's own wording is preserved untouched.
     root_cause_component: Mapped[str] = mapped_column(String(160), default="", index=True)
     root_cause_text: Mapped[str] = mapped_column(Text, default="")
+    cause_system: Mapped[str | None] = mapped_column(String(60), index=True)
+    cause_component: Mapped[str | None] = mapped_column(String(80), index=True)
+    cause_position: Mapped[str | None] = mapped_column(String(40))
+    cause_failure_mode: Mapped[str | None] = mapped_column(String(40))
+    cause_canonical: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    cause_resolution: Mapped[str] = mapped_column(String(40), default="unresolved")
     repair_action_type: Mapped[str] = mapped_column(String(50), default="other")
     components_involved: Mapped[list] = mapped_column(JSON, default=list)
     resolution_status: Mapped[str] = mapped_column(String(50), default="other")
@@ -439,6 +452,9 @@ class ExperienceCase(Base):
     review_state: Mapped[str] = mapped_column(String(30), default="auto_accepted", index=True)
     shareable: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     duplicate_of: Mapped[str | None] = mapped_column(ForeignKey("experience_cases.id"))
+    # Set when a workshop withdraws its contribution. A revoked case stops
+    # counting everywhere rather than leaving stale intelligence behind.
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
 
 
