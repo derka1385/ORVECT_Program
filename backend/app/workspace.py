@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.modules.experience import capture as experience_capture
 from app.auth import AuthContext, active_garage_id, authenticated_user_id, require_admin
 from app.database.models import (
     AccountPreference,
@@ -222,8 +223,28 @@ def complete_diagnostic(session_id: str, data: CompletionInput, db: Session = De
         contribution = build_contribution(db, case, completion, consent)
         db.add(contribution); db.flush()
         analytics(db, "contribution_created", garage_id, user_id, case.id, {"status": contribution.status})
+    # The Experience Engine learns from every completion. Sharing across
+    # workshops still requires consent; this row also serves the garage's own
+    # history and its own metrics, which need no consent from anyone else.
+    experience = experience_capture.capture(db, case, completion, consent)
+    if experience:
+        analytics(db, "experience_case_recorded", garage_id, user_id, case.id, {
+            "outcome_class": experience.outcome_class,
+            "shareable": experience.shareable,
+            "quality_score": experience.quality_score,
+        })
     db.commit(); db.refresh(completion)
-    return {"completion": serialize(completion), "contribution": serialize(contribution) if contribution else None}
+    return {
+        "completion": serialize(completion),
+        "contribution": serialize(contribution) if contribution else None,
+        "experience": {
+            "recorded": bool(experience),
+            "outcome_class": experience.outcome_class if experience else None,
+            "shareable": experience.shareable if experience else False,
+            "quality_score": experience.quality_score if experience else 0,
+            "quality_flags": experience.quality_flags if experience else [],
+        },
+    }
 
 
 @router.post("/api/diagnostics/{session_id}/amendments", status_code=201)

@@ -15,6 +15,7 @@ from app.database.models import (
     VehicleConfiguration,
 )
 from app.modules.diagnostic_data.resolver import DiagnosticDataResolver, build_vehicle_context
+from app.modules.experience import retrieval as field_retrieval, trust
 from app.modules.dtc.service import source_reference
 
 
@@ -162,6 +163,10 @@ class DiagnosticContextBuilder:
             .where(DiagnosticImage.session_id == case.id, DiagnosticImage.processing_status == "ready")
             .order_by(DiagnosticImage.created_at)
         ).all()
+        context_codes = [
+            {"code": item.key, "namespace": (item.value or {}).get("namespace") or "sae_obd2"}
+            for item in dtcs
+        ]
         context = {
             "vehicle": normalized,
             "fault_codes": [
@@ -218,10 +223,20 @@ class DiagnosticContextBuilder:
                 ],
                 "instruction": "Correlate all confirmed DTCs, symptoms, measurements and technician observations together; never concatenate independent code explanations.",
             },
-            "technical_excerpts": self.retriever.search(
-                db, normalized, codes, case.observed_symptoms, "diagnostic controls"
+            "technical_excerpts": [
+                {**item, "origin": "orvect_knowledge", "trust_class": trust.AUTHORITATIVE}
+                for item in self.retriever.search(
+                    db, normalized, codes, case.observed_symptoms, "diagnostic controls"
+                )
+            ],
+            # ORVECT's own accumulated workshop evidence, retrieved before any
+            # external search is considered. Aggregated and anonymized at the
+            # source: no raw case from another garage can reach this list.
+            "orvect_field_evidence": field_retrieval.field_evidence(
+                db, normalized, context_codes, case.garage_id
             ),
         }
+        context["field_evidence_summary"] = field_retrieval.summarize(context["orvect_field_evidence"])
         return context, images
 
     @staticmethod

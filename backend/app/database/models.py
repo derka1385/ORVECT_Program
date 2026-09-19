@@ -331,3 +331,161 @@ class ResearchCache(Base):
     search_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+# --- ORVECT Experience Engine -------------------------------------------------
+# Real workshop outcomes become reusable diagnostic evidence. Nothing here is
+# decided by a language model: every row is derived from structured technician
+# input by deterministic code, and every aggregate remains traceable to the
+# individual cases that produced it.
+
+class HypothesisStateEvent(Base):
+    """Append-only history of how one hypothesis moved during a diagnosis.
+
+    Prior states are never overwritten: the whole ranking history of a case has
+    to stay auditable long after the report was regenerated.
+    """
+    __tablename__ = "hypothesis_state_events"
+    __table_args__ = (Index("ix_hypothesis_state_events_session_created", "session_id", "created_at"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    session_id: Mapped[str] = mapped_column(ForeignKey("diagnostic_sessions.id"), index=True)
+    hypothesis_id: Mapped[str | None] = mapped_column(ForeignKey("diagnostic_hypotheses.id"), index=True)
+    hypothesis_label: Mapped[str] = mapped_column(String(200), default="")
+    event_type: Mapped[str] = mapped_column(String(40), index=True)
+    step_id: Mapped[str | None] = mapped_column(ForeignKey("diagnostic_steps.id"))
+    result_state: Mapped[str | None] = mapped_column(String(30))
+    strength_before: Mapped[float | None] = mapped_column(Float)
+    strength_after: Mapped[float | None] = mapped_column(Float)
+    status_before: Mapped[str | None] = mapped_column(String(30))
+    status_after: Mapped[str | None] = mapped_column(String(30))
+    rank_position: Mapped[int | None] = mapped_column(Integer)
+    decision_source: Mapped[str] = mapped_column(String(40), default="technician")
+    detail: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
+
+
+class HypothesisOutcome(Base):
+    """Technician verdict on one hypothesis. `undetermined` is never confirmation."""
+    __tablename__ = "hypothesis_outcomes"
+    __table_args__ = (UniqueConstraint("hypothesis_id", name="uq_hypothesis_outcome_hypothesis"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    session_id: Mapped[str] = mapped_column(ForeignKey("diagnostic_sessions.id"), index=True)
+    hypothesis_id: Mapped[str] = mapped_column(ForeignKey("diagnostic_hypotheses.id"), index=True)
+    garage_id: Mapped[str] = mapped_column(ForeignKey("garages.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    verdict: Mapped[str] = mapped_column(String(30), index=True)
+    evidence_note: Mapped[str] = mapped_column(Text, default="")
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
+
+
+class ExperienceCase(Base):
+    """One completed diagnosis, normalized into queryable learning dimensions.
+
+    Tenant-private by construction. `shareable` alone decides whether the case
+    may feed cross-garage patterns, and it requires explicit consent plus the
+    quality gate in `experience.capture`.
+    """
+    __tablename__ = "experience_cases"
+    __table_args__ = (
+        Index("ix_experience_cases_dtc_engine", "dtc_signature", "engine_code"),
+        Index("ix_experience_cases_shareable_outcome", "shareable", "outcome_class"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    session_id: Mapped[str] = mapped_column(ForeignKey("diagnostic_sessions.id"), unique=True, index=True)
+    garage_id: Mapped[str] = mapped_column(ForeignKey("garages.id"), index=True)
+    completion_id: Mapped[str | None] = mapped_column(ForeignKey("diagnostic_completions.id"))
+    consent_id: Mapped[str | None] = mapped_column(ForeignKey("diagnostic_data_consents.id"))
+    # Vehicle dimensions used by the compatibility system.
+    manufacturer: Mapped[str | None] = mapped_column(String(150), index=True)
+    make: Mapped[str | None] = mapped_column(String(100))
+    model: Mapped[str | None] = mapped_column(String(100))
+    generation: Mapped[str | None] = mapped_column(String(100))
+    platform: Mapped[str | None] = mapped_column(String(120))
+    model_year: Mapped[int | None] = mapped_column(Integer)
+    engine_code: Mapped[str | None] = mapped_column(String(80), index=True)
+    engine_family: Mapped[str | None] = mapped_column(String(120))
+    fuel_type: Mapped[str | None] = mapped_column(String(50))
+    transmission_type: Mapped[str | None] = mapped_column(String(60))
+    drivetrain: Mapped[str | None] = mapped_column(String(60))
+    ecu_manufacturer: Mapped[str | None] = mapped_column(String(120))
+    ecu_model: Mapped[str | None] = mapped_column(String(120))
+    mileage: Mapped[int | None] = mapped_column(Integer)
+    # Diagnostic dimensions.
+    dtc_signature: Mapped[str] = mapped_column(String(300), index=True)
+    dtc_codes: Mapped[list] = mapped_column(JSON, default=list)
+    symptom_keywords: Mapped[list] = mapped_column(JSON, default=list)
+    measurement_names: Mapped[list] = mapped_column(JSON, default=list)
+    had_freeze_frame: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Outcome.
+    root_cause_component: Mapped[str] = mapped_column(String(160), default="", index=True)
+    root_cause_text: Mapped[str] = mapped_column(Text, default="")
+    repair_action_type: Mapped[str] = mapped_column(String(50), default="other")
+    components_involved: Mapped[list] = mapped_column(JSON, default=list)
+    resolution_status: Mapped[str] = mapped_column(String(50), default="other")
+    post_repair_result: Mapped[str] = mapped_column(String(40), default="unknown_not_tested")
+    dtc_after_repair: Mapped[str] = mapped_column(String(40), default="not_checked")
+    root_cause_confidence: Mapped[str] = mapped_column(String(50), default="not_confirmed")
+    outcome_class: Mapped[str] = mapped_column(String(30), default="unknown", index=True)
+    # Diagnostic path.
+    discriminating_tests: Mapped[list] = mapped_column(JSON, default=list)
+    test_count: Mapped[int] = mapped_column(Integer, default=0)
+    informative_test_count: Mapped[int] = mapped_column(Integer, default=0)
+    confirmed_hypothesis_rank: Mapped[int | None] = mapped_column(Integer)
+    hypothesis_count: Mapped[int] = mapped_column(Integer, default=0)
+    time_to_outcome_seconds: Mapped[int | None] = mapped_column(Integer)
+    # Admission control.
+    quality_score: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    quality_flags: Mapped[list] = mapped_column(JSON, default=list)
+    review_state: Mapped[str] = mapped_column(String(30), default="auto_accepted", index=True)
+    shareable: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    duplicate_of: Mapped[str | None] = mapped_column(ForeignKey("experience_cases.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
+
+
+class ExperiencePattern(Base):
+    """Aggregate of compatible experience cases sharing one outcome.
+
+    Counts are recomputed from `experience_pattern_cases`, never incremented
+    blindly, so the aggregate is always reproducible from the raw cases.
+    """
+    __tablename__ = "experience_patterns"
+    __table_args__ = (
+        Index("ix_experience_patterns_lookup", "dtc_signature", "scope_level", "support_label"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    pattern_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    scope_level: Mapped[str] = mapped_column(String(30), index=True)
+    scope: Mapped[dict] = mapped_column(JSON, default=dict)
+    dtc_scope: Mapped[str] = mapped_column(String(20), default="set")
+    dtc_signature: Mapped[str] = mapped_column(String(300), index=True)
+    root_cause_component: Mapped[str] = mapped_column(String(160), default="")
+    repair_action_type: Mapped[str] = mapped_column(String(50), default="other")
+    case_count: Mapped[int] = mapped_column(Integer, default=0)
+    garage_count: Mapped[int] = mapped_column(Integer, default=0)
+    confirmed_count: Mapped[int] = mapped_column(Integer, default=0)
+    supported_count: Mapped[int] = mapped_column(Integer, default=0)
+    contradicting_count: Mapped[int] = mapped_column(Integer, default=0)
+    unresolved_count: Mapped[int] = mapped_column(Integer, default=0)
+    unknown_count: Mapped[int] = mapped_column(Integer, default=0)
+    mileage_min: Mapped[int | None] = mapped_column(Integer)
+    mileage_max: Mapped[int | None] = mapped_column(Integer)
+    common_symptoms: Mapped[list] = mapped_column(JSON, default=list)
+    discriminating_tests: Mapped[list] = mapped_column(JSON, default=list)
+    component_examples: Mapped[list] = mapped_column(JSON, default=list)
+    support_label: Mapped[str] = mapped_column(String(30), default="emerging", index=True)
+    review_state: Mapped[str] = mapped_column(String(30), default="auto", index=True)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class ExperiencePatternCase(Base):
+    """Link row keeping every pattern traceable to its underlying cases."""
+    __tablename__ = "experience_pattern_cases"
+    __table_args__ = (UniqueConstraint("pattern_id", "case_id", name="uq_pattern_case"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    pattern_id: Mapped[str] = mapped_column(ForeignKey("experience_patterns.id"), index=True)
+    case_id: Mapped[str] = mapped_column(ForeignKey("experience_cases.id"), index=True)
+    garage_id: Mapped[str] = mapped_column(ForeignKey("garages.id"), index=True)
+    outcome_class: Mapped[str] = mapped_column(String(30), index=True)
+    contributed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
