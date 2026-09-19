@@ -7,15 +7,16 @@ from pydantic import ValidationError
 from sqlalchemy import func,select
 from sqlalchemy.orm import Session
 from app.core.config import settings
+from app.modules.experience import next_check
 from app.auth import active_garage_id,authenticated_user_id
-from app.database.models import AICall,DiagnosticDataConsent,DiagnosticEvent,DiagnosticHypothesis,DiagnosticImage,DiagnosticObservation,DiagnosticSession,DiagnosticStep,ProductAnalyticsEvent,VehicleConfiguration,VehicleProfile,now
+from app.database.models import AICall,DiagnosticDataConsent,DiagnosticEvent,DiagnosticHypothesis,DiagnosticImage,DiagnosticObservation,DiagnosticSession,DiagnosticStep,HypothesisStateEvent,ProductAnalyticsEvent,VehicleConfiguration,VehicleProfile,now
 from app.database.session import get_db
 from app.modules.diagnostic_data.resolver import DiagnosticDataResolver,build_vehicle_context
 from . import progress as progress_store
 from .analysis_service import AnalysisInProgress,analyze_case
 from .image_service import InvalidImage,cleanup_expired_images,process_image,safe_unlink
 from .providers import AIInvalidResponse,AIProviderUnavailable
-from .schemas import DTCPreviewInput,DiagnosticAnalysis,DiagnosticCreate,FaultCodesInput,MeasurementInput,StepResultInput
+from .schemas import CARRIED_OUT_STEP_STATES,DEAD_HYPOTHESIS_STATES,DTCPreviewInput,DiagnosticAnalysis,DiagnosticCreate,FaultCodesInput,MeasurementInput,StepResultInput,NON_INFORMATIVE_RESULT_STATES
 
 router=APIRouter(prefix="/api/diagnostics",tags=["diagnostic-ai"]);calls=defaultdict(deque);diagnostic_data_resolver=DiagnosticDataResolver()
 def serialize(o):
@@ -149,7 +150,145 @@ def step_result(case_id:str,step_id:str,data:StepResultInput,db:Session=Depends(
     if case.status=="analyzing":raise HTTPException(409,"Analyse en cours")
     if not step:raise HTTPException(404,"Étape introuvable")
     if step.status!="current":raise HTTPException(409,"Seule l’étape courante non terminée peut recevoir un résultat")
-    step.status="completed" if data.state in {"positive","negative"} else "blocked";step.result=data.model_dump();step.technician_comment=data.comment;step.completed_at=now();track(db,"test_recorded",gid,uid,case.id,{"state":data.state});db.commit();return serialize(step)
+    step.status="completed" if data.state in {"positive","negative"} else "blocked"
+    step.result=data.model_dump();step.technician_comment=data.comment;step.completed_at=now()
+    track(db,"test_recorded",gid,uid,case.id,{"state":data.state})
+    _apply_result_to_hypotheses(db,case,step,data)
+    _record_test_event(db,case,step,data)
+    # The session runs without autoflush, so the hypothesis states just changed
+    # are only visible to the next query once they are flushed. Without this the
+    # promotion would re-read the state from before the technician's result.
+    db.flush()
+    promoted=_promote_next_step(db,case)
+    db.commit();db.refresh(step)
+    return {**serialize(step),"next_step_id":promoted.id if promoted else None}
+
+
+# A hypothesis still in play. Rejected ones are kept for the audit trail but
+# must stop driving which check comes next.
+
+
+
+def _apply_result_to_hypotheses(db,case,step,data):
+    """Turn the technician's reading of the result into hypothesis state.
+
+    Deterministic and explicit: only the ids the technician attached are acted
+    on. ORVECT never decides on its own that a free-text outcome killed a
+    hypothesis, and a rejected hypothesis is marked, never deleted.
+    """
+    wanted=set(data.excludes_hypothesis_ids)|set(data.supports_hypothesis_ids)
+    if not wanted:
+        return
+    rows={row.id:row for row in db.scalars(select(DiagnosticHypothesis).where(
+        DiagnosticHypothesis.session_id==case.id,DiagnosticHypothesis.id.in_(sorted(wanted)),
+    )).all()}
+    unknown=wanted-set(rows)
+    if unknown:
+        raise HTTPException(422,"Hypothèse inconnue pour ce dossier")
+    for identifier in data.excludes_hypothesis_ids:
+        row=rows[identifier];before=row.status
+        row.status="rejected"
+        db.add(HypothesisStateEvent(
+            session_id=case.id,hypothesis_id=row.id,hypothesis_label=row.title[:200],
+            event_type="excluded_by_test",step_id=step.id,result_state=data.state,
+            strength_before=row.probability_score,status_before=before,status_after="rejected",
+            decision_source="technician",detail={"outcome":data.outcome[:500]},
+        ))
+    for identifier in data.supports_hypothesis_ids:
+        row=rows[identifier];before=row.verification_status
+        # Supporting evidence raises the verification state, never the score:
+        # ORVECT does not invent a new probability from one observation.
+        if row.verification_status=="unverified":
+            row.verification_status="partially_verified"
+        db.add(HypothesisStateEvent(
+            session_id=case.id,hypothesis_id=row.id,hypothesis_label=row.title[:200],
+            event_type="supported_by_test",step_id=step.id,result_state=data.state,
+            strength_before=row.probability_score,status_before=row.status,status_after=row.status,
+            decision_source="technician",
+            detail={"outcome":data.outcome[:500],"verification_before":before,
+                    "verification_after":row.verification_status},
+        ))
+
+
+def _record_test_event(db,case,step,data):
+    """Append the technician's result to the hypothesis history.
+
+    The ranking itself is only rewritten by the next analysis; this row records
+    what triggered it, so the evolution stays reconstructable afterwards.
+    """
+    informative=data.state not in NON_INFORMATIVE_RESULT_STATES
+    for entry in (step.hypotheses_before or []):
+        db.add(HypothesisStateEvent(
+            session_id=case.id,
+            hypothesis_label=str(entry.get("label") or "")[:200],
+            event_type="test_result" if informative else "test_non_informative",
+            step_id=step.id,
+            result_state=data.state,
+            strength_before=entry.get("confidence"),
+            status_before=entry.get("status"),
+            decision_source="technician",
+            detail={"outcome":data.outcome[:500],"informative":informative},
+        ))
+
+
+def _step_as_check(step) -> dict:
+    """The stored step rendered back into the shape the ranker expects."""
+    return {
+        "id":step.id,"order":step.step_order,"title":step.title,"objective":step.objective,
+        "requiredTools":step.required_tools or [],
+        "expectedResults":[
+            {"outcome":item.get("label",""),"interpretation":item.get("meaning",""),"nextAction":item.get("next_action","")}
+            for item in (step.expected_results or [])
+        ],
+        "estimatedDifficulty":step.estimated_difficulty or "intermediate",
+        "estimatedMinutes":step.estimated_minutes,
+    }
+
+
+def reselect_current_step(db,case):
+    """Re-choose the current check after the diagnostic state changed.
+
+    Used when a hypothesis is rejected outside the test loop: the check that
+    existed to eliminate it should not stay the recommended action.
+    """
+    current=db.scalar(select(DiagnosticStep).where(
+        DiagnosticStep.session_id==case.id,DiagnosticStep.status=="current",
+    ))
+    if current:
+        current.status="pending"
+    chosen=_promote_next_step(db,case)
+    if not chosen and current:
+        current.status="current"
+        return current
+    return chosen
+
+
+def _promote_next_step(db,case):
+    """Pick the next most useful outstanding check, deterministically.
+
+    This is the iterative loop: a submitted result immediately yields the next
+    action without waiting for a new reasoning call.
+    """
+    pending=db.scalars(select(DiagnosticStep).where(
+        DiagnosticStep.session_id==case.id,DiagnosticStep.status=="pending",
+    ).order_by(DiagnosticStep.step_order)).all()
+    if not pending:
+        return None
+    done={row.title for row in db.scalars(select(DiagnosticStep).where(
+        DiagnosticStep.session_id==case.id,DiagnosticStep.status.in_(CARRIED_OUT_STEP_STATES),
+    )).all()}
+    # Only live hypotheses steer the choice: a test whose whole purpose was to
+    # eliminate a hypothesis the technician just rejected is no longer the next
+    # best action.
+    latest=db.scalars(select(DiagnosticHypothesis).where(
+        DiagnosticHypothesis.session_id==case.id,
+        DiagnosticHypothesis.status.notin_(DEAD_HYPOTHESIS_STATES),
+    ).order_by(DiagnosticHypothesis.probability_score.desc())).all()
+    hypotheses=[{"label":row.title,"component":row.suspected_component} for row in latest]
+    ranked=next_check.rank([_step_as_check(row) for row in pending],hypotheses,done)
+    chosen=next(( row for row in pending if ranked and row.id==ranked[0]["check"]["id"]),pending[0])
+    chosen.status="current"
+    return chosen
 @router.post("/{case_id}/reanalyze")
 async def reanalyze(case_id:str,language:str=Query("fr"),db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
     rate_limit(gid);case=owned_case(db,case_id,gid);track(db,"diagnostic_reassessed",gid,uid,case.id);db.commit()

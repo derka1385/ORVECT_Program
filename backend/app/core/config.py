@@ -76,6 +76,10 @@ class Settings(BaseSettings):
     tavily_results_per_query: int = 5
     tavily_cache_ttl_hours: int = 168
     research_enabled: bool = True
+    # Left at zero on purpose: without a configured tariff the metrics layer
+    # reports token counts and declines to invent a cost.
+    nebius_price_input_per_mtok: float = 0.0
+    nebius_price_output_per_mtok: float = 0.0
 
     gemini_api_key: str = ""
     gemini_model_fast: str = "gemini-3.1-flash-lite"

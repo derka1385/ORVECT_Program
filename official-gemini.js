@@ -198,7 +198,10 @@
       grid.append(card);
     });
     if(!analysis.hypotheses.length)p(hypotheses,analysis.finalConclusion.summary);
-    const check=analysis.nextChecks[0];$('#checkTitle').textContent=check?.title||t('Informations complémentaires nécessaires');$('#checkObjective').textContent=(check?.objective||analysis.finalConclusion.summary||'').replace(/Durée estimée\s*:/i,t('Durée estimée :'));
+    // ORVECT picks the next check itself, deterministically; the plan below
+    // keeps the full reasoning order. Fall back to the plan's first entry.
+    const best=analysis.nextBestCheck?.checkId;
+    const check=(best&&analysis.nextChecks.find(item=>item.id===best))||analysis.nextChecks[0];$('#checkTitle').textContent=check?.title||t('Informations complémentaires nécessaires');$('#checkObjective').textContent=(check?.objective||analysis.finalConclusion.summary||'').replace(/Durée estimée\s*:/i,t('Durée estimée :'));
     const instructions=$('.process-panel .instructions');instructions.replaceChildren();for(const instruction of check?.instructions||[])p(instructions,instruction,'li');
     $('#recordResult').disabled=!currentStep;
     const missing=$('.case-panel .missing');missing.replaceChildren();for(const item of analysis.missingInformation||[])p(missing,`${item.field} : ${item.reason} — ${item.howToObtain}`,'li');

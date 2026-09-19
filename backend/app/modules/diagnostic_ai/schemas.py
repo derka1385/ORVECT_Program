@@ -168,12 +168,24 @@ class LLMDiagnosticAnalysis(Strict):
 
 
 class DiagnosticConfidence(Strict):
-    """Heuristic diagnostic confidence — never a probability that a repair works."""
+    """How well-evidenced this case is — NOT a probability that the diagnosis is right.
+
+    The wire field stays `confidence` for client compatibility, but the metric
+    it carries is `evidence_strength`: it scores the quality and convergence of
+    the evidence gathered, nothing else. A second, genuinely probabilistic
+    metric can only appear once enough confirmed outcomes exist to calibrate it
+    against reality, which is what the Experience Engine is accumulating.
+    """
 
     score: int = Field(ge=0, le=100)
     label: Literal["low", "moderate", "good", "strong"]
     factors: list[str]
     improvedBy: list[str]
+    metric: Literal["evidence_strength"] = "evidence_strength"
+    interpretation: str = (
+        "Mesure la solidité de l’étayage réuni, pas la probabilité que la réparation réussisse."
+    )
+    calibrated: bool = False
     decisionSource: Literal["confidence_heuristic"] = "confidence_heuristic"
 
 
@@ -189,10 +201,36 @@ class ResearchMetadata(Strict):
     failedQueries: list[str] = Field(default_factory=list)
     researchError: str | None = None
     sourceMix: dict = Field(default_factory=dict)
+    # ORVECT field evidence telemetry: how much of this diagnosis rested on the
+    # platform's own accumulated workshop outcomes rather than on the open web.
+    fieldEvidenceUsed: bool = False
+    fieldEvidenceItems: int = 0
+    fieldEvidenceLevel: str | None = None
+    fieldEvidenceSupport: str | None = None
+    fieldEvidenceCases: int = 0
+    fieldEvidenceGarages: int = 0
+    researchAvoidedByFieldEvidence: bool = False
     provider: str | None = None
     model: str | None = None
     durationMs: int | None = None
     tokenUsage: dict | None = None
+
+
+class NextBestCheck(Strict):
+    """Server-chosen next action, ranked deterministically from the model's plan.
+
+    `selectionMethod` is stated so nobody reads this as an information-gain
+    optimum: it is a transparent heuristic over cost, time, discriminating
+    power and what the workshop already did.
+    """
+
+    checkId: str
+    title: str
+    planOrder: int
+    score: int
+    rationale: list[str]
+    selectionMethod: str
+    decisionSource: Literal["next_check_heuristic"] = "next_check_heuristic"
 
 
 class DiagnosticAnalysis(LLMDiagnosticAnalysis):
@@ -200,6 +238,7 @@ class DiagnosticAnalysis(LLMDiagnosticAnalysis):
     # Optional so analyses stored before this revision still validate.
     confidence: DiagnosticConfidence | None = None
     researchMetadata: ResearchMetadata | None = None
+    nextBestCheck: NextBestCheck | None = None
 
 
 class DiagnosticCreate(Strict):
@@ -263,10 +302,22 @@ class MeasurementInput(Strict):
 
 ResultState = Literal["positive", "negative", "inconclusive", "unavailable", "invalid", "refused"]
 NON_INFORMATIVE_RESULT_STATES = {"inconclusive", "unavailable", "invalid", "refused"}
+# A check the workshop has carried out. Status is the reliable record: the
+# `result` column is JSON, and a JSON column set to None is stored as JSON null
+# rather than SQL NULL, so `result IS NOT NULL` matches every step ever created.
+CARRIED_OUT_STEP_STATES = ("completed", "blocked")
+# A hypothesis that no longer steers the diagnosis. Kept in the history, never
+# deleted, but excluded from deciding which check comes next.
+DEAD_HYPOTHESIS_STATES = ("superseded", "rejected")
 
 
 class StepResultInput(Strict):
     state: ResultState
+    # What this outcome means for the ranking, stated by the technician rather
+    # than guessed from free text. ORVECT applies it deterministically and
+    # records it; it never infers elimination from prose on its own.
+    excludes_hypothesis_ids: list[str] = Field(default_factory=list, max_length=20)
+    supports_hypothesis_ids: list[str] = Field(default_factory=list, max_length=20)
     outcome: str = Field(default="", max_length=500)
     measurement: float | None = None
     unit: str | None = Field(default=None, max_length=30)

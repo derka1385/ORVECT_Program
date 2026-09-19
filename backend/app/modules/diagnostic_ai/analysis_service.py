@@ -6,8 +6,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.database.models import AICall, DiagnosticEvent, DiagnosticHypothesis, DiagnosticSession, DiagnosticStep, now
+from app.database.models import (
+    AICall, DiagnosticEvent, DiagnosticHypothesis, DiagnosticSession, DiagnosticStep,
+    HypothesisStateEvent, now,
+)
 
+from app.modules.experience import next_check, trust
 from app.modules.research.retriever import build_evidence
 
 from . import progress
@@ -16,11 +20,44 @@ from .context_builder import DiagnosticContextBuilder
 from .diagnostic_engine import DiagnosticEngine
 from .providers import AIInvalidResponse, AIProviderUnavailable, EXPLORATORY_MEANING_PREFIX, PROMPT_VERSION, canonical_source, get_ai_provider, selected_model, validate_provider_sources
 from .safety_engine import SafetyEngine
-from .schemas import DiagnosticAnalysis, LLMDiagnosticAnalysis, NON_INFORMATIVE_RESULT_STATES, ResearchMetadata
+from .schemas import CARRIED_OUT_STEP_STATES, DiagnosticAnalysis, LLMDiagnosticAnalysis, NON_INFORMATIVE_RESULT_STATES, NextBestCheck, ResearchMetadata
 
 
 class AnalysisInProgress(Exception):
     pass
+
+
+def _evidence_sections(excerpts: list[dict]) -> dict:
+    """Group retrieved evidence by trust class, most authoritative first."""
+    sections: dict[str, list[str]] = {name: [] for name in trust.TRUST_CLASSES}
+    for item in excerpts:
+        source_type = (item.get("source") or {}).get("source_type")
+        label = item.get("trust_class") or trust.trust_class(source_type)
+        sections.setdefault(label, []).append(item.get("id") or (item.get("source") or {}).get("source_id"))
+    return {
+        name: [value for value in ids if value]
+        for name, ids in sections.items()
+    }
+
+
+def _record_hypothesis_ranking(db, case, analysis) -> None:
+    """Append the ranking to the hypothesis history. Prior states are kept."""
+    for position, hypothesis in enumerate(analysis.hypotheses, start=1):
+        db.add(
+            HypothesisStateEvent(
+                session_id=case.id,
+                hypothesis_label=hypothesis.label[:200],
+                event_type="ranked",
+                strength_after=hypothesis.confidence,
+                status_after=hypothesis.status,
+                rank_position=position,
+                decision_source="orvect_analysis",
+                detail={
+                    "verificationStatus": hypothesis.verificationStatus,
+                    "component": hypothesis.component,
+                },
+            )
+        )
 
 
 def _event(db, case, kind, payload):
@@ -151,6 +188,23 @@ def _persist(db, case, result, safety, context, context_hash, operation, researc
         .where(DiagnosticStep.session_id == case.id)
         .order_by(DiagnosticStep.step_order.desc())
     ) or 0
+    plan = [item.model_dump(mode="json") for item in analysis.nextChecks]
+    ranked = next_check.rank(
+        plan,
+        [item.model_dump(mode="json") for item in analysis.hypotheses],
+        {
+            row.title
+            for row in db.scalars(
+                select(DiagnosticStep).where(
+                    DiagnosticStep.session_id == case.id, DiagnosticStep.status.in_(CARRIED_OUT_STEP_STATES)
+                )
+            ).all()
+        },
+        context.get("orvect_field_evidence") or [],
+    )
+    # The report keeps the reasoning layer's full plan; ORVECT decides on its own
+    # which of those checks the workshop should actually do next.
+    current_id = ranked[0]["check"]["id"] if ranked else (plan[0]["id"] if plan else None)
     for index, check in enumerate(analysis.nextChecks):
         source_ids, references = _source_payloads(check.sources)
         db.add(
@@ -171,16 +225,31 @@ def _persist(db, case, result, safety, context, context_hash, operation, researc
                     for result_index, expected in enumerate(check.expectedResults)
                 ],
                 safety_notes=check.safetyWarnings,
+                # Persisted so the check can be re-ranked later without asking
+                # the reasoning layer again.
+                estimated_difficulty=check.estimatedDifficulty,
+                estimated_minutes=next_check.parse_minutes(check.objective),
                 source_ids=source_ids,
                 source_references=references,
                 verification_status=check.verificationStatus,
-                status="current" if index == 0 else "pending",
+                status="current" if check.id == current_id else "pending",
                 result=None,
                 technician_comment=None,
                 hypotheses_before=[item.model_dump(mode="json") for item in analysis.hypotheses],
                 hypotheses_after=[],
             )
         )
+    if ranked:
+        analysis.nextBestCheck = NextBestCheck(
+            checkId=ranked[0]["check"]["id"],
+            title=ranked[0]["check"]["title"],
+            planOrder=ranked[0]["plan_order"],
+            score=ranked[0]["score"],
+            rationale=ranked[0]["rationale"],
+            selectionMethod=ranked[0]["selectionMethod"],
+        )
+        payload = analysis.model_dump(mode="json")
+    _record_hypothesis_ranking(db, case, analysis)
     case.status = "in_progress"
     case.analysis_started_at = None
     case.analysis_context_hash = context_hash
@@ -312,6 +381,10 @@ async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False, la
                 + (" (cache)" if research["fromCache"] else ""),
             )
         context["technical_excerpts"] = excerpts
+        # The model must never blend evidence classes. Sections are derived from
+        # the trust class each item already carries, so the grouping cannot drift
+        # from the provenance the server will reconstruct afterwards.
+        context["evidence_sections"] = _evidence_sections(excerpts)
         # Tell the model what the research layer decided, so it can say so too.
         context["research_status"] = {
             "external_research_performed": research["researchTriggered"],

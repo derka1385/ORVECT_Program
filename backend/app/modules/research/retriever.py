@@ -142,8 +142,16 @@ async def gather_external_evidence(db: Session, context: dict, plan: ResearchPla
 
 
 async def build_evidence(db: Session, context: dict, internal: list[dict]) -> tuple[list[dict], dict]:
-    """Return (excerpts for the model, research metadata for telemetry/UI)."""
+    """Return (excerpts for the model, research metadata for telemetry/UI).
+
+    Retrieval order is authoritative internal knowledge, then ORVECT field
+    evidence, then external research only if the deterministic gate still asks
+    for it. Field evidence is offered to the decision, never allowed to stand in
+    for a definition ORVECT does not have.
+    """
     marked_internal = [{**item, "origin": "orvect_knowledge"} for item in internal]
+    field = context.get("orvect_field_evidence") or []
+    field_summary = context.get("field_evidence_summary") or {}
     plan = decide_research({**context, "internal_excerpts": marked_internal})
     research = await gather_external_evidence(db, context, plan)
     metadata = {
@@ -158,8 +166,15 @@ async def build_evidence(db: Session, context: dict, internal: list[dict]) -> tu
         "failedQueries": research["failed_queries"],
         "researchError": research["error"],
         "sourceMix": _source_mix(research["evidence"]),
+        "fieldEvidenceUsed": bool(field),
+        "fieldEvidenceItems": len(field),
+        "fieldEvidenceLevel": field_summary.get("best_level"),
+        "fieldEvidenceSupport": field_summary.get("strongest_support"),
+        "fieldEvidenceCases": field_summary.get("confirmed_cases", 0),
+        "fieldEvidenceGarages": field_summary.get("independent_garages", 0),
+        "researchAvoidedByFieldEvidence": "orvect_field_evidence_sufficient" in plan.reasons,
     }
-    return marked_internal + research["excerpts"], metadata
+    return marked_internal + field + research["excerpts"], metadata
 
 
 def _source_mix(evidence: list[dict]) -> dict:

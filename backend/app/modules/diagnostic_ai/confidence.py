@@ -1,10 +1,15 @@
-"""Heuristic diagnostic confidence.
+"""Evidence strength.
 
 This is deliberately not an LLM self-assessment and not a calibrated
 probability. It scores how well-evidenced the case is — how much vehicle
 context, how specific the codes, how many independent good-quality sources
-agree — and says plainly what would raise it. It is labelled "diagnostic
-confidence", never "probability the repair will work".
+agree — and says plainly what would raise it. It is never "the probability the
+repair will work"; the schema carries `metric = evidence_strength` and
+`calibrated = False` so no client can read it as one.
+
+A calibrated `diagnostic_confidence` becomes possible only once the Experience
+Engine holds enough confirmed outcomes to fit one against observed reality.
+Until then, fabricating a probability would be worse than having none.
 """
 
 from .schemas import DiagnosticConfidence, LLMDiagnosticAnalysis
@@ -30,6 +35,19 @@ def _best_source_rank(analysis: LLMDiagnosticAnalysis) -> int:
         for source in hypothesis.sources
     ]
     return max(ranks, default=0)
+
+
+# ORVECT field evidence is scored on its own terms rather than folded into the
+# external-source ranking: corroborated observation is useful, and it is still
+# not manufacturer documentation. Keeping the two separate is what stops volume
+# from silently buying authority.
+FIELD_EVIDENCE_ESTABLISHED_BONUS = 12
+FIELD_EVIDENCE_CORROBORATED_BONUS = 7
+FIELD_EVIDENCE_CONTRADICTION_PENALTY = 10
+
+
+def _field_evidence(context: dict) -> dict:
+    return context.get("field_evidence_summary") or {}
 
 
 def assess(analysis: LLMDiagnosticAnalysis, context: dict, research: dict) -> DiagnosticConfidence:
@@ -125,6 +143,33 @@ def assess(analysis: LLMDiagnosticAnalysis, context: dict, research: dict) -> Di
     if len(analysis.hypotheses) >= 4:
         score -= 5
         factors.append("Plusieurs causes racines restent plausibles")
+
+    # ORVECT's own accumulated experience.
+    field = _field_evidence(context)
+    if field.get("available"):
+        support = field.get("strongest_support")
+        garages = field.get("independent_garages", 0)
+        confirmed = field.get("confirmed_cases", 0)
+        if support == "established":
+            score += FIELD_EVIDENCE_ESTABLISHED_BONUS
+            factors.append(
+                f"Expérience ORVECT établie : {confirmed} cas confirmés sur {garages} ateliers"
+            )
+        elif support == "corroborated":
+            score += FIELD_EVIDENCE_CORROBORATED_BONUS
+            factors.append(
+                f"Expérience ORVECT corroborée : {confirmed} cas confirmés sur {garages} ateliers"
+            )
+        else:
+            factors.append("Expérience ORVECT encore isolée sur ce cas")
+            improved_by.append("Confirmer la cause racine et l’issue de la réparation")
+        if field.get("contradicted"):
+            score -= FIELD_EVIDENCE_CONTRADICTION_PENALTY
+            factors.append("Des cas ORVECT contredisent cette cause racine")
+        if field.get("distinct_root_causes", 0) > 1:
+            factors.append("L’expérience ORVECT diverge sur la cause racine")
+    else:
+        improved_by.append("Accumuler des issues confirmées sur des véhicules compatibles")
 
     score = max(5, min(95, score))
     label = "strong" if score >= 75 else "good" if score >= 55 else "moderate" if score >= 35 else "low"
