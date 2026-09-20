@@ -1259,6 +1259,18 @@
     "Durée estimée :": "Geschätzte Dauer:"
   });
 
+  // Messages d’échec réseau du parcours de diagnostic.
+  Object.assign(fr, {});
+  Object.assign(en, {
+    "Le service ORVECT n’a pas répondu à temps. Réessayez.": "The ORVECT service did not respond in time. Try again."
+  });
+  Object.assign(sv, {
+    "Le service ORVECT n’a pas répondu à temps. Réessayez.": "ORVECT-tjänsten svarade inte i tid. Försök igen."
+  });
+  Object.assign(de, {
+    "Le service ORVECT n’a pas répondu à temps. Réessayez.": "Der ORVECT-Dienst hat nicht rechtzeitig geantwortet. Bitte erneut versuchen."
+  });
+
   const dictionaries = {fr,en,sv,de};
   const originals = new WeakMap();
   const attributeOriginals = new WeakMap();

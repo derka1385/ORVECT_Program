@@ -40,7 +40,17 @@
   async function request(path,payload,method){
     token=await window.ORVECT_AUTH.token();
     const headers={'Content-Type':'application/json'};if(token)headers.Authorization='Bearer '+token;
-    const response=await fetch(base()+path,{method:method||(payload===undefined?'GET':'POST'),headers,credentials:'omit',body:payload===undefined?undefined:JSON.stringify(payload),signal:AbortSignal.timeout(240000)});
+    // A refused connection, a CORS rejection or a timeout all surface as a bare
+    // "Failed to fetch". Naming what happened is the difference between a
+    // technician retrying and a technician thinking the button is broken.
+    let response;
+    try{
+      response=await fetch(base()+path,{method:method||(payload===undefined?'GET':'POST'),headers,credentials:'omit',body:payload===undefined?undefined:JSON.stringify(payload),signal:AbortSignal.timeout(240000)});
+    }catch(error){
+      throw Error(error?.name==='TimeoutError'
+        ?t('Le service ORVECT n’a pas répondu à temps. Réessayez.')
+        :t('Connexion réseau indisponible. Réessayez.'));
+    }
     const body=await response.json().catch(()=>({}));
     if(response.status===401){token='';throw Error('Connexion expirée ou identifiants incorrects. Reconnectez-vous.');}
     if(!response.ok)throw Error(typeof body.detail==='string'?body.detail:T('Le service a répondu avec une erreur ({status}).',{status:response.status}));
@@ -216,8 +226,22 @@
     try{await login();await action();}
     finally{busy=false;controls.forEach(({node,disabled})=>node.disabled=disabled);$('#recordResult').disabled=!currentStep;}
   }
-  function intercept(id,action){$(id).addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();run(action).catch(error=>{const notice=$('#diagnosticNotice')||$('#evidenceNotice')||$('#identificationNotice');if(notice){notice.textContent=error.message||'Action indisponible.';notice.classList.add('show','error');}});},true);}
+  // The message has to land on the screen the technician is actually looking at.
+  // Addressing a fixed notice put every failure on the results screen, so a
+  // refused analysis looked like a button that did nothing at all.
+  function visibleNotice(){
+    const screen=document.querySelector('.screen.active');
+    return screen?.querySelector('.notice')||$('#diagnosticNotice')||$('#evidenceNotice')||$('#identificationNotice');
+  }
+  function fail(error){
+    const stages=$('[data-analysis-stages]');if(stages)stages.hidden=true;
+    const notice=visibleNotice();
+    if(notice){notice.textContent=error?.message||t('Action indisponible.');notice.classList.add('show','error');}
+    else{alert(error?.message||t('Action indisponible.'));}
+  }
+  function intercept(id,action){$(id).addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();run(action).catch(fail);},true);}
   intercept('#launchDiagnosis',async()=>{
+    renderStages(null);
     const data=ui.context();
     if(!data.dtcs.length||data.dtcs.some(item=>item.status!=='confirmed'))throw Error('Confirmez chaque code avant l’analyse.');
     if(!data.symptoms.trim())throw Error('Décrivez les symptômes pour tester le raisonnement.');
