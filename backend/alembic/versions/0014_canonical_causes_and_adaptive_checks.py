@@ -16,18 +16,20 @@ down_revision = "0013"
 branch_labels = None
 depends_on = None
 
+# Built on demand rather than stored: a Column instance cannot be attached to
+# two tables, and reusing one across calls would fail on the second use.
 STEP_COLUMNS = (
-    sa.Column("estimated_difficulty", sa.String(20), nullable=True),
-    sa.Column("estimated_minutes", sa.Integer(), nullable=True),
+    ("estimated_difficulty", lambda: sa.Column("estimated_difficulty", sa.String(20), nullable=True)),
+    ("estimated_minutes", lambda: sa.Column("estimated_minutes", sa.Integer(), nullable=True)),
 )
 CASE_COLUMNS = (
-    sa.Column("cause_system", sa.String(60), nullable=True),
-    sa.Column("cause_component", sa.String(80), nullable=True),
-    sa.Column("cause_position", sa.String(40), nullable=True),
-    sa.Column("cause_failure_mode", sa.String(40), nullable=True),
-    sa.Column("cause_canonical", sa.Boolean(), nullable=False, server_default=sa.false()),
-    sa.Column("cause_resolution", sa.String(40), nullable=False, server_default="unresolved"),
-    sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
+    ("cause_system", lambda: sa.Column("cause_system", sa.String(60), nullable=True)),
+    ("cause_component", lambda: sa.Column("cause_component", sa.String(80), nullable=True)),
+    ("cause_position", lambda: sa.Column("cause_position", sa.String(40), nullable=True)),
+    ("cause_failure_mode", lambda: sa.Column("cause_failure_mode", sa.String(40), nullable=True)),
+    ("cause_canonical", lambda: sa.Column("cause_canonical", sa.Boolean(), nullable=False, server_default=sa.false())),
+    ("cause_resolution", lambda: sa.Column("cause_resolution", sa.String(40), nullable=False, server_default="unresolved")),
+    ("revoked_at", lambda: sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True)),
 )
 INDEXES = (
     ("ix_experience_cases_cause_system", "experience_cases", "cause_system"),
@@ -49,9 +51,9 @@ def upgrade():
     inspector = sa.inspect(op.get_bind())
     for table, columns in (("diagnostic_steps", STEP_COLUMNS), ("experience_cases", CASE_COLUMNS)):
         present = _existing(inspector, table)
-        for column in columns:
-            if column.name not in present:
-                op.add_column(table, column.copy())
+        for name, build in columns:
+            if name not in present:
+                op.add_column(table, build())
     for name, table, field in INDEXES:
         if name not in _indexes(inspector, table):
             op.create_index(name, table, [field])
@@ -64,6 +66,6 @@ def downgrade():
             op.drop_index(name, table_name=table)
     for table, columns in (("experience_cases", CASE_COLUMNS), ("diagnostic_steps", STEP_COLUMNS)):
         present = _existing(inspector, table)
-        for column in reversed(columns):
-            if column.name in present:
-                op.drop_column(table, column.name)
+        for name, _build in reversed(columns):
+            if name in present:
+                op.drop_column(table, name)
