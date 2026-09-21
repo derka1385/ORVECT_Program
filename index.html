@@ -57,6 +57,10 @@
     .check-card{background:var(--orange);color:var(--graphite);padding:18px}.check-card h3{margin-top:7px;font-size:20px}.instructions{list-style:none;padding:0;margin:14px 0}.instructions li{border:1px solid #ffffff44;padding:12px;font-size:13px;margin-top:8px}.instructions b{color:var(--orange);margin-right:9px}
     .missing{margin:14px 0 0;padding:0;list-style:none}.missing li{border-top:1px solid var(--line);padding:12px 0;font-size:13px}.missing span{display:block;color:var(--muted);margin-top:3px}
     .notice{display:none;margin:18px 0;border:1px solid var(--orange);padding:14px;font-size:13px}.notice.show{display:block}.notice.error{border-color:var(--danger);color:var(--danger)}
+    /* A refused diagnosis must never scroll out of sight: the banner is pinned
+       under the header until the technician tries again. */
+    .notice[data-orvect-error]{position:fixed;top:84px;left:50%;transform:translateX(-50%);z-index:60;max-width:min(680px,calc(100vw - 32px));margin:0;background:var(--bg,#faf7f2);box-shadow:0 12px 30px rgba(0,0,0,.18);line-height:1.5}
+    @media (max-width:720px){.notice[data-orvect-error]{top:70px}}
     .tag{display:inline-flex;border:1px solid var(--alloy);padding:7px 10px;margin:5px 5px 0 0;font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace}
     .metric{font-size:45px;font-weight:650;letter-spacing:-.05em;margin:12px 0}.muted{color:var(--muted)}
     .measurement{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}.measurement .button{min-height:46px}
@@ -263,7 +267,7 @@
   </script>
   <script src="./runtime-config.js"></script>
   <script src="./firebase-auth.js?v=auth-2"></script>
-  <script src="./official-gemini.js?v=xp-2"></script>
+  <script src="./official-gemini.js?v=xp-4"></script>
   <script src="./workspace.js?v=account-6"></script>
   <script src="./i18n.js?v=xp-2"></script>
 </body>
