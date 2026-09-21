@@ -222,22 +222,37 @@
   }
 
   async function run(action){
-    if(busy)return;busy=true;const controls=[...document.querySelectorAll('main input,main textarea,main select,main button')].map(node=>({node,disabled:node.disabled}));controls.forEach(({node})=>node.disabled=true);
+    if(busy)return;busy=true;clearFailure();const controls=[...document.querySelectorAll('main input,main textarea,main select,main button')].map(node=>({node,disabled:node.disabled}));controls.forEach(({node})=>node.disabled=true);
     try{await login();await action();}
     finally{busy=false;controls.forEach(({node,disabled})=>node.disabled=disabled);$('#recordResult').disabled=!currentStep;}
   }
-  // The message has to land on the screen the technician is actually looking at.
-  // Addressing a fixed notice put every failure on the results screen, so a
-  // refused analysis looked like a button that did nothing at all.
-  function visibleNotice(){
-    const screen=document.querySelector('.screen.active');
-    return screen?.querySelector('.notice')||$('#diagnosticNotice')||$('#evidenceNotice')||$('#identificationNotice');
+  // Diagnostic failures get their own banner, on the screen the technician is
+  // actually looking at. Two reasons it is not one of the existing notices:
+  // those live on a fixed screen, so a refused analysis was announced on the
+  // results page nobody was watching, and every one of them is cleared by an
+  // anonymous 4.2 s timer that would wipe the explanation moments after it
+  // appeared. An error stays until the next attempt.
+  function errorBanner(){
+    const screen=document.querySelector('.screen.active')||document.body;
+    let box=screen.querySelector('[data-orvect-error]');
+    if(!box){
+      box=el('p','notice error');
+      box.setAttribute('data-orvect-error','');
+      box.setAttribute('role','alert');
+      const anchor=screen.querySelector('.notice');
+      if(anchor)anchor.after(box);else screen.prepend(box);
+    }
+    return box;
+  }
+  function clearFailure(){
+    for(const box of document.querySelectorAll('[data-orvect-error]'))box.classList.remove('show');
   }
   function fail(error){
     const stages=$('[data-analysis-stages]');if(stages)stages.hidden=true;
-    const notice=visibleNotice();
-    if(notice){notice.textContent=error?.message||t('Action indisponible.');notice.classList.add('show','error');}
-    else{alert(error?.message||t('Action indisponible.'));}
+    const box=errorBanner();
+    box.textContent=error?.message||t('Action indisponible.');
+    box.classList.add('show','error');
+    box.scrollIntoView({block:'nearest',behavior:'instant'});
   }
   function intercept(id,action){$(id).addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();run(action).catch(fail);},true);}
   intercept('#launchDiagnosis',async()=>{
