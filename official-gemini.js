@@ -101,6 +101,9 @@
     const listNode=$('[data-stage-list]');listNode.replaceChildren();
     const index=progress?.index??0;
     (progress?.stages||[]).forEach((stage,i)=>{const li=el('li',i<index?'done':i===index?'active':'');li.append(el('b','',i<index?'✓':String(i+1).padStart(2,'0')),document.createTextNode(' '+t(stage.label)));listNode.append(li);});
+    // The bar tracks the stage the server actually reports, never a timer.
+    const bar=$('[data-stage-bar]');
+    if(bar){const total=progress?.total||0;bar.style.width=total?Math.round(((index+1)/total)*100)+'%':'0%';}
     $('[data-stage-elapsed]').textContent=progress?.elapsedMs?T('{s} s écoulées',{s:(progress.elapsedMs/1000).toFixed(1)}):'';
   }
   async function analyzeWithProgress(path,showStages){
