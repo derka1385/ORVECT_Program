@@ -16,6 +16,32 @@ from app.core.logging import configure_logging, logger
 
 configure_logging()
 
+# Announce the reasoning configuration at boot. A provider selected without its
+# key fails only when a technician clicks Analyse, and the message they get names
+# the provider, not the misconfiguration. Saying it once at startup turns a
+# confusing runtime error into a line in the deploy log.
+def _announce_provider():
+    keys = {"nebius": settings.nebius_api_key, "gemini": settings.gemini_api_key}
+    provider = settings.llm_provider
+    ready = provider == "mock" or bool(keys.get(provider))
+    logger.info(
+        "orvect_reasoning_configuration",
+        llm_provider=provider,
+        llm_ready=ready,
+        research_enabled=settings.research_enabled,
+        research_ready=bool(settings.tavily_api_key),
+        auth_provider=settings.auth_provider,
+    )
+    if not ready:
+        logger.warning(
+            "llm_provider_has_no_api_key",
+            llm_provider=provider,
+            detail="Every analysis will fail until this provider is given a key, or LLM_PROVIDER is changed.",
+        )
+
+
+_announce_provider()
+
 class PayloadTooLarge(Exception):pass
 
 class PayloadLimitMiddleware:

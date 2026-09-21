@@ -38,8 +38,27 @@ def knowledge_item_payload(db,row):
 
 @router.get("/health")
 def health(db:Session=Depends(get_db)):
+    """Liveness plus enough configuration to spot a stale or misconfigured deploy.
+
+    Booleans only for anything involving a credential: this endpoint is public,
+    so it says whether a key is present, never what it is. `prompt_version` is
+    what makes deployment drift obvious in one request — a server running an old
+    build reports an old version, whatever the repository says.
+    """
+    from app.modules.diagnostic_ai.providers import PROMPT_VERSION
     db.execute(text("SELECT 1"))
-    return {"status":"ok","service":"diagpilot-api","llm_provider":settings.llm_provider}
+    provider=settings.llm_provider
+    keys={"nebius":settings.nebius_api_key,"gemini":settings.gemini_api_key,"mock":"n/a"}
+    return {
+        "status":"ok","service":"orvect-api",
+        "llm_provider":provider,
+        "llm_model":settings.nebius_model if provider=="nebius" else (settings.gemini_model_fast if provider=="gemini" else None),
+        "llm_ready":bool(keys.get(provider)),
+        "research_enabled":settings.research_enabled,
+        "research_ready":bool(settings.tavily_api_key),
+        "auth_provider":settings.auth_provider,
+        "prompt_version":PROMPT_VERSION,
+    }
 
 @router.get("/public/metrics")
 def public_metrics(response:Response,db:Session=Depends(get_db)):
