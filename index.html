@@ -79,10 +79,13 @@
     /* The ORVECT mark doubles as the activity indicator: its three strokes rise
        and fall in turn, so waiting looks like the product rather than a spinner. */
     .ov-mark{width:60px;height:50px;flex:none;fill:var(--orange)}
-    .ov-mark path{transform-box:fill-box;transform-origin:bottom;animation:ov-pulse 1.15s ease-in-out infinite}
-    .ov-mark path:nth-child(2){animation-delay:.18s}
-    .ov-mark path:nth-child(3){animation-delay:.36s}
-    @keyframes ov-pulse{0%,100%{transform:scaleY(.42);opacity:.5}45%{transform:scaleY(1);opacity:1}}
+    /* Clipped from the top rather than scaled: scaling a slanted stroke changes
+       its angle. Revealing it from the baseline upward keeps the mark's exact
+       shape and inclination, and only its length moves. */
+    .ov-mark path{clip-path:inset(0 0 0 0);animation:ov-pulse 1.25s ease-in-out infinite}
+    .ov-mark path:nth-child(2){animation-delay:.16s}
+    .ov-mark path:nth-child(3){animation-delay:.32s}
+    @keyframes ov-pulse{0%,100%{clip-path:inset(62% 0 0 0)}50%{clip-path:inset(0 0 0 0)}}
     /* Real progress, read from the pipeline stage the server reports. */
     .ov-stage-bar{height:3px;margin:16px 0 0;background:#ffffff1f;overflow:hidden}
     .ov-stage-bar span{display:block;height:100%;width:0;background:var(--orange);transition:width .45s ease}
@@ -280,7 +283,7 @@
   </script>
   <script src="./runtime-config.js"></script>
   <script src="./firebase-auth.js?v=auth-2"></script>
-  <script src="./official-gemini.js?v=xp-5"></script>
+  <script src="./official-gemini.js?v=xp-6"></script>
   <script src="./workspace.js?v=account-6"></script>
   <script src="./i18n.js?v=xp-2"></script>
 </body>
