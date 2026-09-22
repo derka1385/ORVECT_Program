@@ -1283,6 +1283,48 @@
     "Connexion au service et préparation du dossier…": "Verbindung zum Dienst und Vorbereitung des Falls …"
   });
 
+  // Saisie manuelle du véhicule sur l’écran d’identification.
+  Object.assign(fr, {});
+  Object.assign(en, {
+    "Saisie manuelle": "Manual entry",
+    "Renseignez la marque, le modèle, l’année et le code moteur.": "Enter the make, model, year and engine code.",
+    "Configuration saisie manuellement. Vérifiez-la avant de continuer.": "Configuration entered manually. Check it before continuing.",
+    "Pas de VIN ni de plaque ?": "No VIN or plate?",
+    "Saisissez la configuration vous-même.": "Enter the configuration yourself.",
+    "Saisir le véhicule manuellement": "Enter the vehicle manually",
+    "Le véhicule est enregistré dans votre atelier. Le code moteur est nécessaire pour que l’analyse soit spécifique.": "The vehicle is saved in your workshop. The engine code is what makes the analysis specific to it."
+  });
+  Object.assign(sv, {
+    "Saisie manuelle": "Manuell inmatning",
+    "Renseignez la marque, le modèle, l’année et le code moteur.": "Ange märke, modell, årsmodell och motorkod.",
+    "Configuration saisie manuellement. Vérifiez-la avant de continuer.": "Konfigurationen är manuellt inmatad. Kontrollera den innan du fortsätter.",
+    "Pas de VIN ni de plaque ?": "Inget VIN eller registreringsnummer?",
+    "Saisissez la configuration vous-même.": "Ange konfigurationen själv.",
+    "Saisir le véhicule manuellement": "Ange fordonet manuellt",
+    "Le véhicule est enregistré dans votre atelier. Le code moteur est nécessaire pour que l’analyse soit spécifique.": "Fordonet sparas i din verkstad. Motorkoden är det som gör analysen specifik."
+  });
+  Object.assign(de, {
+    "Saisie manuelle": "Manuelle Eingabe",
+    "Renseignez la marque, le modèle, l’année et le code moteur.": "Geben Sie Marke, Modell, Baujahr und Motorcode an.",
+    "Configuration saisie manuellement. Vérifiez-la avant de continuer.": "Konfiguration manuell erfasst. Prüfen Sie sie vor dem Fortfahren.",
+    "Pas de VIN ni de plaque ?": "Keine FIN und kein Kennzeichen?",
+    "Saisissez la configuration vous-même.": "Geben Sie die Konfiguration selbst ein.",
+    "Saisir le véhicule manuellement": "Fahrzeug manuell eingeben",
+    "Le véhicule est enregistré dans votre atelier. Le code moteur est nécessaire pour que l’analyse soit spécifique.": "Das Fahrzeug wird in Ihrer Werkstatt gespeichert. Der Motorcode macht die Analyse fahrzeugspezifisch."
+  });
+
+  // Saisie manuelle du véhicule sur l’écran d’identification.
+  Object.assign(fr, {});
+  Object.assign(en, {
+    "Enregistrer le véhicule": "Save the vehicle"
+  });
+  Object.assign(sv, {
+    "Enregistrer le véhicule": "Spara fordonet"
+  });
+  Object.assign(de, {
+    "Enregistrer le véhicule": "Fahrzeug speichern"
+  });
+
   const dictionaries = {fr,en,sv,de};
   const originals = new WeakMap();
   const attributeOriginals = new WeakMap();

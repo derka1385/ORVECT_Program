@@ -76,11 +76,44 @@
 
   async function login(){
     base();await window.ORVECT_AUTH.ensure();await request('/auth/me');
+    // A manually entered case brings its own vehicle, created below. Looking for
+    // a demonstration vehicle it will never use would refuse the diagnosis.
+    if(ui.context().manual_vehicle){activeVehicle=null;return;}
     const vehicles=(await request('/vehicles')).items||[];
     // A loaded demo case names its vehicle; otherwise the Volkswagen demo stays the default.
     const wanted=ui.context().demo_vehicle_id;
     activeVehicle=vehicles.find(vehicle=>vehicle.is_demo_vehicle&&vehicle.id===wanted)||vehicles.find(vehicle=>vehicle.is_demo_vehicle&&vehicle.make==='Volkswagen')||null;
     if(!activeVehicle)throw Error('Aucun véhicule de démonstration n’est configuré pour ce compte.');
+  }
+
+  // A vehicle the workshop typed in. Created once per configuration and reused,
+  // so repeating an analysis does not pile up near-identical vehicle records.
+  let manualVehicles={};
+  async function ensureManualVehicle(vehicle){
+    const year=Number(vehicle.year);
+    if(!vehicle.make||!vehicle.model||!year||!vehicle.engine)
+      throw Error(t('Renseignez la marque, le modèle, l’année et le code moteur.'));
+    const key=[vehicle.make,vehicle.model,year,vehicle.engine].map(part=>String(part).trim().toLowerCase()).join('|');
+    if(manualVehicles[key])return manualVehicles[key];
+    const created=await request('/vehicles',{
+      make:vehicle.make.trim(),model:vehicle.model.trim(),year,
+      market:'EU',engine_name:(vehicle.engine||'').trim(),engine_code:vehicle.engine.trim(),
+      fuel_type:(vehicle.fuel||'').trim()||'unspecified',
+      transmission:(vehicle.gearbox||'').trim()||'unspecified',
+      notes:'',
+    });
+    // The server only reasons on a configuration a human confirmed; this is the
+    // technician confirming what they just typed.
+    await request('/vehicles/'+encodeURIComponent(created.id)+'/configuration',{
+      make:vehicle.make.trim(),model:vehicle.model.trim(),model_year:year,
+      engine_code:vehicle.engine.trim(),engine_name:(vehicle.engine||'').trim()||null,
+      fuel_type:(vehicle.fuel||'').trim()||null,
+      transmission_type:(vehicle.gearbox||'').trim()||null,
+      vehicle_platform:(vehicle.platform||'').trim()||null,
+      technician_note:'Configuration saisie par le technicien',
+    },'PUT');
+    manualVehicles[key]=created.id;
+    return created.id;
   }
 
   function el(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=String(text??'');return node;}
@@ -289,11 +322,18 @@
     const data=ui.context();
     if(!data.dtcs.length||data.dtcs.some(item=>item.status!=='confirmed'))throw Error('Confirmez chaque code avant l’analyse.');
     if(!data.symptoms.trim())throw Error('Décrivez les symptômes pour tester le raisonnement.');
-    const vehicleId=activeVehicle?.id||runtime.vehicleId;if(!vehicleId)throw Error('Véhicule de démonstration non configuré côté site.');
-    const vehicle=await request('/vehicles/'+encodeURIComponent(vehicleId)+'/configuration');
-    if(!vehicle.vehicle?.is_demo_vehicle)throw Error('Ce parcours public de test exige un véhicule synthétique configuré.');
-    const config=data.vehicle;
-    if(config.make!==vehicle.vehicle.make||config.model!==vehicle.vehicle.model||config.engine!==vehicle.vehicle.engine_code||Number(config.year)!==vehicle.vehicle.year)throw Error('Pour ce test, chargez un cas de démonstration et conservez sa configuration synthétique.');
+    let vehicleId;
+    if(data.manual_vehicle){
+      // A real case: the workshop's own vehicle, checked by the server against
+      // the garage it belongs to. The demonstration guards below do not apply.
+      vehicleId=await ensureManualVehicle(data.vehicle);
+    }else{
+      vehicleId=activeVehicle?.id||runtime.vehicleId;if(!vehicleId)throw Error('Véhicule de démonstration non configuré côté site.');
+      const vehicle=await request('/vehicles/'+encodeURIComponent(vehicleId)+'/configuration');
+      if(!vehicle.vehicle?.is_demo_vehicle)throw Error('Ce parcours public de test exige un véhicule synthétique configuré.');
+      const config=data.vehicle;
+      if(config.make!==vehicle.vehicle.make||config.model!==vehicle.vehicle.model||config.engine!==vehicle.vehicle.engine_code||Number(config.year)!==vehicle.vehicle.year)throw Error('Pour ce test, chargez un cas de démonstration et conservez sa configuration synthétique.');
+    }
     const created=await request('/diagnostics',{vehicle_id:vehicleId,mileage:data.mileage,symptoms:data.symptoms,circumstances:data.circumstances});activeCase=created.id;
     await request('/diagnostics/'+activeCase+'/fault-codes',{fault_codes:data.dtcs.map(item=>({code:item.code,namespace:'sae_obd2',ecu:'ECU moteur',status:'unknown',freeze_frame:{},technician_verification:'confirmed',technician_note:'Code confirmé dans le parcours exploratoire de test.'}))});
     for(const measurement of data.measurements)await request('/diagnostics/'+activeCase+'/measurements',{name:measurement.name,value:measurement.value,unit:null,conditions:'Saisie du test exploratoire',source:'manual'});
