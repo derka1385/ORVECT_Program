@@ -501,3 +501,73 @@ def test_citation_ids_are_scrubbed_from_prose():
     # An entry that was nothing but an id disappears instead of leaving an empty bullet.
     assert normalized["hypotheses"][0]["supportingEvidence"] == ["Raté isolé"]
     assert normalized["hypotheses"][0]["sources"][0]["source_id"] == EXTERNAL_SOURCE["source_id"]
+
+
+def _degenerate_ranking():
+    """A ranking where every cause scores zero is refused outright.
+
+    Most malformed output is quietly normalized instead: an unknown citation is
+    dropped, a correlation on a foreign code is removed. This one cannot be
+    repaired server-side, so it is the honest way to exercise the retry.
+    """
+    payload = _valid_payload()
+    for hypothesis in payload["hypotheses"]:
+        hypothesis["confidence"] = 0
+    return payload
+
+
+@pytest.mark.anyio
+async def test_repair_tells_the_model_exactly_what_was_refused():
+    """A blind retry reproduces the same mistake; a named one usually does not."""
+    seen = []
+
+    def handler(request):
+        body = json.loads(request.content)
+        seen.append(body["messages"][1]["content"])
+        if len(seen) == 1:
+            return _completion(_degenerate_ranking())
+        return _completion(_valid_payload())
+
+    provider = NebiusAutomotiveAIProvider(_nebius_client(handler))
+    result = await provider.analyze_initial_case(_context(), [])
+    assert len(seen) == 2, "exactly one repair attempt"
+    assert result.repaired is True
+    assert seen[0].startswith("LANGUE DE RÉDACTION"), "the first call carries no correction"
+    assert seen[1].startswith("CORRECTION DEMANDÉE"), "the retry states the correction first"
+    assert "zero relevance" in seen[1], "the retry names what the server refused"
+
+
+@pytest.mark.anyio
+async def test_a_persistent_failure_reports_why():
+    """The error a technician sees must say what was wrong, not just that it was."""
+    def handler(request):
+        return _completion(_degenerate_ranking())
+
+    provider = NebiusAutomotiveAIProvider(_nebius_client(handler))
+    with pytest.raises(AIInvalidResponse) as failure:
+        await provider.analyze_initial_case(_context(), [])
+    message = str(failure.value)
+    assert "réparation" in message
+    assert "zero relevance" in message, "the reason has to reach the report"
+
+
+@pytest.mark.anyio
+async def test_schema_failures_report_fields_never_values():
+    """Pydantic messages quote the offending value, which can echo workshop input."""
+    from app.modules.diagnostic_ai.nebius import _failure_reason
+
+    def handler(request):
+        broken = _valid_payload()
+        broken["hypotheses"][0]["confidence"] = "plaque AB-123-CD"
+        return _completion(broken)
+
+    provider = NebiusAutomotiveAIProvider(_nebius_client(handler))
+    with pytest.raises(AIInvalidResponse) as failure:
+        await provider.analyze_initial_case(_context(), [])
+    message = str(failure.value)
+    assert "hypotheses.0.confidence" in message
+    assert "AB-123-CD" not in message, "a rejected value must not travel into the message"
+
+    class Fake(Exception):
+        pass
+    assert _failure_reason(Fake("boundary crossed")) == "boundary crossed"

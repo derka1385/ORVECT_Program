@@ -11,6 +11,7 @@ import json
 import time
 
 import httpx
+from pydantic import ValidationError
 
 from app.core.config import settings
 from app.core.logging import logger
@@ -66,11 +67,31 @@ def _model_facing_schema() -> dict:
 LANGUAGE_NAMES = {"fr": "français", "en": "English", "sv": "svenska", "de": "Deutsch"}
 
 
+def _failure_reason(exc: Exception) -> str:
+    """Short, safe description of why a response was rejected.
+
+    The server's own validators already raise explicit sentences that are safe to
+    repeat. A Pydantic error is reduced to the failing field paths: its message
+    embeds the offending values, which echo workshop input and must not travel
+    into a log, an error message or a follow-up prompt.
+    """
+    if isinstance(exc, ValidationError):
+        fields = sorted({".".join(str(part) for part in error["loc"]) for error in exc.errors()})
+        return "champs invalides : " + ", ".join(fields[:6])
+    return str(exc)[:300] or exc.__class__.__name__
+
+
 def _user_message(context: dict) -> str:
     # The language rule is restated next to the data: a rule buried in a long
     # French system prompt was followed for titles but not for test-plan bodies.
     language = context.get("response_language", "fr")
+    # A repair instruction buried in the serialized context is easy for a model
+    # to miss. Stating it first, above the data, is what makes the single retry
+    # worth its cost.
+    repair = context.get("repair_request")
+    header = f"CORRECTION DEMANDÉE : {repair}\n" if repair else ""
     return (
+        header +
         f"LANGUE DE RÉDACTION OBLIGATOIRE : {LANGUAGE_NAMES.get(language, 'français')} ({language}). "
         "Chaque champ texte — titres, résumés, objectifs, étapes, résultats attendus, outils, "
         "avertissements, explications — doit être rédigé dans cette langue, sans exception.\n"
@@ -193,15 +214,23 @@ class NebiusAutomotiveAIProvider(AutomotiveAIProvider):
             payload, normalized = _normalize_provider_payload(_parse(body), context)
             analysis = LLMDiagnosticAnalysis.model_validate(payload)
             validate_provider_sources(analysis, context)
-        except Exception:
+        except Exception as first_error:
             # Exactly one repair attempt; never an unbounded retry loop.
             repaired = True
             normalized = True
+            reason = _failure_reason(first_error)
+            logger.warning(
+                "nebius_response_rejected", attempt=1, model=model, reason=reason
+            )
+            # The retry is told exactly what the server refused. A blind
+            # "regenerate" tends to reproduce the same mistake, which turns one
+            # recoverable slip into a failed diagnosis.
             repair_context = {
                 **context,
                 "repair_request": (
-                    "La réponse précédente était invalide. Régénère strictement selon le schéma. "
-                    "Cite uniquement des source_id présents dans le contexte et zéro hypothèse est acceptable."
+                    f"La réponse précédente a été REJETÉE par la validation serveur pour cette raison : {reason}. "
+                    "Corrige précisément ce point et régénère la réponse entière selon le schéma. "
+                    "Cite uniquement des source_id présents dans le contexte ; zéro hypothèse reste acceptable."
                 ),
             }
             body = await self._request(repair_context, model)
@@ -209,8 +238,14 @@ class NebiusAutomotiveAIProvider(AutomotiveAIProvider):
                 payload, _ = _normalize_provider_payload(_parse(body), context)
                 analysis = LLMDiagnosticAnalysis.model_validate(payload)
                 validate_provider_sources(analysis, context)
-            except Exception as exc:
-                raise AIInvalidResponse("Réponse Nebius invalide après une tentative de réparation") from exc
+            except Exception as second_error:
+                reason = _failure_reason(second_error)
+                logger.warning(
+                    "nebius_response_rejected", attempt=2, model=model, reason=reason
+                )
+                raise AIInvalidResponse(
+                    f"Réponse Nebius invalide après une tentative de réparation ({reason})"
+                ) from second_error
         usage = body.get("usage") if isinstance(body.get("usage"), dict) else None
         return ProviderResult(
             analysis,
