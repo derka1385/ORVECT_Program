@@ -166,7 +166,7 @@
     const panel=$('[data-test-plan]');if(!panel)return;const checks=analysis.nextChecks||[];panel.hidden=!checks.length;
     const listNode=$('[data-test-plan-list]');listNode.replaceChildren();
     checks.forEach((check,index)=>{
-      const li=el('li',index===0?'is-current':'');li.append(el('div','ov-num',String(check.order||index+1).padStart(2,'0')));
+      const li=el('li',(analysis.nextBestCheck?check.id===analysis.nextBestCheck.checkId:index===0)?'is-current':'');li.append(el('div','ov-num',String(check.order||index+1).padStart(2,'0')));
       const body=el('div','ov-body');p(body,check.title,'h3');
       const duration=(check.objective||'').match(DURATION_RE);const objective=(check.objective||'').replace(DURATION_RE,'').trim();
       if(objective)p(body,objective).className='ov-meta';
@@ -190,6 +190,9 @@
   window.addEventListener('orvect:language',()=>{if(lastReport)paint(lastReport.analysis,lastReport.detail);});
   function paint(analysis,detail){
     ui.updateContext();ui.show(4);
+    $('[data-report-id]').textContent=T('Dossier {id}',{id:detail.case.id.slice(0,8).toUpperCase()});
+    const safetyLabels={DO_NOT_DRIVE:'Ne pas rouler',STOP_AS_SOON_AS_SAFE:'S’arrêter dès que les conditions le permettent',UNKNOWN:'Sécurité non déterminée — avis technicien requis'};
+    $('[data-result-safety]').textContent=label(safetyLabels,analysis.safetyAssessment.status);
     $('#diagSymptoms').textContent=analysis.caseSummary;
     const codes=$('#diagDtcList');codes.replaceChildren();
     for(const code of analysis.interpretedFaultCodes||[]){const card=el('article','dtc-card');p(card,code.code,'h3');p(card,meaningText(code.meaning));p(card,t(code.sourceStatus==='ai_general_knowledge_unverified'?'APPROXIMATION IA · NON VÉRIFIÉE':code.sourceStatus==='provided_by_database'?'DÉFINITION DU CATALOGUE · SOURCE CONSERVÉE':'DÉFINITION INDISPONIBLE'),'p').className='eyebrow muted';for(const source of code.sources||[])card.append(sourceNode(source));codes.append(card);}
@@ -199,22 +202,31 @@
     const hypotheses=$('#hypothesisContent');hypotheses.replaceChildren();$('#hypothesisCount').textContent=plural(analysis.hypotheses.length,'{n} hypothèse','{n} hypothèses');
     const grid=el('div','ov-hyp-grid');hypotheses.append(grid);
     analysis.hypotheses.forEach((h,index)=>{
-      const card=el('article',`ov-hyp${index===0?' is-lead':''}`);
-      const top=el('div','ov-hyp-top');top.append(el('span','ov-hyp-rank',index===0?t('HYPOTHÈSE PRINCIPALE · 01'):T('HYPOTHÈSE · {n}',{n:String(index+1).padStart(2,'0')})),el('span','ov-hyp-pct',`${Math.round(h.confidence*100)} %`));card.append(top);
-      p(card,h.label,'h3');
-      const bar=el('div','ov-bar');const fill=el('div','ov-bar-fill');fill.style.width=`${Math.round(h.confidence*100)}%`;bar.append(fill);card.append(bar);
-      const meta=el('div','ov-hyp-meta');meta.append(el('span','',label(STATUS_LABELS,h.status)),el('span','',label(VERIFICATION_LABELS,h.verificationStatus)));card.append(meta);
-      if((h.supportingEvidence||[]).length){card.append(el('strong','ov-h',t('Éléments favorables')));list(card,h.supportingEvidence);}
-      if((h.contradictingEvidence||[]).length){card.append(el('strong','ov-h',t('Contradictions ou limites')));list(card,h.contradictingEvidence);}
-      if((h.requiredConfirmation||[]).length){card.append(el('strong','ov-h',t('Contrôles nécessaires')));list(card,h.requiredConfirmation);}
-      for(const source of h.sources||[])card.append(sourceNode(source));
-      grid.append(card);
+      const card=el('details',`ov-hyp${index===0?' is-lead':''}`);card.open=index===0;
+      const heading=el('summary','ov-track-heading');const content=el('div','ov-track-content');
+      const top=el('div','ov-hyp-top');top.append(el('span','ov-hyp-rank',index===0?t('HYPOTHÈSE PRINCIPALE · 01'):T('HYPOTHÈSE · {n}',{n:String(index+1).padStart(2,'0')})),el('span','ov-hyp-pct',`${Math.round(h.confidence*100)} %`));heading.append(top);
+      p(heading,h.label,'h3');p(heading,t('Score de cohérence · pas une certitude'),'p').className='ov-score-note';heading.append(el('span','ov-track-toggle',t('Examiner la piste')));
+      const bar=el('div','ov-bar');const fill=el('div','ov-bar-fill');fill.style.width=`${Math.round(h.confidence*100)}%`;bar.append(fill);content.append(bar);
+      const meta=el('div','ov-hyp-meta');meta.append(el('span','',label(STATUS_LABELS,h.status)),el('span','',label(VERIFICATION_LABELS,h.verificationStatus)));content.append(meta);
+      if((h.supportingEvidence||[]).length){content.append(el('strong','ov-h',t('Éléments favorables')));list(content,h.supportingEvidence);}
+      if((h.contradictingEvidence||[]).length){content.append(el('strong','ov-h',t('Contradictions ou limites')));list(content,h.contradictingEvidence);}
+      if((h.requiredConfirmation||[]).length){content.append(el('strong','ov-h',t('Contrôles nécessaires')));list(content,h.requiredConfirmation);}
+      if((h.sources||[]).length){
+        const references=el('details','ov-references');references.append(el('summary','',plural(h.sources.length,'Voir la référence','Voir les {n} références')));
+        for(const source of h.sources)references.append(sourceNode(source));
+        content.append(references);
+      }
+      card.append(heading,content);grid.append(card);
     });
     if(!analysis.hypotheses.length)p(hypotheses,analysis.finalConclusion.summary);
     // ORVECT picks the next check itself, deterministically; the plan below
     // keeps the full reasoning order. Fall back to the plan's first entry.
     const best=analysis.nextBestCheck?.checkId;
     const check=(best&&analysis.nextChecks.find(item=>item.id===best))||analysis.nextChecks[0];$('#checkTitle').textContent=check?.title||t('Informations complémentaires nécessaires');$('#checkObjective').textContent=(check?.objective||analysis.finalConclusion.summary||'').replace(/Durée estimée\s*:/i,t('Durée estimée :'));
+    const rationale=$('[data-check-rationale]');rationale.replaceChildren();
+    rationale.hidden=!(analysis.nextBestCheck?.rationale||[]).length;
+    if(!rationale.hidden){p(rationale,t('Pourquoi ce contrôle ?'),'strong');list(rationale,analysis.nextBestCheck.rationale);}
+    const stepLabel=$('.process-panel .check-card .eyebrow');stepLabel.textContent=check?T('Contrôle {n} · recommandé',{n:String(check.order).padStart(2,'0')}):t('Compléter les preuves');
     const instructions=$('.process-panel .instructions');instructions.replaceChildren();for(const instruction of check?.instructions||[])p(instructions,instruction,'li');
     $('#recordResult').disabled=!currentStep;
     const missing=$('.case-panel .missing');missing.replaceChildren();for(const item of analysis.missingInformation||[])p(missing,`${item.field} : ${item.reason} — ${item.howToObtain}`,'li');
