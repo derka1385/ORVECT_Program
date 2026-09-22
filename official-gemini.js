@@ -94,17 +94,29 @@
   }
 
   // --- live pipeline stages (screen 3) ------------------------------------
+  // The pipeline's step list, remembered from the server between runs. Showing
+  // it as soon as the technician clicks fills the wait for sign-in and case
+  // creation with the real sequence instead of an empty box. It is never
+  // invented: an installation that has run nothing yet simply shows no list.
+  let knownStages=[];
   function renderStages(progress){
-    const panel=$('[data-analysis-stages]');if(!panel)return;panel.hidden=false;
+    const panel=$('[data-analysis-stages]');if(!panel)return;
+    const opening=panel.hidden;panel.hidden=false;
+    if(progress?.stages?.length)knownStages=progress.stages;
     $('[data-stage-label]').textContent=t(progress?.label||'Démarrage de l’analyse');
-    $('[data-stage-detail]').textContent=progress?.detail||'';
+    // Before the first progress reply, name what is actually happening rather
+    // than leaving the panel silent.
+    $('[data-stage-detail]').textContent=progress?(progress.detail||''):t('Connexion au service et préparation du dossier…');
     const listNode=$('[data-stage-list]');listNode.replaceChildren();
-    const index=progress?.index??0;
-    (progress?.stages||[]).forEach((stage,i)=>{const li=el('li',i<index?'done':i===index?'active':'');li.append(el('b','',i<index?'✓':String(i+1).padStart(2,'0')),document.createTextNode(' '+t(stage.label)));listNode.append(li);});
+    // -1 while the pipeline has not started: every step stays pending, none is
+    // shown as running.
+    const index=progress?progress.index??0:-1;
+    (progress?.stages||knownStages).forEach((stage,i)=>{const li=el('li',i<index?'done':i===index?'active':'');li.append(el('b','',i<index?'✓':String(i+1).padStart(2,'0')),document.createTextNode(' '+t(stage.label)));listNode.append(li);});
     // The bar tracks the stage the server actually reports, never a timer.
     const bar=$('[data-stage-bar]');
     if(bar){const total=progress?.total||0;bar.style.width=total?Math.round(((index+1)/total)*100)+'%':'0%';}
     $('[data-stage-elapsed]').textContent=progress?.elapsedMs?T('{s} s écoulées',{s:(progress.elapsedMs/1000).toFixed(1)}):'';
+    if(opening)panel.scrollIntoView({block:'nearest',behavior:'instant'});
   }
   async function analyzeWithProgress(path,showStages){
     if(showStages)renderStages(null);
@@ -269,9 +281,11 @@
     box.classList.add('show','error');
     box.scrollIntoView({block:'nearest',behavior:'instant'});
   }
-  function intercept(id,action){$(id).addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();run(action).catch(fail);},true);}
+  // `onClick` runs synchronously on the click, before sign-in and the requests
+  // that precede the analysis. Anything meant to cover that wait has to happen
+  // here: the action itself only starts once `run` has awaited login.
+  function intercept(id,action,onClick){$(id).addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();if(onClick)onClick();run(action).catch(fail);},true);}
   intercept('#launchDiagnosis',async()=>{
-    renderStages(null);
     const data=ui.context();
     if(!data.dtcs.length||data.dtcs.some(item=>item.status!=='confirmed'))throw Error('Confirmez chaque code avant l’analyse.');
     if(!data.symptoms.trim())throw Error('Décrivez les symptômes pour tester le raisonnement.');
@@ -284,7 +298,7 @@
     await request('/diagnostics/'+activeCase+'/fault-codes',{fault_codes:data.dtcs.map(item=>({code:item.code,namespace:'sae_obd2',ecu:'ECU moteur',status:'unknown',freeze_frame:{},technician_verification:'confirmed',technician_note:'Code confirmé dans le parcours exploratoire de test.'}))});
     for(const measurement of data.measurements)await request('/diagnostics/'+activeCase+'/measurements',{name:measurement.name,value:measurement.value,unit:null,conditions:'Saisie du test exploratoire',source:'manual'});
     const analysis=await analyzeWithProgress('/diagnostics/'+activeCase+'/analyze',true);await render(analysis,activeCase);
-  });
+  },()=>renderStages(null));
   intercept('#reanalyze',async()=>{if(!activeCase)throw Error('Lancez une première analyse.');await render(await analyzeWithProgress('/diagnostics/'+activeCase+'/reanalyze',false),activeCase);});
   intercept('#attachPhoto',async()=>{
     if(!activeCase)throw Error('Lancez une première analyse avant de joindre une photo.');
