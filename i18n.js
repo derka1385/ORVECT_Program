@@ -1271,6 +1271,18 @@
     "Le service ORVECT n’a pas répondu à temps. Réessayez.": "Der ORVECT-Dienst hat nicht rechtzeitig geantwortet. Bitte erneut versuchen."
   });
 
+  // État d’attente affiché dès le clic sur « Analyser ».
+  Object.assign(fr, {});
+  Object.assign(en, {
+    "Connexion au service et préparation du dossier…": "Connecting to the service and preparing the case…"
+  });
+  Object.assign(sv, {
+    "Connexion au service et préparation du dossier…": "Ansluter till tjänsten och förbereder ärendet…"
+  });
+  Object.assign(de, {
+    "Connexion au service et préparation du dossier…": "Verbindung zum Dienst und Vorbereitung des Falls …"
+  });
+
   const dictionaries = {fr,en,sv,de};
   const originals = new WeakMap();
   const attributeOriginals = new WeakMap();
