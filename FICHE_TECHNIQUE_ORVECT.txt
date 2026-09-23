@@ -4,764 +4,168 @@ Plateforme d'aide au diagnostic automobile fondée sur la preuve
 Document de référence pour audit externe (systèmes et IA)
 ===============================================================================
 
-Version du document : 2.0
-Date : 19 septembre 2026
-Périmètre : dépôt derka1385/ORVECT_Program, branche feat/nebius-on-bijou
-Version de prompt en vigueur : automotive-v4.7-field-evidence
+Version du document : 3.0
+Date : 23 septembre 2026
+Périmètre : dépôt derka1385/ORVECT_Program, branche main au commit 4475e35
+Version de prompt : automotive-v4.7-field-evidence
 Version des règles de sécurité : safety-rules-v1
-Migration de base de données la plus récente : 0014
 Version du schéma de sortie IA : 2.0
+Migration de base la plus récente : 0014
+Tests : 243 fonctions, 265 exécutions, 1 ignorée
+
+État du déploiement au moment de la rédaction, relevé sur l'API publique :
+  llm_provider = nebius · llm_ready = true · research_ready = true
+  auth_provider = firebase · prompt_version = automotive-v4.7-field-evidence
+  81 routes exposées
 
 
 ===============================================================================
-1. OBJET DU SYSTÈME ET POSITIONNEMENT
+1. CE QUE FAIT ORVECT
 ===============================================================================
 
-1.1 Ce que fait ORVECT
+Entrée : un véhicule identifié, un ou plusieurs codes défaut confirmés par un
+technicien, des symptômes, des mesures, éventuellement des photos.
 
-ORVECT prend en entrée un véhicule identifié, un ou plusieurs codes défaut (DTC)
-confirmés par un technicien, des symptômes, des mesures et éventuellement des
-photos. Il produit :
-
-  - une interprétation des codes défaut adossée à un catalogue versionné ;
-  - des hypothèses de cause racine classées, chacune avec ses éléments
-    favorables, ses éléments contradictoires et ses sources ;
-  - un plan de contrôle ordonné (le moins cher, le plus rapide, le moins
-    invasif et le plus informatif d'abord) ;
-  - un indicateur de confiance diagnostique calculé côté serveur ;
+Sortie :
+  - une interprétation des codes adossée à un catalogue versionné ;
+  - des hypothèses de cause racine classées, avec éléments favorables,
+    éléments contradictoires et sources ;
+  - un plan de contrôle, et le prochain contrôle choisi par ORVECT selon
+    l'état diagnostique courant ;
+  - une mesure de la solidité de l'étayage ;
   - une évaluation de sécurité produite par un moteur déterministe ;
   - l'expérience ORVECT compatible accumulée sur des véhicules similaires.
 
-Depuis la révision 2.0 de ce document, ORVECT apprend de ses propres
-diagnostics. Les issues réelles d'atelier confirmées sont normalisées, agrégées
-et réutilisées comme classe de preuve à part entière (section 18).
-
-1.2 Ce que le système ne fait pas, par conception
-
-ORVECT ne confirme jamais définitivement une panne, ne prescrit jamais le
-remplacement d'une pièce, ne déclare jamais un véhicule apte ou inapte à
-rouler et ne fixe aucun niveau de danger à partir d'une réponse de modèle de
-langage. Ces décisions appartiennent au moteur déterministe (Safety Engine) et
-au technicien humain. Cette frontière est contrôlée par du code, pas seulement
-par des consignes de prompt (voir section 7).
-
-1.3 Statut
-
-Prototype fonctionnel en bêta, données de démonstration synthétiques pour les
-cas administrateur, pipeline de raisonnement et de recherche réel.
+Ce que le système ne fait jamais : confirmer définitivement une panne,
+prescrire le remplacement d'une pièce, déclarer un véhicule apte ou inapte à
+rouler, fixer un niveau de danger à partir d'une réponse de modèle. Ces
+frontières sont tenues par du code exécuté après la réponse du modèle, pas
+seulement par des consignes de prompt.
 
 
 ===============================================================================
-2. ARCHITECTURE GÉNÉRALE
+2. ARCHITECTURE
 ===============================================================================
 
 2.1 Composants
 
-  A. Site statique (GitHub Pages)
-     Fichiers : index.html, official-gemini.js (moteur de rendu),
-     workspace.js (espace compte), firebase-auth.js, i18n.js,
-     runtime-config.js, investor-cases.js, collecte/ (formulaire de
-     contribution atelier), data/fixtures/dtc_catalog.lookup.js.
-     Aucune clé privée. runtime-config.js ne contient que la configuration
-     Firebase Web publique et l'URL de l'API.
+  A. Site statique, GitHub Pages
+     index.html, official-gemini.js (moteur de rendu), results-ui.css,
+     workspace.js, firebase-auth.js, i18n.js, runtime-config.js,
+     investor-cases.js, collecte/. Aucune clé privée.
 
-  B. Backend API (FastAPI, Python >= 3.11, exécuté en 3.12)
-     SQLAlchemy 2 + Alembic. SQLite en local, PostgreSQL en conteneur.
-     Déployé sur Render, point d'entrée https://orvect-api.onrender.com/api.
-     Dépendances de production : fastapi, uvicorn, sqlalchemy, alembic,
-     pydantic-settings, python-multipart, psycopg, email-validator, structlog,
-     httpx, cryptography, google-genai, Pillow, firebase-admin.
+  B. Backend FastAPI, Python 3.12, SQLAlchemy 2 + Alembic
+     SQLite en local, PostgreSQL en production. Déployé sur Render.
 
-  C. Frontend Next.js (répertoire frontend/)
-     Hérité, conservé à l'identique, non utilisé par le déploiement Pages.
+  C. Services externes
+     Nebius Token Factory (raisonnement), Tavily (recherche externe),
+     Firebase Authentication (identité).
 
-  D. Services externes
-     - Nebius Token Factory : couche de raisonnement (LLM).
-     - Tavily : recherche de preuves techniques externes.
-     - Firebase Authentication : identité et vérification d'e-mail.
-     - NHTSA vPIC / AutoRef / fournisseur d'immatriculation : résolution
-       véhicule, désactivés ou en mode mock par défaut.
+  D. Frontend Next.js hérité, conservé, non déployé.
 
-2.2 Chaîne de traitement d'un diagnostic
+2.2 Chaîne de traitement
 
-  entrée technicien (véhicule + DTC confirmés + symptômes + mesures + photos)
-        |
+  technicien (véhicule + DTC confirmés + symptômes + mesures + photos)
         v
-  DiagnosticContextBuilder ........ contexte canonique, données utilisateur
-        |                            explicitement marquées « non fiables »
+  contexte canonique ............ données utilisateur marquées non fiables
         v
-  Diagnostic Data Resolver ........ identité et définition faisant autorité
-        |                            du DTC, ou abstention explicite
+  résolveur de définitions DTC .. définition faisant autorité, ou abstention
         v
-  Diagnostic Engine (porte) ....... décision déterministe : des hypothèses
-        |                            sont-elles autorisées ? sinon, statut
-        |                            d'arrêt imposé
+  porte déterministe ............ des hypothèses sont-elles autorisées ?
         v
-  Experience Engine ............... expérience ORVECT compatible, agrégée et
-        |                            anonymisée, récupérée AVANT toute
-        |                            recherche externe
+  Experience Engine ............. expérience ORVECT compatible, agrégée et
+        |                         anonymisée, AVANT toute recherche externe
         v
-  Décision de recherche ........... déterministe, sans appel LLM, informée par
-        |                            l'expérience accumulée
+  décision de recherche ......... déterministe, sans appel de modèle
         +-- non --> base interne + expérience ORVECT
-        |
-        +-- oui --> Tavily (1 à 3 requêtes) --> classement par qualité de
-        |                                        source --> cache 168 h
+        +-- oui --> Tavily, 3 requêtes maximum, cache 168 h
         v
-  Nebius Token Factory ............ UN appel structuré sur preuves internes,
-        |                            de terrain et externes, par classe séparée
+  Nebius ........................ UN appel structuré, classes de preuve
+        |                         séparées
         v
-  Couche de validation serveur .... provenance reconstruite, frontières
-        |                            d'autorité appliquées, réponse rejetée
-        |                            si non conforme
+  validation serveur ............ provenance reconstruite, frontières
+        |                         d'autorité appliquées, réponse rejetée
+        |                         si non conforme, une seule réparation ciblée
         v
-  Safety Engine (déterministe) .... jamais le LLM
-        |
+  Safety Engine ................. déterministe, jamais le modèle
         v
-  Force de l'étayage .............. heuristique serveur, non calibrée
-        |
+  force de l'étayage ............ heuristique serveur, non calibrée
         v
-  Prochain contrôle ............... choisi par heuristique déterministe
-        |
+  prochain contrôle ............. heuristique déterministe sur l'état courant
         v
-  Persistance + journal d'audit ... ai_calls, diagnostic_events,
-        |                            hypothesis_state_events
+  rapport technicien, 4 langues
         v
-  Rapport technicien (4 langues)
-        |
+  résultat de contrôle -> boucle itérative
         v
-  Résultat de contrôle -> boucle itérative (prochain contrôle promu)
-        |
-        v
-  Cause confirmée -> réparation -> issue -> Experience Engine
-                                              (intelligence future)
-
-2.3 Modularité
-
-Monolithe modulaire : un déploiement, une base relationnelle. Modules backend :
-auth, workspace, diagnostic_ai, diagnostic_data, dtc, experience, research,
-vehicle_data, vehicle_resolution, ai. Ils partagent une transaction SQLAlchemy mais gardent
-des contrats séparés.
+  cause confirmée -> réparation -> issue -> Experience Engine
 
 
 ===============================================================================
-3. ORCHESTRATION DU DIAGNOSTIC (analysis_service.analyze_case)
+3. IDENTIFICATION DU VÉHICULE
 ===============================================================================
 
-Séquence exacte, avec les étapes publiées en temps réel au client :
+Trois méthodes sur l'écran d'accueil.
 
-  1. Verrou : si le dossier est déjà en statut « analyzing », l'appel est
-     rejeté (HTTP 409). Aucune analyse concurrente sur un même dossier.
-  2. Étape « context » : construction du contexte canonique.
-  3. Rejet si aucun code défaut (HTTP 422).
-  4. Étape « codes ».
-  5. exploration_mode = DIAGNOSTIC_EXPLORATION_ENABLED et fournisseur dans
-     {gemini, nebius}.
-  6. Évaluation de la porte Diagnostic Engine, injectée dans le contexte.
-  7. response_language (fr, en, sv, de ; défaut fr) injecté dans le contexte.
-  8. Calcul de l'empreinte de contexte (SHA-256 du contexte canonicalisé,
-     après filtrage des étapes non informatives).
-  9. Court-circuit : sur une réévaluation, si le dernier résultat de contrôle
-     est non informatif et que l'empreinte est inchangée, le dernier rapport
-     est renvoyé sans nouvel appel LLM.
- 10. Cache d'analyse : réutilisation d'un AICall existant si session,
-     empreinte d'entrée, type d'opération, statut, version de schéma,
-     fournisseur, modèle et version de prompt correspondent tous.
- 11. Étape « knowledge » : recherche interne à compatibilité véhicule.
- 12. Étape « research_decision » puis « research » (section 5).
- 13. Étape « reasoning » : appel Nebius (section 6).
- 14. Étape « test_plan ».
- 15. Safety Engine (section 8).
- 16. Persistance et validation (sections 7 et 9).
- 17. Étape « complete ».
+  Par VIN ........... résolution via les fournisseurs configurés
+  Par plaque ........ idem
+  Saisie manuelle ... le technicien saisit marque, modèle, année, code moteur,
+                      carburant, transmission
 
-En cas d'exception : rollback, restauration du statut antérieur du dossier,
-enregistrement d'un AICall en statut « failed » avec un message d'erreur
-assaini, et publication de l'échec dans le suivi d'étapes. Un message d'erreur
-interne n'est jamais renvoyé tel quel : seules les exceptions métier connues
-(fournisseur indisponible, réponse invalide, erreur de validation) sont
-propagées, les autres deviennent « Erreur interne du fournisseur IA ».
+Les quatre premiers champs de la saisie manuelle sont obligatoires. Le code
+moteur en particulier : sans lui, la porte déterministe s'arrête avant toute
+hypothèse, autant le dire à la saisie.
+
+Au lancement de l'analyse, un véhicule saisi manuellement est créé dans le
+garage du technicien et sa configuration enregistrée comme confirmée par un
+humain, ce qu'exige la porte. Il est créé une fois par configuration puis
+réutilisé, pour ne pas accumuler de doublons.
+
+Les garde-fous de démonstration (véhicule synthétique obligatoire,
+configuration identique au cas chargé) ne s'appliquent qu'au parcours de
+démonstration administrateur.
 
 
 ===============================================================================
-4. PORTE DÉTERMINISTE (Diagnostic Engine)
+4. PORTE DÉTERMINISTE
 ===============================================================================
 
-Évaluée avant tout appel LLM. Elle produit un booléen hypotheses_allowed, un
-statut de conclusion imposé le cas échéant, et des motifs traçables.
+Évaluée avant tout appel de modèle. Règles d'arrêt, dans l'ordre :
 
-Règles d'arrêt, dans l'ordre :
+  1. DTC non confirmé par le technicien, ou en discordance
+     -> human_escalation_required
+  2. Configuration véhicule non confirmée, ou code moteur absent
+     -> vehicle_configuration_not_sufficiently_identified
+  3. Définition ambiguë ou configuration insuffisante (hors mode exploratoire)
+     -> vehicle_configuration_not_sufficiently_identified
+  4. Code constructeur non documenté (hors mode exploratoire)
+     -> manufacturer_specific_definition_unavailable
+  5. Définition inconnue (hors mode exploratoire)
+     -> human_escalation_required
+  6. Aucune preuve : ni mesure, ni contrôle informatif, ni freeze-frame,
+     ni symptôme, ni image
+     -> insufficient_evidence
 
-  1. Un DTC non confirmé par le technicien, ou marqué en discordance
-     d'interprétation
-     -> arrêt, statut human_escalation_required
-  2. Configuration véhicule non confirmée ou code moteur absent
-     -> arrêt, statut vehicle_configuration_not_sufficiently_identified
-  3. (hors mode exploratoire) Définition de DTC ambiguë ou configuration
-     véhicule insuffisante pour trancher
-     -> arrêt, même statut, avec la liste des informations manquantes
-  4. (hors mode exploratoire) Code constructeur non documenté
-     -> arrêt, statut manufacturer_specific_definition_unavailable
-  5. (hors mode exploratoire) Définition inconnue ou non documentée
-     -> arrêt, statut human_escalation_required
-  6. Aucune preuve exploitable, c'est-à-dire aucune mesure, aucun résultat de
-     contrôle informatif, aucun freeze-frame, aucun symptôme rapporté et
-     aucune image
-     -> arrêt, statut insufficient_evidence
-     (règle centrale : un code défaut seul n'est pas une preuve diagnostique)
+Règle centrale : un code défaut seul n'est pas une preuve diagnostique.
 
-Sinon la porte autorise les hypothèses et documente les motifs :
-reported_symptoms_available, structured_measurements_available,
-freeze_frame_available, informative_test_result_available,
-visual_evidence_available, et exploratory_general_knowledge_unverified en mode
-exploratoire.
-
-Statuts de conclusion possibles (énumération fermée) :
-insufficient_evidence, vehicle_configuration_not_sufficiently_identified,
+Statuts de conclusion possibles, énumération fermée : insufficient_evidence,
+vehicle_configuration_not_sufficiently_identified,
 manufacturer_specific_definition_unavailable, human_escalation_required,
 testing_required, probable_cause_identified.
 
-Point d'audit : le mode exploratoire (DIAGNOSTIC_EXPLORATION_ENABLED) neutralise
-les règles 3 à 5. Il est destiné à la démonstration et exige en contrepartie que
-toute signification non documentée soit préfixée « Approximation IA non
-vérifiée : » et dépourvue de source (contrôle vérifié en section 7).
-
 
 ===============================================================================
-5. RECHERCHE EXTERNE (Tavily)
+5. EXPERIENCE ENGINE — INTELLIGENCE PROPRIÉTAIRE
 ===============================================================================
 
-5.1 Décision de recherche — déterministe, sans appel LLM
+5.1 Principe
 
-Aucun aller-retour de modèle n'est dépensé pour décider s'il faut dépenser un
-aller-retour de modèle.
+Chaque diagnostic clôturé devient un cas normalisé et interrogeable. Les cas
+compatibles sont agrégés en motifs, reliés à leurs cas sources par une table de
+liaison. Aucun modèle n'intervient : tout est déterministe et reproductible.
+Les compteurs d'un motif sont recalculés depuis ses cas, jamais incrémentés.
 
-Désactivation : RESEARCH_ENABLED à faux ou clé Tavily absente -> pas de
-recherche, motif research_disabled.
+5.2 Classes de confiance
 
-Déclencheurs (un seul suffit) :
-  - manufacturer_specific_code : au moins une définition constructeur
-  - internal_definition_missing : au moins une définition non documentée
-  - multiple_codes_need_shared_cause_evidence : plus d'un code défaut
-  - internal_evidence_insufficient : moins de 3 extraits internes compatibles
-  - engine_specific_failure_pattern_relevant : code moteur connu, aucun
-    extrait interne
-  - symptoms_need_vehicle_specific_evidence : symptômes rapportés, aucun
-    extrait interne
-
-Sans déclencheur : motif internal_knowledge_sufficient, aucune requête émise.
-
-5.2 Construction des requêtes
-
-Toujours spécifiques au véhicule, jamais le code nu. Maximum 3 requêtes
-(TAVILY_MAX_QUERIES). Les mots-clés de symptômes sont extraits après retrait
-des mots vides, limités à 5 termes. Exemples réels :
-
-  2018 Volkswagen Golf VII 1.4 TSI 92 kW P0301 common causes diagnosis
-  Volkswagen CZCA P0301 rough idle EPC light technical service bulletin
-  2018 Volkswagen Golf VII 1.4 TSI 92 kW P0301 recall technical service bulletin
-
-5.3 Exécution
-
-Endpoint /search, profondeur « advanced », 5 résultats par requête, délai
-d'expiration 20 s, requêtes exécutées en parallèle. Un résultat sans URL http
-ou https est écarté : une citation sans URL réelle n'est jamais fabriquée.
-L'échec d'une requête isolée est journalisé (texte de la requête uniquement,
-jamais la clé) et n'interrompt pas le diagnostic. L'échec de toutes les
-requêtes lève TavilyUnavailable, qui reste non fatal : le dossier se poursuit
-sur la base interne et le rapport indique explicitement que la vérification
-externe est indisponible.
-
-5.4 Hiérarchie de qualité des sources
-
-Rang 6  oem_manufacturer ........... constructeur, portails techniques OEM
-Rang 5  safety_authority ........... NHTSA, KBA, Transportstyrelsen, rappels UE
-Rang 4  technical_documentation .... SAE, ISO, équipementiers, Haynes, Autodata
-Rang 3  repair_technical_resource .. distributeurs de pièces, ressources de
-                                     réparation
-Rang 2  specialist_community ....... forums de marque, Reddit, StackExchange
-Rang 1  general_web ................ reste du web
-
-Classification par listes de domaines connus d'abord, puis par motifs de
-repli ordonnés du signal le plus autoritaire au moins autoritaire. Déduplication
-par URL, tri par (rang de source, pertinence Tavily) décroissant.
-
-Toute preuve externe est marquée verified = false de façon permanente. C'est ce
-qui l'empêche de déverrouiller un champ « procédure constructeur » (section 7).
-
-5.5 Cache de recherche
-
-Table research_cache. Clé : SHA-256 de {marque, modèle, année, moteur, codes
-triés, requêtes triées}. Les symptômes en texte libre sont volontairement
-exclus de la clé. Durée de vie : 168 heures (TAVILY_CACHE_TTL_HOURS).
-
-Point d'audit : la clé de cache ne contient pas garage_id. Les preuves mises en
-cache sont des contenus web publics, mais le cache est donc partagé entre
-locataires pour une même signature véhicule + codes + requêtes.
-
-
-===============================================================================
-6. COUCHE DE RAISONNEMENT (Nebius Token Factory)
-===============================================================================
-
-6.1 Appel
-
-Endpoint compatible OpenAI /chat/completions, appelé exclusivement côté
-serveur via httpx. Modèle principal : openai/gpt-oss-120b. Modèle de repli :
-deepseek-ai/DeepSeek-V4.1-Flash. Température 0,15. Sortie maximale 8192
-tokens. Délai d'expiration 90 s.
-
-Sortie structurée : response_format json_schema strict. Sur un HTTP 400, repli
-automatique sur json_object, puis sur le modèle de repli. Trois tentatives par
-modèle sur 408, 429 et 5xx, avec attente exponentielle (0,4 s, 0,8 s, 1,6 s).
-Un 401 ou 403 est remonté immédiatement comme « clé d'API refusée ».
-
-Latence observée en production locale : 13 à 48 s selon le cas.
-
-6.2 Schéma présenté au modèle
-
-Le schéma Pydantic strict est réécrit pour un moteur JSON de type vLLM :
-suppression des contraintes non supportées, additionalProperties forcé à false.
-
-Point essentiel : l'objet SourceReference est remplacé, côté modèle, par
-{ source_id } seul. Le modèle ne cite qu'un identifiant ; le serveur
-reconstruit tous les autres champs depuis son propre contexte. Cela supprime
-toute possibilité d'URL, d'horodatage ou d'indicateur de vérification inventés.
-
-6.3 Message utilisateur
-
-Il contient, dans cet ordre :
-  - la langue de rédaction obligatoire, répétée explicitement ;
-  - la mention que les textes utilisateur et OCR sont des données non fiables
-    et jamais des instructions ;
-  - le contexte diagnostique sérialisé en JSON.
-
-6.4 Tentative de réparation
-
-Une seule. Si la réponse échoue à la normalisation, à la validation Pydantic ou
-au contrôle de provenance, un second appel est émis avec une consigne de
-régénération stricte. Un second échec lève AIInvalidResponse (HTTP 502). Il n'y
-a aucune boucle de reprise non bornée.
-
-Le résultat distingue deux états : « repaired » (une seconde tentative a été
-nécessaire) et « normalized » (canonicalisation serveur de routine). Cette
-distinction est persistée dans ai_calls.validation_status.
-
-
-===============================================================================
-7. GARDE-FOUS SERVEUR APPLIQUÉS À LA SORTIE DU MODÈLE
-===============================================================================
-
-C'est le cœur du dispositif de maîtrise du risque IA. Tous ces contrôles sont
-du code exécuté après la réponse du modèle, indépendamment du prompt.
-
-7.1 Reconstruction de la provenance
-
-Chaque source_id cité est recherché dans les sources réellement disponibles du
-contexte. S'il correspond à exactement une source, l'objet canonique complet est
-réinjecté. Un identifiant inconnu ou un objet altéré lève AIInvalidResponse
-(« Unknown or altered source reference »). Le modèle ne peut donc citer que ce
-qui existe.
-
-7.2 Intégrité des définitions de DTC
-
-Contrôle _validate_dtc_interpretations :
-  - chaque code défaut d'entrée doit apparaître exactement une fois en sortie,
-    ni plus ni moins ;
-  - pour un code documenté, la signification, le type de définition, le statut
-    de source et la liste des sources doivent être strictement identiques à
-    ceux du catalogue ;
-  - pour un code non documenté, le statut doit être not_found et la liste de
-    sources vide ;
-  - exception mode exploratoire : la signification doit commencer par
-    « Approximation IA non vérifiée : » et ne porter aucune source.
-Toute divergence lève AIInvalidResponse.
-
-7.3 Frontière d'autorité
-
-Une liste de 22 expressions interdites couvre les décisions réservées :
-aptitude à rouler (safe to drive, peut rouler, éviter de conduire, road test,
-essai routier), remplacement (should/must be replaced, doit être remplacé,
-à remplacer, remplacer), confirmation définitive (cause confirmée,
-definitively confirmed), niveau de danger, et effacement de codes.
-
-La détection est sensible à la négation : une phrase du type « à ne pas
-remplacer à l'aveugle tant que les contrôles simples ne sont pas faits » est
-préservée, car elle constitue précisément un avertissement utile. Une violation
-détectée pendant la normalisation est remplacée par le message « Décision
-réservée au moteur déterministe ou à une validation humaine ». Une violation
-subsistante à la validation finale lève AIInvalidResponse.
-
-7.4 Respect de la porte déterministe
-
-Si hypotheses_allowed est faux :
-  - toute hypothèse renvoyée est un rejet ;
-  - un statut de conclusion différent de celui imposé est un rejet.
-
-7.5 Contrôles de cohérence supplémentaires
-
-  - Classement dégénéré : si toutes les hypothèses sont notées à zéro, la
-    réponse est rejetée (le rapport n'afficherait aucun classement utile).
-  - Corrélations : les codes reliés doivent être un sous-ensemble des codes
-    réellement soumis.
-  - Une procédure marquée « constructeur » exige au moins une source verified,
-    ce qu'une preuve web ne peut jamais être (validateur Pydantic).
-  - Un contrôle sans source doit être marqué unverified (validateur Pydantic).
-  - Les identifiants de source glissés dans la prose sont nettoyés par
-    expression régulière, y compris les préfixes « tavily: » et « catalog: »
-    collés à un titre.
-  - Les entrées vides de listes sont supprimées ; les clés structurelles
-    (sources, source_id, id, imageId) sont exclues du nettoyage textuel.
-  - Une conclusion « preuves insuffisantes » accompagnée d'hypothèses est
-    ramenée à « testing_required » pour rester cohérente.
-
-7.6 Schéma de sortie
-
-Modèle Pydantic strict, extra fields interdits, schemaVersion figé à « 2.0 ».
-Champs produits par le modèle : caseSummary, reasoningApproach,
-interpretedFaultCodes (max 30), correlations (max 30), hypotheses (max 20),
-imageEvidence (max 8), missingInformation (max 30), nextChecks (max 20),
-finalConclusion, warnings.
-
-Champs ajoutés exclusivement par le serveur, absents du schéma présenté au
-modèle : safetyAssessment, confidence, researchMetadata. Le modèle n'a donc
-structurellement aucun champ pour se prononcer sur la sécurité ou sur sa
-propre confiance.
-
-
-===============================================================================
-8. MOTEUR DE SÉCURITÉ (Safety Engine)
-===============================================================================
-
-Entièrement déterministe. Aucun appel LLM. Version safety-rules-v1.
-
-Règle 1 — DO_NOT_DRIVE (risque critique)
-  Déclenchée par la présence, dans le texte utilisateur, d'un terme critique
-  parmi : brake failure, no brakes, fire, flames, fumée importante,
-  freins inopérants, incendie. Recherche par frontière de mot.
-
-Règle 2 — STOP_AS_SOON_AS_SAFE (risque élevé)
-  Déclenchée par un code défaut actif, confirmé ou permanent parmi :
-  P0217 (surchauffe moteur), P0524 (pression d'huile trop basse).
-
-Règle 3 — UNKNOWN (défaut)
-  Aucune règle déterministe fiable ne couvre le cas. Le système ne déduit
-  jamais la sécurité d'une réponse de modèle de langage.
-
-Dans les trois cas, humanReviewRequired vaut toujours true et decisionSource
-vaut toujours safety_engine. Les identifiants de règles déclenchées sont
-journalisés dans le rapport.
-
-Point d'audit : la couverture est volontairement étroite (2 codes, 7 termes).
-Le mode d'échec par défaut est UNKNOWN avec revue humaine obligatoire, ce qui
-est le comportement conservateur attendu, mais ce moteur ne doit pas être
-présenté comme une évaluation de sécurité exhaustive.
-
-
-===============================================================================
-9. HEURISTIQUE DE CONFIANCE DIAGNOSTIQUE
-===============================================================================
-
-Calculée côté serveur, jamais par le modèle. decisionSource =
-confidence_heuristic. Elle mesure la solidité de l'étayage du dossier, et non
-la probabilité qu'une réparation fonctionne. Cette distinction est affichée
-telle quelle dans l'interface.
-
-Score de base : 20. Résultat borné à l'intervalle [5, 95].
-
-Bonifications :
-  +12  code moteur identifié et confirmé
-  + 6  identité véhicule complète (année, marque, modèle)
-  +10  au moins une définition de DTC documentée au catalogue
-  +16  au moins 3 domaines externes indépendants convergents
-  +10  exactement 2 domaines externes indépendants
-  + 5  exactement 1 domaine externe
-  +12  meilleure source de rang >= 5 (constructeur ou autorité de sécurité)
-  + 7  meilleure source de rang >= 3 (documentation technique reconnue)
-  + 8  mesures structurées disponibles
-  + 8  freeze-frame disponible
-  +10  résultat de contrôle informatif déjà enregistré
-
-Pénalités :
-  -3 par élément contradictoire, plafonné à -12
-  -8  toutes les hypothèses restent non vérifiées
-  -6  recherche externe déclenchée mais sans résultat exploitable
-  -5  au moins 4 hypothèses restent plausibles
-
-Cas particulier : aucune hypothèse défendable -> score 0, label low, et liste
-explicite de ce qu'il faudrait fournir.
-
-Libellés : low (< 35), moderate (35-54), good (55-74), strong (>= 75).
-
-Chaque score est accompagné de la liste des facteurs qui l'ont construit et de
-la liste, limitée à 5 entrées, de ce qui l'améliorerait.
-
-Point d'audit : heuristique non calibrée statistiquement. Elle est documentée
-comme telle dans le code et dans l'interface, et n'est jamais présentée comme
-une probabilité.
-
-
-===============================================================================
-10. DONNÉES, PERSISTANCE ET JOURNALISATION
-===============================================================================
-
-10.1 Schéma relationnel
-
-Environ 40 tables. Principales familles :
-  - Identité et locataires : garages, users, garage_memberships,
-    firebase_identities, auth_sessions
-  - Véhicules : vehicle_profiles, vehicle_configurations, ecu_configurations,
-    vehicle_configuration_candidates, vin_resolution_requests,
-    vehicle_resolution_events
-  - Catalogue diagnostic : dtcs, diagnostic_namespaces, diagnostic_datasets,
-    diagnostic_identifiers, diagnostic_definition_variants,
-    diagnostic_code_aliases, diagnostic_definition_reviews,
-    diagnostic_alias_reviews, diagnostic_source_assessments,
-    diagnostic_data_conflicts, diagnostic_dataset_events
-  - Dossiers : diagnostic_sessions, diagnostic_observations,
-    diagnostic_hypotheses, diagnostic_steps, diagnostic_events,
-    diagnostic_images
-  - IA et recherche : ai_calls, research_cache
-  - Contribution et conformité : diagnostic_data_consents,
-    diagnostic_completions, diagnostic_contributions, dtc_submissions,
-    account_preferences, product_analytics_events
-  - Connaissance : knowledge_sources, knowledge_items, diagnostic_rules
-
-Migrations Alembic : 0001 à 0012, tête unique. La migration 0012 introduit
-research_cache.
-
-10.2 Journal des appels IA (ai_calls)
-
-Chaque appel, réussi ou non, enregistre : fournisseur, modèle, type
-d'opération, statut, version de schéma, version de prompt, identifiant de
-requête, empreinte d'entrée, empreinte de sortie, charge utile de sortie,
-statut de validation (valid / normalized / repaired), message d'erreur
-assaini, latence et consommation de tokens.
-
-10.3 Journal d'événements
-
-diagnostic_events est append-only. L'événement ai_explanation_completed
-enregistre notamment : identifiant de l'exécution IA, fournisseur, modèle,
-opération, statut de validation, source de décision de sécurité, déclenchement
-de recherche, nombre de requêtes, nombre de sources externes, utilisation du
-cache, latence et tokens.
-
-10.4 Traçabilité des hypothèses et des étapes
-
-À chaque nouvelle analyse, les hypothèses et étapes antérieures passent au
-statut « superseded » plutôt que d'être supprimées. Chaque étape conserve
-l'état des hypothèses au moment où elle a été créée. Les résultats de contrôle
-non informatifs (inconclusive, unavailable, invalid, refused) sont conservés
-dans le dossier sans modifier l'état diagnostique.
-
-10.5 Journalisation applicative
-
-structlog en sortie JSON. Les journaux httpx et httpcore sont forcés au niveau
-WARNING parce que les URL du fournisseur vPIC contiennent le VIN. Les clés
-d'API ne sont jamais journalisées : l'échec d'une requête Tavily journalise le
-texte de la requête et le type d'exception, rien d'autre.
-
-
-===============================================================================
-11. SÉCURITÉ ET PROTECTION DES DONNÉES
-===============================================================================
-
-11.1 Authentification
-
-Deux fournisseurs, sélectionnés par AUTH_PROVIDER :
-  - firebase (production) : vérification du jeton d'identité. Si
-    FIREBASE_CHECK_REVOKED est faux, la vérification est réalisée sans clé de
-    compte de service via google-auth ; sinon firebase-admin est utilisé avec
-    contrôle de révocation.
-  - legacy : identifiants locaux, session opaque dont seul le hachage est
-    stocké, durée de vie 12 h par défaut.
-
-Le compte propriétaire (OWNER_ADMIN_EMAIL) est lié une seule fois au compte
-administrateur pré-initialisé, après vérification Firebase de la propriété de
-l'adresse. L'auto-inscription Firebase est contrôlée par
-FIREBASE_SELF_SIGNUP_ENABLED.
-
-11.2 Isolation multi-locataires
-
-Le garage actif est dérivé côté serveur d'une appartenance active. Aucun
-identifiant de locataire fourni par le client n'est accepté comme preuve
-d'accès. Toutes les requêtes de dossiers sont filtrées par garage_id ; un
-dossier appartenant à un autre garage renvoie 404, jamais 403 avec fuite
-d'existence.
-
-11.3 Identifiants véhicule
-
-VIN chiffré au repos (Fernet). Déduplication par empreinte HMAC-SHA-256 avec
-un secret distinct. Seuls les six derniers caractères sont exposés. Le VIN
-n'apparaît ni dans les événements, ni dans le contexte transmis au LLM. La
-sérialisation des profils véhicule masque explicitement vin, vin_encrypted,
-vin_fingerprint, registration_encrypted et registration_fingerprint.
-
-Point d'audit : sans VIN_ENCRYPTION_KEY et VIN_FINGERPRINT_SECRET persistants,
-le système bascule sur des clés dérivées du secret de développement ; les VIN
-chiffrés avec ces clés éphémères ne sont plus déchiffrables après redémarrage.
-Un indicateur using_development_keys existe dans le code.
-
-11.4 Images
-
-Ré-encodage systématique en JPEG après transposition EXIF, ce qui supprime les
-métadonnées d'origine, y compris la géolocalisation. Vignette 480 px générée.
-Stockage dans un répertoire privé exclu du dépôt (backend/private_images,
-ignoré par git). Service par route authentifiée et contrôlée par garage, avec
-Cache-Control private. Rétention 90 jours, purge par cleanup_expired_images.
-Limites : 8 Mo par image, 24 Mo au total, 8 images par dossier, 2400 px, 16 Mpx.
-L'OCR n'est pas configuré : les catégories concernées reçoivent un marqueur
-explicite indiquant que le texte visible resterait une donnée non fiable.
-
-11.5 Résistance à l'injection de prompt
-
-  - Les entrées libres sont isolées dans untrusted_user_data et annoncées
-    comme non fiables dans le message système et dans le message utilisateur.
-  - Les résultats d'OCR, lorsqu'ils existeront, sont marqués de la même façon.
-  - Surtout, aucune sortie du modèle n'est acceptée sur parole : définitions
-    de DTC, sources, statut de conclusion et frontières d'autorité sont tous
-    revalidés contre le contexte serveur. Une injection réussie dans le texte
-    ne peut donc pas fabriquer une source, modifier une définition de
-    catalogue, lever une porte d'arrêt ni produire une décision de sécurité.
-
-11.6 Limites de débit et de taille
-
-  - 10 analyses par minute et par garage (paramètre nommé
-    GEMINI_RATE_LIMIT_PER_MINUTE, conservé après la migration vers Nebius)
-  - 30 résolutions VIN par minute
-  - Corps de requête global plafonné à 25 Mo par un middleware dédié
-  - Téléversement générique plafonné à 1 Mo
-  - 30 codes défaut, 100 mesures, 200 observations par dossier
-  - Pagination plafonnée à 100 éléments
-
-11.7 Gestion des secrets
-
-Aucune clé privée dans le code client. Les clés Nebius et Tavily ne sont
-lues que par le backend, depuis l'environnement. Le fichier .env est exclu du
-dépôt ; seul .env.example est versionné. Les deux dépôts GitHub sont publics,
-ce qui rend cette séparation critique.
-
-Point d'audit ouvert : une clé Tavily de développement a été exposée en clair
-dans un échange de travail et doit être révoquée puis régénérée.
-
-
-===============================================================================
-12. INTERNATIONALISATION
-===============================================================================
-
-Quatre langues : français (source), anglais, suédois, allemand.
-
-Mécanisme côté site : dictionnaires indexés par le texte français exact,
-traduction des nœuds de texte et des attributs traduisibles, observateur de
-mutations pour le contenu injecté dynamiquement, API window.ORVECT_I18N
-exposant lang et t(). Un petit dictionnaire français traduit en retour les
-phrases déterministes rédigées en anglais (Safety Engine, libellés d'état).
-
-Mécanisme côté modèle : la langue du site est transmise en paramètre de
-requête lors de l'analyse, injectée dans le contexte sous response_language,
-et fait donc partie de l'empreinte de cache. Le prompt (v4.6) impose la langue,
-et la consigne est répétée en tête du message utilisateur, car la consigne
-placée uniquement dans le prompt système était respectée pour les titres mais
-pas pour le corps du plan de contrôle.
-
-Le rapport affiché se retraduit immédiatement lors d'un changement de langue ;
-le texte produit par le modèle suit à la réévaluation suivante.
-
-
-===============================================================================
-13. SURFACE D'API
-===============================================================================
-
-Environ 80 routes, préfixe /api. Principaux groupes :
-
-  /api/auth ................... login, me, logout
-  /api/health, /api/public/metrics
-  /api/vehicles ............... CRUD véhicules, resolve, resolve-vin,
-                                resolve-registration
-  /api/vehicle-resolution ..... validate-vin, vin, confirm, cancel,
-                                invalidate-cache, anonymize
-  /api/vehicles/{id}/configuration, /ecu-configurations,
-                                /diagnostic-compatibility
-  /api/dtcs ................... liste, détail, lookup
-  /api/diagnostics ............ création, détail, suppression, dtc-preview,
-                                fault-codes, measurements, images,
-                                analyze, reanalyze, progress,
-                                steps/{id}/result, consent, complete,
-                                amendments
-  /api/diagnostic-data ........ resolve, imports, datasets, definitions,
-                                aliases, promote, conflicts, coverage,
-                                source-assessments, revoke
-  /api/workspace .............. dashboard, history, settings
-  /api/dtc-submissions ........ check, création
-  /api/admin/review ........... file de revue, décision
-  /api/knowledge, /api/imports, /api/diagnostic-sessions (hérité)
-
-Les routes d'analyse acceptent le paramètre language (fr, en, sv, de).
-
-
-===============================================================================
-14. QUALITÉ, TESTS ET INTÉGRATION CONTINUE
-===============================================================================
-
-164 fonctions de test réparties en 15 fichiers. Exécution de référence :
-177 tests réussis, 1 ignoré.
-
-Couverture notable : pipeline de recherche ORVECT, validation de provenance,
-frontières d'autorité et négation, admission des données diagnostic,
-résolution véhicule, authentification Firebase, durcissement des fondations,
-fonctionnalités atelier, métriques publiques, audit des sources publiques,
-opérations d'exécution, mode exploratoire, langue de rédaction et clé de cache.
-
-Chaîne d'intégration continue (GitHub Actions) :
-  1. Installation de dépendances verrouillées (requirements-test.lock)
-  2. Compilation de l'ensemble du paquet et vérification que le prompt est bien
-     embarqué dans la distribution
-  3. Vérification d'intégrité du catalogue DTC
-  4. Migrations et initialisation sur une base neuve
-  5. Exécution de pytest
-  6. Audit des dépendances de production et de test (pip-audit)
-
-
-===============================================================================
-15. DÉPLOIEMENT ET EXPLOITATION
-===============================================================================
-
-Front : GitHub Pages, branche main, https://derka1385.github.io/ORVECT_Program/
-API : Render, https://orvect-api.onrender.com/api
-Conteneur : Dockerfile.railway, base python:3.12-slim
-Commande de démarrage : alembic upgrade head && python -m app.seed &&
-uvicorn app.main:app
-Sonde de santé : /api/health, délai 120 s, redémarrage sur échec, 5 essais.
-
-Variables d'environnement requises en production :
-  LLM_PROVIDER=nebius
-  NEBIUS_API_KEY
-  TAVILY_API_KEY
-  AUTH_PROVIDER=firebase
-  FIREBASE_PROJECT_ID=orvect
-  FIREBASE_CHECK_REVOKED=false
-  CORS_ORIGINS=https://derka1385.github.io
-  VIN_ENCRYPTION_KEY, VIN_FINGERPRINT_SECRET (recommandé, voir 11.3)
-
-CORS : origines explicitement listées, méthodes limitées à
-GET/POST/PUT/PATCH/DELETE, en-têtes limités à Authorization et Content-Type.
-
-
-===============================================================================
-18. EXPERIENCE ENGINE — INTELLIGENCE PROPRIÉTAIRE ORVECT
-===============================================================================
-
-18.1 Principe
-
-Chaque diagnostic clôturé est normalisé en un « cas d'expérience » interrogeable
-(table experience_cases). Les cas compatibles sont agrégés en motifs
-(experience_patterns), reliés à leurs cas sources par une table de liaison
-(experience_pattern_cases) qui garantit la traçabilité. Aucun modèle de langage
-n'intervient : tout est déterministe et reproductible.
-
-18.2 Classes de confiance
-
-Quatre classes cohabitent sans jamais se compenser par le volume :
   authoritative_knowledge ...... catalogue validé, constructeur, autorité
   technical_external_evidence .. documentation technique reconnue
   orvect_field_evidence ........ issues réelles d'atelier agrégées
@@ -771,235 +175,429 @@ Cent cas de terrain ne deviennent jamais une source constructeur. La preuve de
 terrain est marquée verified=false de façon permanente, ce qui l'empêche de
 déverrouiller une procédure constructeur.
 
-18.2 bis Identité canonique de la cause racine
+5.3 Identité canonique de la cause racine
 
-Une cause confirmée est résolue sur un vocabulaire structuré : système,
-composant, position, mode de défaillance. La résolution est un appariement de
-jetons exact, sans modèle et sans plongement vectoriel, sur un lexique
-multilingue (français, anglais, suédois, allemand).
+Une cause confirmée est résolue sur un vocabulaire structuré de 30 composants
+et 10 modes de défaillance : système, composant, position, mode. Appariement de
+jetons exact, multilingue, sans modèle ni plongement vectoriel.
 
   « injecteur cylindre 1 défectueux »   ┐
   « injecteur #1 »                      ├─> fuel_system/injector/cylinder_1
   « fuel injector cylinder 1 »          │
   « Insprutare cylinder 1 »             ┘
 
-Le mode de défaillance est enregistré mais volontairement exclu de la clé : il
-scinderait en deux un même constat selon que le technicien a écrit « défectueux »
-ou non. Ce qui sépare un injecteur nettoyé d'un injecteur remplacé est le type
-de réparation, champ structuré déjà présent dans la clé du motif.
+Le mode de défaillance est enregistré mais exclu de la clé : il scinderait un
+même constat selon que le technicien a écrit « défectueux » ou non. Ce qui
+sépare un injecteur nettoyé d'un injecteur remplacé est le type de réparation,
+champ structuré déjà présent dans la clé du motif.
 
 La liste structurée de composants prime sur le texte libre. Deux composants
-distincts dans un même constat rendent la cause AMBIGUË, aucun composant connu
-la rend NON RÉSOLUE : dans les deux cas elle conserve une identité propre et ne
-fusionne avec rien. Sous-fusionner coûte un peu de puissance statistique ;
-fusionner à tort placerait le défaut d'un véhicule sur le rapport d'un autre.
-Le texte du technicien est conservé mot pour mot pour l'audit.
+distincts rendent la cause AMBIGUË, aucun composant connu la rend NON RÉSOLUE.
+Dans les deux cas elle conserve une identité propre et ne fusionne avec rien.
+Sous-fusionner coûte un peu de puissance statistique ; fusionner à tort
+placerait le défaut d'un véhicule sur le rapport d'un autre. Le texte du
+technicien est conservé mot pour mot.
 
-18.2 ter Révocation d'une contribution
-
-Le passage d'une contribution au statut REVOKED par la revue administrateur
-retire le cas de l'intelligence partagée : la ligne est conservée pour l'audit,
-horodatée comme révoquée, retirée de tous ses motifs, et chaque motif concerné
-est recalculé immédiatement. Aucun agrégat ne survit au retrait du consentement.
-
-18.3 Classification déterministe des issues
+5.4 Classification déterministe des issues
 
   confirmed ..... réparé, résolution vérifiée, codes non revenus, confiance
                   fondée sur une réparation réussie ou une mesure
   supported ..... réparé et amélioré, sans vérification de ce niveau
-  contradicted .. la réparation n'a pas tenu : rétrograde un motif
+  contradicted .. la réparation n'a pas tenu, rétrograde un motif
   unresolved .... diagnostic clos sans cause
-  unknown ....... issue jamais observée ; ne vaut jamais confirmation
+  unknown ....... issue jamais observée, ne vaut jamais confirmation
 
-Une issue inconnue ne peut produire qu'UNKNOWN, quelle que soit la conviction du
-technicien.
+5.5 Compatibilité véhicule
 
-18.4 Compatibilité véhicule
-
-Niveaux de spécificité décroissante, avec leur poids :
   engine_ecu (100) .. marque + code moteur + calculateur
   engine (80) ....... marque + code moteur
   platform (60) ..... marque + plateforme + carburant
   model (50) ........ marque + modèle
   brand (30) ........ marque
 
-L'axe est la MARQUE et non le groupe : « Volkswagen Group » fusionnerait à tort
-Audi, Seat et Škoda. Il n'existe aucun niveau inter-marques : un constat sur
-Golf ne devient jamais une preuve pour un autre constructeur partageant le même
-code générique. Un appariement partiel n'est pas un appariement faible, c'est
-une absence d'appariement. Chaque élément retourné indique le niveau, le score
-et la liste exacte des dimensions appariées.
+Score minimum retenu : 30. L'axe est la MARQUE et non le groupe : « Volkswagen
+Group » fusionnerait à tort Audi, Seat et Škoda. Aucun niveau inter-marques
+n'existe : un constat sur Golf ne devient jamais une preuve pour un autre
+constructeur partageant le même code générique.
 
-18.5 Seuils d'admission
+Un appariement partiel n'est pas un appariement faible, c'est une absence
+d'appariement. Chaque élément restitué indique le niveau, le score et la liste
+exacte des dimensions appariées. Un constat donne un seul élément de preuve,
+jamais un par niveau.
 
-  corroborated : au moins 2 issues confirmées, 2 ateliers indépendants, moins
-                 de contradictions que de confirmations
+5.6 Seuils d'admission
+
+  corroborated : au moins 2 confirmations, 2 ateliers indépendants,
+                 moins de contradictions que de confirmations
   established  : au moins 5 confirmations, 3 ateliers, contradictions <= 1/3
 
-Seul « corroborated » et au-dessus franchit la frontière entre ateliers. Un
-atelier bénéficie toujours de son propre historique, quel que soit son niveau.
+Seul corroborated et au-dessus franchit la frontière entre ateliers. Un atelier
+bénéficie toujours de son propre historique, quel que soit son niveau.
 
-18.6 Protection contre l'empoisonnement
+5.7 Protection contre l'empoisonnement
 
   - consentement explicite requis pour toute sortie de l'atelier ;
-  - score de qualité (configuration véhicule, contrôle informatif, issue
-    observée, cause identifiée, codes revérifiés) avec seuil d'admission ;
+  - score de qualité, seuil 5 sur 8, portant sur la configuration véhicule, un
+    contrôle informatif, une issue observée, une cause identifiée, des codes
+    revérifiés et le kilométrage ;
   - détection de doublons : un atelier reclôturant le même travail conserve sa
     ligne mais cesse de compter ;
+  - le nombre d'ateliers est le nombre de garages distincts, donc un seul
+    atelier reste à un quel que soit son volume ;
   - les contradictions rétrogradent un motif ;
   - revue administrateur possible, un motif rejeté disparaît de la restitution.
 
-18.7 Effet sur la décision de recherche
+5.8 Révocation
 
-Une expérience fortement étayée (niveau moteur ou calculateur, 3 confirmations,
-2 ateliers, une seule cause racine, aucune contradiction) peut éviter une
-recherche externe. Elle ne le peut jamais lorsque le code est constructeur ou
-la définition manquante : l'expérience ne remplace pas une définition absente.
-Une expérience contradictoire ou divergente déclenche au contraire la recherche.
+Le passage d'une contribution au statut REVOKED retire le cas de
+l'intelligence partagée : la ligne est conservée pour l'audit, horodatée comme
+révoquée, retirée de tous ses motifs, et chaque motif concerné est recalculé
+immédiatement. Aucun agrégat ne survit au retrait du consentement.
 
-18.8 Diagnostic itératif et adaptatif
-
-Le plan complet reste produit par la couche de raisonnement. ORVECT choisit
-ensuite lui-même le prochain contrôle, par une heuristique déterministe sur le
-coût, la durée, le pouvoir discriminant, l'outillage et les contrôles déjà
-réalisés. La méthode est nommée explicitement dans la réponse
-(deterministic_heuristic_v1) : ce n'est pas un gain d'information optimisé.
-
-Le choix réagit à l'état diagnostique courant, pas à l'ordre initial du plan.
-Un résultat de contrôle peut porter les identifiants des hypothèses qu'il écarte
-ou qu'il appuie ; ORVECT les applique de façon déterministe, consigne chaque
-transition, puis recalcule le prochain contrôle sur les seules hypothèses encore
-vivantes. Un contrôle qui ne départage plus aucune hypothèse restante est
-fortement pénalisé et cesse d'être recommandé. L'interprétation du résultat reste
-au technicien : ORVECT ne déduit jamais d'un texte libre qu'une piste est morte.
-
-Un verdict d'hypothèse hors de la boucle de test déclenche la même
-re-sélection. Difficulté et durée estimées sont persistées avec l'étape, afin
-que le re-classement n'exige jamais un nouvel appel de modèle.
-
-18.9 Historique des hypothèses
-
-La table hypothesis_state_events enregistre en append-only chaque classement,
-chaque résultat de contrôle et chaque verdict de technicien. Une hypothèse
-rejetée est marquée, jamais supprimée.
-
-18.10 Confidentialité
+5.9 Confidentialité
 
 Les agrégats franchissent la frontière entre ateliers, les cas bruts jamais. Le
-texte restitué est agrégé (« 17 cas compatibles sur 6 ateliers indépendants »),
-sans identifiant d'atelier, sans identifiant de dossier et sans date
-d'intervention. Les preuves de terrain sont citables par identifiant stable
+texte restitué est agrégé, sans identifiant d'atelier, de dossier, de véhicule
+ni date d'intervention. Les horodatages des preuves réseau sont ramenés au
+mois : une date exacte dirait quand un véhicule précis est passé dans un
+atelier précis. Les preuves de terrain sont citables par identifiant stable
 préfixé « orvect: », dont le serveur reconstruit l'objet canonique.
 
-18.11 Métriques
+
+===============================================================================
+6. RECHERCHE EXTERNE (TAVILY)
+===============================================================================
+
+6.1 Décision, déterministe et sans appel de modèle
+
+Déclencheurs : code constructeur, définition interne manquante, plusieurs codes
+à relier, moins de 3 extraits internes, code moteur connu sans extrait interne,
+symptômes sans extrait interne.
+
+Suppression possible : une expérience ORVECT fortement étayée évite la
+recherche, sous conditions cumulatives strictes — niveau moteur ou calculateur,
+au moins 3 confirmations, au moins 2 ateliers indépendants, une seule cause
+racine, aucune contradiction, et appui réseau.
+
+Jamais supprimée : code constructeur ou définition manquante. L'expérience ne
+remplace pas une définition absente. Une expérience contradictoire ou
+divergente déclenche au contraire la recherche.
+
+6.2 Exécution
+
+3 requêtes maximum, 5 résultats chacune, toujours spécifiques au véhicule,
+jamais le code nu. Profondeur avancée, exécution parallèle, délai 20 s. Un
+résultat sans URL réelle est écarté. L'échec d'une requête n'interrompt rien ;
+l'échec total est signalé comme vérification externe indisponible.
+
+6.3 Hiérarchie des sources
+
+  6 oem_manufacturer ........ constructeur
+  5 safety_authority ........ NHTSA, KBA, Transportstyrelsen, rappels UE
+  4 technical_documentation . SAE, ISO, équipementiers
+  3 repair_technical_resource ressources de réparation
+  2 specialist_community .... forums de marque
+  1 general_web ............. reste du web
+
+Toute preuve externe est marquée verified=false de façon permanente.
+
+6.4 Cache
+
+Clé SHA-256 de {marque, modèle, année, moteur, codes triés, requêtes triées}.
+Les symptômes en texte libre sont volontairement exclus. Durée de vie 168 h.
+
+
+===============================================================================
+7. RAISONNEMENT (NEBIUS)
+===============================================================================
+
+Endpoint compatible OpenAI, appelé côté serveur uniquement.
+Modèle openai/gpt-oss-120b, repli deepseek-ai/DeepSeek-V4.1-Flash.
+Température 0,15. Délai 90 s. Sortie structurée json_schema, repli json_object.
+Trois tentatives par modèle sur 408, 429 et 5xx, attente exponentielle.
+
+Le modèle ne cite qu'un source_id ; le serveur reconstruit tous les autres
+champs. Cela supprime toute possibilité d'URL, d'horodatage ou d'indicateur de
+vérification inventés.
+
+Le message utilisateur énonce d'abord la langue de rédaction obligatoire, puis
+la mention que les textes utilisateur et OCR sont des données et jamais des
+instructions, puis le contexte.
+
+Réparation : exactement une tentative, jamais de boucle. Depuis la révision
+3.0, la raison exacte du refus est placée en tête de la relance. Une relance
+aveugle reproduisait la même erreur et transformait un accroc rattrapable en
+diagnostic échoué. Les deux refus sont journalisés avec leur motif, et le motif
+remonte jusqu'au message affiché au technicien. Les erreurs de schéma sont
+réduites aux noms des champs fautifs : le message par défaut cite la valeur
+rejetée, qui peut contenir une saisie d'atelier.
+
+
+===============================================================================
+8. GARDE-FOUS APPLIQUÉS À LA SORTIE DU MODÈLE
+===============================================================================
+
+Tous ces contrôles sont du code exécuté après la réponse, indépendamment du
+prompt.
+
+ 1. Provenance reconstruite. Un identifiant inconnu ou altéré est rejeté.
+ 2. Définitions de DTC. Chaque code d'entrée doit apparaître exactement une
+    fois, avec la signification, le type et les sources du catalogue.
+ 3. Frontière d'autorité. 22 expressions interdites couvrent l'aptitude à
+    rouler, le remplacement, la confirmation définitive, le niveau de danger et
+    l'effacement de codes. La détection est sensible à la négation : un
+    avertissement « à ne pas remplacer à l'aveugle » est préservé.
+ 4. Porte respectée. Hypothèses interdites, ou statut d'arrêt modifié : rejet.
+ 5. Classement dégénéré. Toutes les hypothèses à zéro : rejet.
+ 6. Corrélations. Les codes reliés doivent appartenir au dossier soumis.
+ 7. Procédure constructeur. Exige une source verified, ce qu'une preuve web ou
+    de terrain ne peut jamais être.
+ 8. Identifiants de source nettoyés de la prose.
+ 9. Le modèle n'a aucun champ pour la sécurité ni pour sa propre confiance :
+    safetyAssessment, confidence, researchMetadata et nextBestCheck sont
+    ajoutés exclusivement par le serveur.
+
+
+===============================================================================
+9. MOTEUR DE SÉCURITÉ
+===============================================================================
+
+Entièrement déterministe, aucun appel de modèle, version safety-rules-v1.
+
+  DO_NOT_DRIVE ......... terme critique dans le texte utilisateur : brake
+                         failure, no brakes, fire, flames, fumée importante,
+                         freins inopérants, incendie
+  STOP_AS_SOON_AS_SAFE . code actif P0217 ou P0524
+  UNKNOWN .............. aucune règle fiable ne couvre le cas
+
+Dans les trois cas, revue humaine obligatoire. Aucun volume d'expérience de
+terrain ne peut déplacer une décision de sécurité ; un test le vérifie.
+
+Couverture volontairement étroite. Le mode d'échec par défaut est UNKNOWN avec
+revue humaine, comportement conservateur attendu, mais ce moteur ne doit pas
+être présenté comme une évaluation de sécurité exhaustive.
+
+
+===============================================================================
+10. FORCE DE L'ÉTAYAGE
+===============================================================================
+
+Calculée côté serveur, jamais par le modèle. Le champ transmis s'appelle
+toujours confidence pour la compatibilité client, mais porte metric =
+evidence_strength et calibrated = false. Elle mesure la solidité de l'étayage,
+pas la probabilité qu'une réparation réussisse.
+
+Base 20, bornée à [5, 95].
+
+  +12 code moteur confirmé          +16 au moins 3 domaines externes
+  + 6 identité véhicule complète    +10 exactement 2 domaines
+  +10 définition DTC documentée     + 5 exactement 1 domaine
+  +12 source de rang >= 5           + 8 mesures structurées
+  + 7 source de rang >= 3           + 8 freeze-frame
+  +10 contrôle informatif enregistré
+  +12 expérience ORVECT établie     + 7 expérience corroborée
+
+  -3 par élément contradictoire, plafonné à -12
+  -8  toutes les hypothèses non vérifiées
+  -6  recherche déclenchée sans résultat
+  -5  au moins 4 hypothèses plausibles
+  -10 des cas ORVECT contredisent la cause
+
+Libellés : low < 35, moderate 35-54, good 55-74, strong >= 75.
+
+Une probabilité diagnostique calibrée n'existera qu'une fois assez d'issues
+confirmées accumulées. C'est précisément ce que l'Experience Engine collecte.
+
+
+===============================================================================
+11. DIAGNOSTIC ITÉRATIF
+===============================================================================
+
+Le plan complet reste produit par la couche de raisonnement. ORVECT choisit
+lui-même le prochain contrôle, par une heuristique déterministe nommée
+explicitement dans la réponse : deterministic_heuristic_v1. Ce n'est pas un
+gain d'information optimisé.
+
+Pondérations : pouvoir discriminant 3, contrôle déjà observé en atelier 3,
+difficulté 2, durée 2, outillage 1. Pénalité 20 pour un contrôle qui ne
+départage plus aucune hypothèse vivante.
+
+Le choix réagit à l'état courant, pas à l'ordre initial. Un résultat de
+contrôle peut porter les identifiants des hypothèses qu'il écarte ou qu'il
+appuie ; ORVECT les applique de façon déterministe, consigne chaque transition,
+puis recalcule sur les seules hypothèses vivantes. Un verdict d'hypothèse hors
+de la boucle déclenche la même re-sélection.
+
+L'interprétation du résultat reste au technicien : ORVECT ne déduit jamais
+d'un texte libre qu'une piste est morte.
+
+Difficulté et durée estimées sont persistées avec l'étape, afin que le
+re-classement n'exige jamais un nouvel appel de modèle.
+
+Historique : chaque classement, chaque résultat et chaque verdict sont
+enregistrés en append-only. Une hypothèse rejetée est marquée, jamais
+supprimée.
+
+
+===============================================================================
+12. MÉTRIQUES
+===============================================================================
 
 Taux de confirmation de la première hypothèse et du top 3, nombre moyen de
 contrôles avant cause confirmée, délai médian, taux de rejet d'hypothèse, taux
 de réussite de réparation, taux de dossiers non résolus, taux de déclenchement
-de recherche, taux de réutilisation du cache, taux de réparation de réponse IA,
-latences p50 et p95, tokens et coût par diagnostic, part des diagnostics
-appuyés sur l'expérience de terrain. Un taux calculé sur moins de cinq cas
-n'est pas renvoyé. Aucun coût n'est inventé : sans tarif configuré, seuls les
-compteurs de tokens sont exposés.
+de recherche, taux de réutilisation du cache, part des diagnostics appuyés sur
+l'expérience de terrain, part des recherches évitées grâce à elle, taux de
+réparation de réponse IA, latences p50 et p95, tokens et coût par diagnostic.
+
+Un taux calculé sur moins de 5 cas n'est pas renvoyé. Fenêtre par défaut 90
+jours. Aucun coût n'est inventé : sans tarif configuré, seuls les compteurs de
+tokens sont exposés.
 
 
 ===============================================================================
-19. LIMITES CONNUES ET POINTS D'ATTENTION POUR L'AUDIT
+13. SÉCURITÉ ET DONNÉES
 ===============================================================================
 
-Ces points sont documentés volontairement. Ils sont pour la plupart signalés
-dans le code lui-même.
+Authentification Firebase en production, vérification sans clé de compte de
+service. Isolation par garage dérivée côté serveur d'une appartenance active ;
+aucun identifiant fourni par le client n'est accepté comme preuve d'accès.
 
- 1. État en mémoire du processus. Le suivi d'étapes (progress) et le compteur
-    de limitation de débit sont des structures en mémoire, locales au
-    processus. En exécution multi-worker, le suivi d'étapes serait incohérent
-    et la limite de débit serait multipliée par le nombre de workers. Un
-    magasin partagé (Redis) est la correction indiquée.
+VIN chiffré au repos, empreinte HMAC-SHA-256, six derniers caractères exposés,
+absent des événements et du contexte transmis au modèle.
 
- 2. Cache de recherche non cloisonné par locataire (section 5.5). Le cache
-    d'expérience, lui, est cloisonné : la restitution inter-ateliers ne passe
-    que par des agrégats.
+Images ré-encodées en JPEG après transposition EXIF, ce qui supprime les
+métadonnées d'origine dont la géolocalisation. Répertoire privé exclu du dépôt,
+route authentifiée, rétention 90 jours.
 
- 3. Heuristique de confiance non calibrée (section 9).
+Résistance à l'injection de prompt : les entrées libres sont isolées et
+annoncées comme non fiables, et surtout aucune sortie du modèle n'est acceptée
+sur parole. Une injection réussie dans le texte ne peut ni fabriquer une
+source, ni modifier une définition de catalogue, ni lever une porte d'arrêt, ni
+produire une décision de sécurité.
 
- 4. Couverture étroite du Safety Engine (section 8).
+Limites : 10 analyses par minute et par garage, 25 Mo par requête, 8 Mo par
+image et 24 Mo au total, 30 codes défaut, 100 mesures, 200 observations.
 
- 5. Mode exploratoire. Il neutralise trois règles d'arrêt sur six. Il doit
+Secrets : aucune clé dans le code client, lecture depuis l'environnement
+uniquement, .env exclu du dépôt. Les deux dépôts GitHub étant publics, cette
+séparation est critique.
+
+
+===============================================================================
+14. OBSERVABILITÉ DU DÉPLOIEMENT
+===============================================================================
+
+/api/health renvoie le moteur, le modèle, si ce moteur a bien une clé, si la
+recherche est active et configurée, le mode d'authentification et la version du
+prompt. Uniquement des booléens pour tout ce qui touche à une clé : l'endpoint
+est public et dit si une clé existe, jamais laquelle. La version de prompt rend
+une dérive de déploiement visible en une seule requête.
+
+Au démarrage, le serveur écrit sa configuration dans le log, avec un
+avertissement explicite si le moteur choisi n'a pas de clé.
+
+Ces deux ajouts viennent d'un incident réel : le site répondait « Gemini est
+temporairement indisponible » alors que le dépôt était sur Nebius depuis
+plusieurs jours. Deux causes invisibles de l'extérieur, un build périmé et une
+variable d'environnement jamais changée.
+
+Côté interface, un échec de diagnostic s'affiche dans une bannière dédiée,
+épinglée sous le header, qui reste jusqu'à la tentative suivante. Les zones de
+message héritées sont effacées par un minuteur de 4,2 s et vivaient sur un
+écran que le technicien ne regardait pas : une analyse refusée ressemblait à un
+bouton mort.
+
+
+===============================================================================
+15. INTERFACE
+===============================================================================
+
+Quatre langues : français source, anglais, suédois, allemand. La langue du site
+est transmise à chaque analyse, fait partie de l'identité de l'analyse donc de
+la clé de cache, et le modèle rédige dans cette langue.
+
+Le panneau de chargement s'ouvre au clic lui-même, avant la connexion et les
+requêtes de préparation, et annonce ce qui se passe. La liste des étapes,
+mémorisée depuis le serveur, s'affiche en attente ; rien n'est inventé et
+aucune étape n'est marquée en cours tant que le serveur ne l'a pas dit. La
+marque ORVECT sert d'indicateur d'activité : ses trois traits sont révélés
+depuis leur base, ce qui préserve l'inclinaison et ne fait varier que la
+longueur. Une barre suit l'étape réelle du pipeline, jamais un minuteur.
+
+
+===============================================================================
+16. BASE DE DONNÉES
+===============================================================================
+
+Environ 45 tables. Migrations 0001 à 0014, tête unique.
+
+Ajouts de l'Experience Engine :
+  experience_cases ............ un diagnostic clôturé, normalisé
+  experience_patterns ......... agrégat de cas compatibles
+  experience_pattern_cases .... lien traçable motif vers cas
+  hypothesis_state_events ..... historique append-only des hypothèses
+  hypothesis_outcomes ......... verdict technicien par hypothèse
+
+La migration 0014 est idempotente : les révisions antérieures créent les tables
+depuis les modèles vivants, donc une base neuve porte déjà ces colonnes alors
+qu'un déploiement existant ne les a pas.
+
+Journal des appels IA : fournisseur, modèle, opération, statut, versions de
+schéma et de prompt, empreintes d'entrée et de sortie, charge utile, statut de
+validation, message d'erreur assaini, latence, tokens.
+
+
+===============================================================================
+17. LIMITES CONNUES
+===============================================================================
+
+ 1. État en mémoire du processus pour le suivi d'étapes et la limite de débit.
+    En multi-worker, le suivi serait incohérent et la limite multipliée.
+ 2. Cache de recherche non cloisonné par locataire. Le cache d'expérience,
+    lui, est cloisonné.
+ 3. Force de l'étayage non calibrée, et elle l'annonce.
+ 4. Couverture étroite du Safety Engine.
+ 5. Mode exploratoire : il neutralise trois règles d'arrêt sur six et doit
     rester désactivé sur tout environnement présenté comme opérationnel.
-
- 6. Catalogue DTC communautaire. Le catalogue générique embarqué (source
-    Wal33D, licence MIT) n'a pas été rapproché de l'édition SAE sous licence.
-    L'interface l'affiche explicitement.
-
- 7. OCR non configuré. Les photos sont stockées et affichées, mais aucun texte
-    n'en est extrait ; les champs correspondants portent un marqueur d'absence.
-
- 8. Clés VIN de développement. Sans secrets persistants, le chiffrement bascule
-    sur des clés dérivées, non durables (section 11.3).
-
- 9. Paramètre mal nommé. La limite d'analyses par minute s'appelle encore
-    GEMINI_RATE_LIMIT_PER_MINUTE bien que le fournisseur soit Nebius.
-
-10. Rotation de secret en attente. Voir section 11.7.
-
-11. Dépendance résiduelle. google-genai reste dans les dépendances de
-    production ; le fournisseur Gemini est conservé comme implémentation
-    alternative de l'interface AutomotiveAIProvider. Le fichier du moteur de
-    rendu du site s'appelle encore official-gemini.js bien qu'il soit devenu
-    neutre vis-à-vis du fournisseur.
-
-11 bis. Agrégation synchrone. La mise à jour des motifs se fait dans la
-    transaction de clôture du diagnostic. Le volume actuel le permet ; au-delà,
-    il faudra la sortir du chemin critique. L'échec d'apprentissage est déjà
-    non bloquant pour le technicien.
-
-11 ter. Recherche d'expérience non indexée sémantiquement. L'appariement se
-    fait sur des dimensions structurées et sur les codes défaut, pas sur le
-    texte des symptômes. C'est un choix : il rend la compatibilité explicable,
-    au prix de ne pas rapprocher deux formulations différentes du même symptôme.
-
-11 quinquies. Lexique de causes volontairement étroit. Un composant absent du
-    vocabulaire reste non résolu et ne groupe avec rien. C'est la direction
-    d'échec sûre, au prix d'un apprentissage plus lent sur les pièces non
-    couvertes. Étendre le lexique est une modification de données.
-
-11 quater. Confiance non calibrée. La métrique exposée est explicitement
-    `evidence_strength`, avec `calibrated: false`. Une probabilité diagnostique
-    calibrée ne pourra exister qu'une fois assez d'issues confirmées
-    accumulées ; c'est précisément ce que l'Experience Engine collecte.
-
-12. Base de données locale. SQLite est utilisé en développement, PostgreSQL en
-    conteneur. Les fichiers .db sont exclus du dépôt.
+ 6. Catalogue DTC communautaire non rapproché de l'édition SAE sous licence.
+ 7. OCR non configuré.
+ 8. Agrégation synchrone dans la transaction de clôture. L'échec
+    d'apprentissage est déjà non bloquant pour le technicien.
+ 9. Appariement d'expérience sur dimensions structurées et codes, pas sur le
+    texte des symptômes. Choix assumé : compatibilité explicable, au prix de ne
+    pas rapprocher deux formulations d'un même symptôme.
+10. Lexique de causes volontairement étroit, 30 composants. Un composant absent
+    reste non résolu et ne groupe avec rien. Direction d'échec sûre.
+11. Migrations vérifiées sur SQLite ; PostgreSQL non couvert en local.
+12. Dépendance résiduelle google-genai ; le fichier de rendu s'appelle encore
+    official-gemini.js bien qu'il soit neutre vis-à-vis du fournisseur.
 
 
 ===============================================================================
-20. RÉSUMÉ DES PRINCIPES DE CONCEPTION VÉRIFIABLES
+18. PRINCIPES VÉRIFIABLES
 ===============================================================================
 
-Pour un auditeur, les sept propriétés suivantes sont vérifiables par lecture du
-code et par exécution des tests :
-
- 1. Le modèle de langage n'a aucun champ de sortie permettant de se prononcer
-    sur la sécurité, l'aptitude à rouler, le remplacement d'une pièce ou sa
-    propre confiance.
- 2. Le modèle ne peut citer que des sources existantes : il ne transmet qu'un
-    identifiant et le serveur reconstruit l'objet complet.
- 3. Les définitions de codes défaut sont des faits de catalogue ; toute
-    altération par le modèle est rejetée.
+ 1. Le modèle n'a aucun champ de sortie pour la sécurité, l'aptitude à rouler,
+    le remplacement d'une pièce ou sa propre confiance.
+ 2. Le modèle ne cite qu'un identifiant ; le serveur reconstruit la source.
+ 3. Les définitions de codes sont des faits de catalogue ; toute altération est
+    rejetée.
  4. Une porte déterministe décide, avant tout appel de modèle, si des
-    hypothèses sont légitimes ; le modèle ne peut pas la contourner.
- 5. La décision d'effectuer une recherche externe est déterministe et ne
-    consomme aucun appel de modèle.
- 6. Toute preuve issue du web reste marquée non vérifiée et ne peut pas
+    hypothèses sont légitimes.
+ 5. La décision de recherche externe est déterministe et ne consomme aucun
+    appel de modèle.
+ 6. Toute preuve web ou de terrain reste non vérifiée et ne peut pas
     déverrouiller une procédure constructeur.
- 7. Chaque exécution est journalisée avec son fournisseur, son modèle, sa
-    version de prompt, ses empreintes d'entrée et de sortie et son statut de
-    validation, ce qui rend chaque rapport reproductible et traçable.
- 8. L'expérience de terrain ORVECT est une classe de preuve distincte, marquée
-    non vérifiée, jamais convertible en source constructeur, et toujours
-    traçable jusqu'aux cas anonymisés qui la produisent.
+ 7. Chaque exécution est journalisée avec fournisseur, modèle, version de
+    prompt, empreintes et statut de validation.
+ 8. L'expérience de terrain est une classe de preuve distincte, traçable
+    jusqu'aux cas anonymisés qui la produisent.
  9. Une issue de réparation inconnue ne vaut jamais confirmation, et un seul
     atelier ne suffit jamais à établir un motif pour les autres.
+10. Le prochain contrôle est choisi sur l'état diagnostique courant, par une
+    heuristique nommée, et un contrôle réalisé n'est jamais recommandé à
+    nouveau.
 
 
 ===============================================================================
