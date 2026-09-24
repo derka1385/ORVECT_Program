@@ -40,7 +40,8 @@
     .auth-panel{display:grid;min-height:100vh;place-items:center;padding:54px 8vw}.auth-card{width:min(100%,520px);animation:auth-card-in .48s .08s both cubic-bezier(.2,.8,.2,1)}.auth-card>.eyebrow{color:var(--orange)}.auth-card h1{margin:17px 0 11px;font-size:clamp(38px,4vw,55px);line-height:1;letter-spacing:-.05em}.auth-intro{margin:0;color:var(--muted);font-size:16px;line-height:1.5}
     .auth-choice{display:grid;gap:12px;margin-top:34px}.auth-choice button{display:flex;min-height:76px;align-items:center;justify-content:space-between;border:1px solid var(--line);background:#fff;padding:16px 18px;color:var(--graphite);font-weight:650;text-align:left;transition:border-color .18s,transform .18s}.auth-choice button:hover{border-color:var(--orange);transform:translateY(-2px)}.auth-choice button span{display:block;color:var(--muted);font-size:12px;font-weight:400}.auth-choice button b{color:var(--orange);font-size:22px}.auth-choice button:first-child{background:var(--graphite);color:var(--mineral);border-color:var(--graphite)}.auth-choice button:first-child span{color:var(--alloy)}
     .auth-tabs{display:grid;grid-template-columns:1fr 1fr;margin-top:34px;border:1px solid var(--line)}.auth-tabs button{min-height:52px;border:0;background:transparent;color:var(--muted);font-weight:650}.auth-tabs button+button{border-left:1px solid var(--line)}.auth-tabs button.active{background:var(--graphite);color:var(--mineral)}
-    .auth-form{margin-top:25px}.auth-form label{margin-top:17px}.auth-form .field-label{margin:0 0 8px}.auth-form input{min-height:56px;background:#fff;border-color:var(--line)}.auth-submit{width:100%;min-height:54px;margin-top:24px}
+    .auth-form{margin-top:25px}.auth-form label{margin-top:17px}.auth-form [data-password-field]{margin-top:17px}.auth-form .field-label{margin:0 0 8px}.auth-form input{min-height:56px;background:#fff;border-color:var(--line)}.auth-submit{width:100%;min-height:54px;margin-top:24px}
+    .auth-password-control{position:relative}.auth-password-control input{padding-right:62px}.auth-password-toggle{position:absolute;top:6px;right:6px;display:grid;width:44px;height:44px;place-items:center;border:0;background:transparent;color:var(--muted);cursor:pointer}.auth-password-toggle:hover{color:var(--graphite)}.auth-password-toggle svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.auth-password-toggle:focus-visible{outline:2px solid var(--orange);outline-offset:1px}
     .auth-link{min-height:42px;margin-top:12px;border:0;background:transparent;padding:7px 0;color:var(--graphite);font-size:13px;font-weight:650;text-decoration:underline;text-underline-offset:4px}
     .auth-message{min-height:24px;margin:18px 0 0;color:var(--danger);font-size:13px;line-height:1.45}.auth-caption{margin-top:20px;color:var(--muted);font-size:11px;line-height:1.5}
     .auth-verify{margin-top:30px;border-top:1px solid var(--line);padding-top:26px}.auth-verify h2{margin:0;font-size:28px}.auth-verify p{color:var(--muted);line-height:1.5}.auth-verify-actions{display:flex;gap:10px;flex-wrap:wrap}.auth-verify-actions .button{min-height:50px}
@@ -66,7 +67,7 @@
         <div class="auth-tabs" data-auth-tabs><button class="active" type="button" data-mode="login">Connexion</button><button type="button" data-mode="signup">Inscription</button></div>
         <form class="auth-form" id="firebase-form">
           <label><span class="field-label">E-mail</span><input name="email" type="email" autocomplete="username" required></label>
-          <label data-password-field><span class="field-label">Mot de passe</span><input name="password" type="password" autocomplete="current-password" required></label>
+          <div data-password-field><label class="field-label" for="firebase-password">Mot de passe</label><div class="auth-password-control"><input id="firebase-password" name="password" type="password" autocomplete="current-password" required><button class="auth-password-toggle" type="button" data-password-toggle aria-label="Afficher le mot de passe" aria-pressed="false"><svg data-eye-open aria-hidden="true" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg data-eye-closed aria-hidden="true" viewBox="0 0 24 24" hidden><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.3 4.1M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg></button></div></div>
           <button class="button primary auth-submit" type="submit" data-submit>Se connecter</button>
         </form>
         <button class="auth-link" type="button" data-action="reset-mode">Mot de passe oublié ?</button>
@@ -85,6 +86,8 @@
   const tabs = page.querySelector('[data-auth-tabs]');
   const choice = page.querySelector('[data-auth-choice]');
   const passwordField = page.querySelector('[data-password-field]');
+  const passwordInput = form.elements.password;
+  const passwordToggle = page.querySelector('[data-password-toggle]');
   const submit = page.querySelector('[data-submit]');
   const resetLink = page.querySelector('[data-action="reset-mode"]');
   const loginLink = page.querySelector('[data-action="login-mode"]');
@@ -127,6 +130,11 @@
 
   function setMode(next) {
     mode = next; message.textContent = ''; message.style.color = ''; form.reset();
+    passwordInput.type = 'password';
+    passwordToggle.setAttribute('aria-pressed', 'false');
+    passwordToggle.setAttribute('aria-label', ({fr:'Afficher le mot de passe',en:'Show password',sv:'Visa lösenord',de:'Passwort anzeigen'}[document.documentElement.lang] || 'Afficher le mot de passe'));
+    page.querySelector('[data-eye-open]').hidden = false;
+    page.querySelector('[data-eye-closed]').hidden = true;
     const login = mode === 'login', signup = mode === 'signup', reset = mode === 'reset', verify = mode === 'verify', welcome = mode === 'welcome';
     choice.hidden = !welcome; tabs.hidden = reset || verify || welcome; form.hidden = verify || welcome; passwordField.hidden = reset; verifyPanel.hidden = !verify;
     resetLink.hidden = !login; loginLink.hidden = login || verify || welcome;
@@ -202,6 +210,19 @@
   page.querySelector('[data-action="verify"]').onclick = () => verificationAction('verify');
   page.querySelector('[data-action="refresh"]').onclick = () => verificationAction('refresh');
   page.querySelector('[data-action="close"]').onclick = () => closePage();
+  passwordToggle.onclick = () => {
+    const visible = passwordInput.type === 'password';
+    passwordInput.type = visible ? 'text' : 'password';
+    passwordToggle.setAttribute('aria-pressed', String(visible));
+    passwordToggle.setAttribute('aria-label', ({
+      fr:visible?'Masquer le mot de passe':'Afficher le mot de passe',
+      en:visible?'Hide password':'Show password',
+      sv:visible?'Dölj lösenord':'Visa lösenord',
+      de:visible?'Passwort verbergen':'Passwort anzeigen'
+    }[document.documentElement.lang] || (visible?'Masquer le mot de passe':'Afficher le mot de passe')));
+    page.querySelector('[data-eye-open]').hidden = visible;
+    page.querySelector('[data-eye-closed]').hidden = !visible;
+  };
   page.addEventListener('keydown', event => { if (event.key === 'Escape') closePage(); });
   account.onclick = () => {
     if (window.ORVECT_WORKSPACE?.openAccount) { window.ORVECT_WORKSPACE.openAccount(); return; }
