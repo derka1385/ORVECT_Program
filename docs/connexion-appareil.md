@@ -19,7 +19,13 @@ En mode Firebase, la session est un *custom token* Firebase, que le client écha
    - Si Render a déjà `GOOGLE_APPLICATION_CREDENTIALS`, qui pointe vers le JSON du compte de service (voir `firebase-authentication.md`), il n'y a rien à faire : la clé privée qu'il contient suffit pour signer.
    - Si le serveur tourne sans clé (`FIREBASE_CHECK_REVOKED=false`, sans JSON), il faut en créer une : console Firebase › Paramètres du projet › Comptes de service › « Générer une nouvelle clé privée ». Déposer ensuite le fichier comme *Secret File* sur Render, et pointer `GOOGLE_APPLICATION_CREDENTIALS` vers lui. Cette clé ne doit jamais être commitée.
    - Sans clé, le serveur répond « La connexion sans mot de passe n'est pas encore configurée sur ce serveur ».
-4. **Page de connexion** : `connexion.html` est publiée avec le site de l'app. `DEVICE_VERIFICATION_URL` pointe par défaut vers `https://derka1385.github.io/ORVECT_Program/connexion.html`. Pour la servir sous `compte.orvect.fr`, ajouter le CNAME DNS, puis mettre à jour `DEVICE_VERIFICATION_URL` et `CORS_ORIGINS`.
+4. **Page de connexion sur `app.orvect.fr`** : `connexion.html` est publiée avec le site de l'app. GitHub Pages n'accepte qu'un domaine par dépôt, donc tout le site de l'app passe sous `app.orvect.fr` ; `orvect.fr` (la landing) ne change pas. Ordre à suivre :
+   1. Dans IONOS, ajouter un enregistrement CNAME `app` → `derka1385.github.io`.
+   2. Sur Render, ajouter `https://app.orvect.fr` à `CORS_ORIGINS`, en gardant l'origine `github.io`. Sans ça, l'espace en ligne ne peut plus joindre l'API une fois déplacé.
+   3. Dans la console Firebase › Authentication › Paramètres › Domaines autorisés, ajouter `app.orvect.fr`.
+   4. Dans GitHub › dépôt `ORVECT_Program` › Settings › Pages, indiquer le domaine personnalisé `app.orvect.fr`, puis cocher « Enforce HTTPS » une fois le certificat émis.
+
+   Les anciennes adresses `derka1385.github.io/ORVECT_Program/…` redirigent alors vers `app.orvect.fr`. `DEVICE_VERIFICATION_URL` peut ensuite passer à `https://app.orvect.fr/connexion.html`.
 5. **Nouveaux comptes** : une adresse inconnue n'obtient pas de session tant que `FIREBASE_SELF_SIGNUP_ENABLED` est désactivé.
 
 Tests : `pytest app/tests/test_account_link.py`.
