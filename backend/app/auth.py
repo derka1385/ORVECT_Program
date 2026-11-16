@@ -142,6 +142,15 @@ def require_admin(auth: AuthContext = Depends(get_current_user)) -> AuthContext:
     return auth
 
 
+def open_session(db: Session, user_id: str, garage_id: str) -> tuple[str, datetime]:
+    """Create a legacy API session and return its bearer token (stored hashed only)."""
+    token = secrets.token_urlsafe(32)
+    expires_at = now() + timedelta(hours=settings.auth_session_ttl_hours)
+    db.add(AuthSession(token_hash=_token_hash(token), user_id=user_id, garage_id=garage_id, expires_at=expires_at))
+    db.commit()
+    return token, expires_at
+
+
 @router.post("/login")
 def login(data: LoginInput, response: Response, db: Session = Depends(get_db)):
     if settings.auth_provider == "firebase":
@@ -161,17 +170,7 @@ def login(data: LoginInput, response: Response, db: Session = Depends(get_db)):
             "A user must have exactly one active garage in the minimal authentication implementation",
         )
     membership = memberships[0]
-    token = secrets.token_urlsafe(32)
-    expires_at = now() + timedelta(hours=settings.auth_session_ttl_hours)
-    db.add(
-        AuthSession(
-            token_hash=_token_hash(token),
-            user_id=user.id,
-            garage_id=membership.garage_id,
-            expires_at=expires_at,
-        )
-    )
-    db.commit()
+    token, expires_at = open_session(db, user.id, membership.garage_id)
     response.set_cookie(
         "diagpilot_session",
         token,

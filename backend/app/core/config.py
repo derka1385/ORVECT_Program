@@ -20,6 +20,21 @@ class Settings(BaseSettings):
     firebase_project_id: str = ""
     firebase_self_signup_enabled: bool = False
     firebase_check_revoked: bool = True
+    # --- Account linking: sign-in by e-mail code and device (QR code) approval ---
+    # "console" only logs codes (development); "smtp" sends them from a mailbox (IONOS for orvect.fr);
+    # "resend" sends them through the Resend API.
+    email_provider: Literal["console", "smtp", "resend"] = "console"
+    smtp_host: str = "smtp.ionos.fr"
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    resend_api_key: str = ""
+    email_from: str = "ORVECT <connexion@orvect.fr>"
+    login_code_ttl_minutes: int = 10
+    login_codes_per_hour: int = 5
+    device_code_ttl_minutes: int = 10
+    # Page opened by the QR code: the user signs in there and approves the device.
+    device_verification_url: str = "https://derka1385.github.io/ORVECT_Program/connexion.html"
     demo_access_without_login: bool = True
     demo_admin_email: str = "admin@example.com"
     # Verified Firebase identity that owns the seeded demonstration workspace.

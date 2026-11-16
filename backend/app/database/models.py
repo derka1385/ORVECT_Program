@@ -505,3 +505,32 @@ class ExperiencePatternCase(Base):
     garage_id: Mapped[str] = mapped_column(ForeignKey("garages.id"), index=True)
     outcome_class: Mapped[str] = mapped_column(String(30), index=True)
     contributed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class LoginCode(Base):
+    """One-time sign-in code sent by e-mail. Only a hash of the code is stored."""
+    __tablename__ = "login_codes"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    email: Mapped[str] = mapped_column(String(320), index=True)
+    code_hash: Mapped[str] = mapped_column(String(64))
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
+
+
+class DeviceAuthorization(Base):
+    """A device (ORVECT for Mac) waiting for a signed-in user to approve it, as in the OAuth device flow."""
+    __tablename__ = "device_authorizations"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    device_code_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    user_code: Mapped[str] = mapped_column(String(9), unique=True, index=True)
+    client_name: Mapped[str] = mapped_column(String(120), default="ORVECT pour Mac")
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    garage_id: Mapped[str | None] = mapped_column(ForeignKey("garages.id"))
+    firebase_uid: Mapped[str | None] = mapped_column(String(128))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api import router
 from app.auth import router as auth_router
+from app.modules.account_link.routes import router as account_link_router
 from app.modules.vehicle_resolution.routes import router as vehicle_resolution_router
 from app.modules.vehicle_data.routes import router as vehicle_data_router
 from app.modules.diagnostic_ai.routes import router as diagnostic_ai_router
@@ -68,6 +69,7 @@ app=FastAPI(title="DiagPilot API",version="0.1.0",description="MVP fictif d’as
 app.add_middleware(PayloadLimitMiddleware,limit=settings.max_request_bytes)
 app.add_middleware(CORSMiddleware,allow_origins=[x.strip() for x in settings.cors_origins.split(",")],allow_credentials=True,allow_methods=["GET","POST","PUT","PATCH","DELETE"],allow_headers=["Authorization","Content-Type"])
 app.include_router(auth_router)
+app.include_router(account_link_router)
 app.include_router(router)
 app.include_router(vehicle_resolution_router)
 app.include_router(vehicle_data_router)

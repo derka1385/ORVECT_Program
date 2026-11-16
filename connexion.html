@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Connexion ORVECT</title>
+  <link rel="icon" href="./orvect-mark.svg" type="image/svg+xml">
+  <style>
+    @font-face{font-family:"Space Grotesk";src:url("./frontend/public/fonts/SpaceGrotesk.ttf") format("truetype");font-weight:300 700;font-display:swap}
+    :root{--paper:#f2f1ed;--paper-2:#e9e7e0;--ink:#101214;--ink-2:#4b5056;--line:#d4d2c9;--accent:#ff5c28;--accent-ink:#c33d0e;--on-dark:#f2f1ed;--on-dark-2:#a9adb0;--danger:#b3261e;--ease:cubic-bezier(.16,1,.3,1)}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100svh;background:var(--paper);color:var(--ink);font:400 16px/1.55 "Space Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
+    header{background:var(--ink);color:var(--on-dark);height:60px;display:flex;align-items:center;padding:0 20px;gap:10px;font-weight:700;font-size:20px;letter-spacing:-.04em}
+    header svg{width:26px;height:auto}
+    main{flex:1;display:flex;justify-content:center;padding:40px 16px}
+    .card{width:100%;max-width:420px}
+    .eyebrow{font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);margin:0 0 10px}
+    h1{font-size:28px;line-height:1.1;letter-spacing:-.03em;margin:0 0 10px;font-weight:700}
+    p{margin:0 0 18px;color:var(--ink-2)}
+    .device{border:1px solid var(--line);border-radius:4px;background:#fbfaf7;padding:16px 18px;margin:0 0 24px}
+    .device strong{display:block;font-size:15px}
+    .code{font-size:30px;font-weight:700;letter-spacing:.12em;font-variant-numeric:tabular-nums;color:var(--accent-ink);margin-top:4px}
+    label{display:block;font-size:13px;color:var(--ink-2);margin:0 0 6px}
+    input{width:100%;height:46px;padding:0 14px;border:1px solid var(--line);border-radius:2px;background:#fbfaf7;font:500 17px "Space Grotesk",system-ui,sans-serif;color:var(--ink);margin:0 0 14px}
+    input:focus-visible{outline:2px solid var(--accent-ink);outline-offset:1px;border-color:transparent}
+    input.otp{font-size:26px;letter-spacing:.4em;text-align:center;font-variant-numeric:tabular-nums}
+    .btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;border:1px solid transparent;border-radius:2px;font:600 16px "Space Grotesk",system-ui,sans-serif;cursor:pointer;transition:background-color .2s,color .2s,border-color .2s}
+    .btn-primary{background:var(--accent);color:var(--ink)}
+    .btn-primary:hover{background:var(--ink);color:var(--on-dark)}
+    .btn-ghost{background:transparent;border-color:var(--ink);color:var(--ink);margin-top:10px}
+    .btn-ghost:hover{background:var(--ink);color:var(--on-dark)}
+    .btn:disabled{opacity:.45;cursor:default;background:transparent;border-color:var(--line);color:var(--ink-2)}
+    .btn:focus-visible{outline:2px solid var(--accent-ink);outline-offset:3px}
+    .link{background:none;border:0;padding:0;margin-top:14px;font:500 14px "Space Grotesk",system-ui,sans-serif;color:var(--accent-ink);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+    .error{border-left:2px solid var(--danger);background:#fbfaf7;padding:10px 12px;color:var(--danger);font-size:14px;margin:0 0 16px}
+    .done{border-left:2px solid var(--accent);background:#fbfaf7;padding:14px 16px;margin:0 0 16px;color:var(--ink)}
+    .note{font-size:13px;color:var(--ink-2);margin-top:22px}
+    [hidden]{display:none!important}
+    .mark path{fill:var(--accent)}
+    .busy .mark path{animation:pulse 1.25s ease-in-out infinite}
+    .busy .mark path:nth-child(2){animation-delay:.16s}.busy .mark path:nth-child(3){animation-delay:.32s}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    @media (prefers-reduced-motion:reduce){.busy .mark path{animation:none}}
+  </style>
+</head>
+<body>
+  <header>
+    <svg class="mark" viewBox="0 0 120 80" aria-hidden="true"><path d="M8 74 29 22h19L27 74Z"/><path d="M41 74 70 2h19L60 74Z"/><path d="M74 74 95 22h19L93 74Z"/></svg>
+    ORVECT
+  </header>
+  <main>
+    <div class="card" id="card" aria-live="polite">
+      <p class="eyebrow">Connexion d’un appareil</p>
+      <h1 id="title">Connecter ORVECT pour Mac</h1>
+
+      <div class="device" id="deviceBox" hidden>
+        <strong id="deviceName">ORVECT pour Mac</strong>
+        <span>Code affiché sur l’appareil</span>
+        <div class="code" id="deviceCode"></div>
+      </div>
+
+      <div class="error" id="error" role="alert" hidden></div>
+
+      <!-- 1. Code typed by hand when the page was not opened from the QR code -->
+      <form id="stepCode" hidden>
+        <p>Saisissez le code affiché sur votre Mac.</p>
+        <label for="codeInput">Code de l’appareil</label>
+        <input id="codeInput" autocomplete="off" autocapitalize="characters" placeholder="ABCD-EFGH" maxlength="9" required>
+        <button class="btn btn-primary" type="submit">Continuer</button>
+      </form>
+
+      <!-- 2. Sign in with an e-mail code -->
+      <form id="stepEmail" hidden>
+        <p>Connectez-vous à votre compte ORVECT : nous vous envoyons un code par e-mail.</p>
+        <label for="emailInput">Adresse e-mail</label>
+        <input id="emailInput" type="email" autocomplete="email" inputmode="email" placeholder="vous@garage.fr" required>
+        <button class="btn btn-primary" type="submit">Recevoir un code</button>
+      </form>
+
+      <form id="stepVerify" hidden>
+        <p id="verifyText">Saisissez le code à 6 chiffres reçu par e-mail.</p>
+        <label for="otpInput">Code reçu par e-mail</label>
+        <input id="otpInput" class="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
+        <button class="btn btn-primary" type="submit">Se connecter</button>
+        <button class="link" type="button" id="resend">Renvoyer un code</button>
+      </form>
+
+      <!-- 3. Approve the device -->
+      <div id="stepConfirm" hidden>
+        <p id="confirmText"></p>
+        <button class="btn btn-primary" id="approve" type="button">Autoriser ce Mac</button>
+        <button class="btn btn-ghost" id="deny" type="button">Refuser</button>
+      </div>
+
+      <div id="stepDone" hidden>
+        <div class="done" id="doneText"></div>
+      </div>
+
+      <p class="note">Ne validez que si vous êtes devant le Mac qui affiche ce code. ORVECT ne vous demandera jamais ce code par téléphone.</p>
+    </div>
+  </main>
+  <script src="./runtime-config.js"></script>
+  <script>
+  (() => {
+    const runtime = window.ORVECT_RUNTIME || {};
+    const params = new URLSearchParams(location.search);
+    const local = ['localhost', '127.0.0.1'].includes(location.hostname);
+    // A local server may be named only when the page itself runs locally (never on the public site).
+    const api = (local && params.get('api')) || runtime.apiBase;
+    const firebaseKey = runtime.firebase && runtime.firebase.apiKey;
+    const $ = id => document.getElementById(id);
+    let deviceCode = (params.get('code') || '').toUpperCase();
+    let email = '';
+    let bearer = '';
+
+    const steps = ['stepCode', 'stepEmail', 'stepVerify', 'stepConfirm', 'stepDone'];
+    function show(step) {
+      steps.forEach(id => { $(id).hidden = id !== step; });
+      const field = $(step).querySelector('input');
+      if (field) field.focus();
+    }
+    function fail(message) { $('error').textContent = message; $('error').hidden = !message; }
+    function busy(on) { document.body.classList.toggle('busy', on); document.querySelectorAll('button').forEach(b => { b.disabled = on; }); }
+
+    async function call(path, body, method = 'POST') {
+      const headers = { 'Content-Type': 'application/json' };
+      if (bearer) headers.Authorization = 'Bearer ' + bearer;
+      const response = await fetch(api + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const detail = typeof data.detail === 'string' ? data.detail : 'Le service ORVECT a refusé la demande.';
+        throw new Error(detail);
+      }
+      return data;
+    }
+
+    // A Firebase custom token becomes this browser's own Firebase session (REST, no SDK needed).
+    async function adopt(session) {
+      if (session.token_type === 'bearer') { bearer = session.access_token; return; }
+      const response = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=' + firebaseKey, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: session.custom_token, returnSecureToken: true })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error('La connexion au compte a échoué. Réessayez.');
+      bearer = data.idToken;
+    }
+
+    function setDevice(code) {
+      deviceCode = code;
+      $('deviceCode').textContent = code;
+      $('deviceBox').hidden = !code;
+    }
+
+    async function loadDevice() {
+      const info = await call('/auth/device/' + encodeURIComponent(deviceCode), null, 'GET');
+      $('deviceName').textContent = info.client_name;
+      $('confirmText').textContent = info.client_name + ' demande l’accès au compte ' + info.email + '. Une fois autorisé, le Mac ouvre sa propre session : vos dossiers et analyses y sont accessibles.';
+      $('title').textContent = 'Autoriser ce Mac ?';
+      show('stepConfirm');
+    }
+
+    async function sendCode() {
+      await call('/auth/email/start', { email });
+      $('verifyText').textContent = 'Saisissez le code à 6 chiffres envoyé à ' + email + '. Il expire dans 10 minutes.';
+      show('stepVerify');
+    }
+
+    function guard(action) {
+      return async event => {
+        if (event) event.preventDefault();
+        fail('');
+        busy(true);
+        try { await action(); } catch (error) { fail(error.message || 'Une erreur est survenue. Réessayez.'); }
+        finally { busy(false); }
+      };
+    }
+
+    $('stepCode').addEventListener('submit', guard(async () => {
+      const raw = $('codeInput').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (raw.length !== 8) throw new Error('Le code compte 8 caractères, par exemple ABCD-EFGH.');
+      setDevice(raw.slice(0, 4) + '-' + raw.slice(4));
+      show('stepEmail');
+    }));
+    $('stepEmail').addEventListener('submit', guard(async () => {
+      email = $('emailInput').value.trim().toLowerCase();
+      await sendCode();
+    }));
+    $('resend').addEventListener('click', guard(sendCode));
+    $('stepVerify').addEventListener('submit', guard(async () => {
+      const session = await call('/auth/email/verify', { email, code: $('otpInput').value.trim() });
+      await adopt(session);
+      await loadDevice();
+    }));
+    $('approve').addEventListener('click', guard(async () => {
+      await call('/auth/device/' + encodeURIComponent(deviceCode) + '/approve', { approve: true });
+      $('title').textContent = 'Mac connecté';
+      $('doneText').textContent = 'Votre Mac est connecté à votre compte ORVECT. Vous pouvez revenir sur ORVECT pour Mac ; cette page peut être fermée.';
+      $('deviceBox').hidden = true;
+      show('stepDone');
+    }));
+    $('deny').addEventListener('click', guard(async () => {
+      await call('/auth/device/' + encodeURIComponent(deviceCode) + '/approve', { approve: false });
+      $('title').textContent = 'Accès refusé';
+      $('doneText').textContent = 'Le Mac n’a pas été connecté. Si ce n’était pas vous, aucune action n’est nécessaire.';
+      $('deviceBox').hidden = true;
+      show('stepDone');
+    }));
+
+    if (!api) { fail('Configuration du service introuvable.'); return; }
+    if (/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(deviceCode)) { setDevice(deviceCode); show('stepEmail'); }
+    else { show('stepCode'); }
+  })();
+  </script>
+</body>
+</html>
