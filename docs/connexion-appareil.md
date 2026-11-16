@@ -25,7 +25,7 @@ En mode Firebase, la session est un *custom token* Firebase, que le client écha
    3. Dans la console Firebase › Authentication › Paramètres › Domaines autorisés, ajouter `app.orvect.fr`.
    4. Dans GitHub › dépôt `ORVECT_Program` › Settings › Pages, indiquer le domaine personnalisé `app.orvect.fr`, puis cocher « Enforce HTTPS » une fois le certificat émis.
 
-   Les anciennes adresses `derka1385.github.io/ORVECT_Program/…` redirigent alors vers `app.orvect.fr`. `DEVICE_VERIFICATION_URL` peut ensuite passer à `https://app.orvect.fr/connexion.html`.
+   Les anciennes adresses `derka1385.github.io/ORVECT_Program/…` redirigent vers `app.orvect.fr`. `DEVICE_VERIFICATION_URL` vaut `https://app.orvect.fr/connexion.html` par défaut. Fait le 16 novembre 2026 : CNAME IONOS, `CORS_ORIGINS` sur Render, domaine GitHub Pages et HTTPS.
 5. **Nouveaux comptes** : une adresse inconnue n'obtient pas de session tant que `FIREBASE_SELF_SIGNUP_ENABLED` est désactivé.
 
 Tests : `pytest app/tests/test_account_link.py`.

@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     login_codes_per_hour: int = 5
     device_code_ttl_minutes: int = 10
     # Page opened by the QR code: the user signs in there and approves the device.
-    device_verification_url: str = "https://derka1385.github.io/ORVECT_Program/connexion.html"
+    device_verification_url: str = "https://app.orvect.fr/connexion.html"
     demo_access_without_login: bool = True
     demo_admin_email: str = "admin@example.com"
     # Verified Firebase identity that owns the seeded demonstration workspace.
