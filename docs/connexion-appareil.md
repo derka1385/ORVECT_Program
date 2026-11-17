@@ -28,4 +28,16 @@ En mode Firebase, la session est un *custom token* Firebase, que le client écha
    Les anciennes adresses `derka1385.github.io/ORVECT_Program/…` redirigent vers `app.orvect.fr`. `DEVICE_VERIFICATION_URL` vaut `https://app.orvect.fr/connexion.html` par défaut. Fait le 16 novembre 2026 : CNAME IONOS, `CORS_ORIGINS` sur Render, domaine GitHub Pages et HTTPS.
 5. **Nouveaux comptes** : une adresse inconnue n'obtient pas de session tant que `FIREBASE_SELF_SIGNUP_ENABLED` est désactivé.
 
-Tests : `pytest app/tests/test_account_link.py`.
+## Inscription d'un garage (SIRET)
+
+Un garage crée son compte lui-même, avec son numéro SIRET :
+
+1. `GET /api/auth/signup/siret/{siret}` vérifie la clé du numéro (Luhn), puis interroge le registre public des entreprises (`recherche-entreprises.api.gouv.fr`, gratuit, sans clé). La réponse donne le nom, l'adresse, le code NAF, et dit si l'établissement peut s'inscrire.
+2. `POST /api/auth/signup/start` refait cette vérification côté serveur, puis envoie un code à 6 chiffres.
+3. `POST /api/auth/signup/verify` crée le garage (`garages.siret`, `naf_code`, `siret_verified_at`), son premier administrateur et la session.
+
+Sont refusés : un SIRET invalide ou inconnu, un établissement fermé, une activité hors automobile (`SIGNUP_NAF_PREFIXES`, `45.` par défaut ; vide pour tout accepter) et un SIRET déjà inscrit (son administrateur invite les autres). Une adresse e-mail qui a déjà un compte doit se connecter. Migration : révision 0016.
+
+Une fois ce parcours en ligne, mettre `FIREBASE_SELF_SIGNUP_ENABLED=false` sur Render. Sinon, n'importe quelle adresse obtient un espace par la simple connexion par code, sans passer par le SIRET.
+
+Tests : `pytest app/tests/test_account_link.py app/tests/test_signup.py`.

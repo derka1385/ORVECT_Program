@@ -12,7 +12,11 @@ class Timestamps:
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
 class Garage(Base, Timestamps):
-    __tablename__="garages"; id: Mapped[str]=mapped_column(String(36), primary_key=True, default=uid); name: Mapped[str]=mapped_column(String(200))
+    __tablename__="garages"; __table_args__=(UniqueConstraint("siret", name="uq_garages_siret"),); id: Mapped[str]=mapped_column(String(36), primary_key=True, default=uid); name: Mapped[str]=mapped_column(String(200))
+    # Set when the garage signed up itself: the establishment checked against the public company register.
+    siret: Mapped[str|None]=mapped_column(String(14))
+    naf_code: Mapped[str|None]=mapped_column(String(6))
+    siret_verified_at: Mapped[datetime|None]=mapped_column(DateTime(timezone=True))
 class User(Base, Timestamps):
     __tablename__="users"; id: Mapped[str]=mapped_column(String(36), primary_key=True, default=uid); garage_id: Mapped[str]=mapped_column(ForeignKey("garages.id"), index=True); email: Mapped[str]=mapped_column(String(320), unique=True); display_name: Mapped[str]=mapped_column(String(160)); role: Mapped[str]=mapped_column(String(20), default="technician"); password_hash: Mapped[str|None]=mapped_column(String(300)); is_active: Mapped[bool]=mapped_column(Boolean,default=True)
 class GarageMembership(Base, Timestamps):
@@ -512,6 +516,22 @@ class LoginCode(Base):
     __tablename__ = "login_codes"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     email: Mapped[str] = mapped_column(String(320), index=True)
+    code_hash: Mapped[str] = mapped_column(String(64))
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
+
+
+class SignupRequest(Base):
+    """A garage signing up: its SIRET was checked, the e-mail code is pending. Only a hash of the code is stored."""
+    __tablename__ = "signup_requests"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    email: Mapped[str] = mapped_column(String(320), index=True)
+    display_name: Mapped[str] = mapped_column(String(160))
+    siret: Mapped[str] = mapped_column(String(14))
+    garage_name: Mapped[str] = mapped_column(String(200))
+    naf_code: Mapped[str | None] = mapped_column(String(6))
     code_hash: Mapped[str] = mapped_column(String(64))
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

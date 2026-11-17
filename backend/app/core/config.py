@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     email_from: str = "ORVECT <connexion@orvect.fr>"
     login_code_ttl_minutes: int = 10
     login_codes_per_hour: int = 5
+    # Garage sign-up: NAF code prefixes allowed to create an account on their own ("45." = automotive trade
+    # and repair). Empty allows any active establishment.
+    signup_naf_prefixes: str = "45."
+    company_register_url: str = "https://recherche-entreprises.api.gouv.fr/search"
     device_code_ttl_minutes: int = 10
     # Page opened by the QR code: the user signs in there and approves the device.
     device_verification_url: str = "https://app.orvect.fr/connexion.html"

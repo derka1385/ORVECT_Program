@@ -1010,7 +1010,7 @@ def test_migrations_have_a_single_head(client):
     config = Config(str(root / "alembic.ini"))
     config.set_main_option("script_location", str(root / "alembic"))
     heads = ScriptDirectory.from_config(config).get_heads()
-    assert list(heads) == ["0015"], f"expected one head, found {heads}"
+    assert list(heads) == ["0016"], f"expected one head, found {heads}"
 
 
 # --- review 2: adaptive next check --------------------------------------------

@@ -13,3 +13,5 @@ frontend/*.tsbuildinfo
 .DS_Store
 .local/
 backend/private_images/
+# Firebase service-account keys never go in the repository.
+*firebase-adminsdk*.json

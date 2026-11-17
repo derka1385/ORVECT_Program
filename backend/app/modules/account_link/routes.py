@@ -62,7 +62,7 @@ def _firebase_custom_token(uid: str) -> str:
     return token.decode() if isinstance(token, bytes) else token
 
 
-def _session_for_email(db: Session, email: str) -> dict:
+def _session_for_email(db: Session, email: str, create: bool = False) -> dict:
     """Session for whoever proved ownership of `email` with a code."""
     if settings.auth_provider == "firebase":
         from firebase_admin import auth
@@ -72,7 +72,7 @@ def _session_for_email(db: Session, email: str) -> dict:
         try:
             user = auth.get_user_by_email(email, app=firebase_app())
         except auth.UserNotFoundError:
-            if not settings.firebase_self_signup_enabled:
+            if not (create or settings.firebase_self_signup_enabled):
                 raise HTTPException(403, "Aucun compte ORVECT n’est associé à cette adresse.")
             user = auth.create_user(email=email, email_verified=True, app=firebase_app())
         except Exception as exc:

@@ -19,7 +19,11 @@ def provision_isolated_workspace(claims, db):
         return None
     email = str(claims["email"]).lower()
     display_name = str(claims.get("name") or email.split("@", 1)[0])[:160]
-    garage = Garage(name=f"Espace de {display_name}"[:200])
+    return create_workspace(db, Garage(name=f"Espace de {display_name}"[:200]), email, display_name)
+
+
+def create_workspace(db, garage, email, display_name):
+    """A new garage with its first admin and a synthetic demo vehicle. Returns the admin user."""
     db.add(garage)
     db.flush()
     user = User(garage_id=garage.id, email=email, display_name=display_name, role="admin", password_hash=None)
