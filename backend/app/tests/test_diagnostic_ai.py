@@ -370,3 +370,22 @@ def test_a_case_without_fault_code_is_analysed_from_symptoms(client, monkeypatch
     assert response.status_code == 200, response.text
     preview = seen["preview"]
     assert preview["definitions"] == [] and "reportedIssues" in preview, "the preview is ready before the model call"
+
+
+def test_a_case_can_be_picked_up_from_another_device(client):
+    """The case list carries what a second device needs to rebuild and resume a case."""
+    launched = client.post("/api/diagnostics/launch", json={
+        "vehicle": LAUNCH_VEHICLE, "mileage": 61000, "symptoms": "À-coups à l'accélération",
+        "fault_codes": [{"code": "P0300", "status": "active", "technician_verification": "confirmed"}],
+        "measurements": [{"name": "Pression rail", "value": 38.5, "unit": "bar", "conditions": "ralenti"}]}).json()
+    case_id = launched["case"]["id"]
+    listed = client.get("/api/diagnostics").json()
+    item = next(i for i in listed["items"] if i["case"]["id"] == case_id)
+    assert item["vehicle"]["engine_code"] == "CZCA" and "vin" not in item["vehicle"]
+    assert item["fault_codes"] == [{"code": "P0300", "technician_verification": "confirmed"}]
+    assert item["measurements"][0]["name"] == "Pression rail" and item["case"]["observed_symptoms"].startswith("À-coups")
+    before = item["last_activity"]
+    assert client.post(f"/api/diagnostics/{case_id}/analyze").status_code == 200
+    after = next(i for i in client.get("/api/diagnostics").json()["items"] if i["case"]["id"] == case_id)["last_activity"]
+    assert after > before, "an analysis on one device marks the case as updated for the others"
+    assert listed["items"][0]["last_activity"] >= listed["items"][-1]["last_activity"]

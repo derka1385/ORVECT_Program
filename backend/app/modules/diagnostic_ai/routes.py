@@ -57,6 +57,36 @@ def create_case(data:DiagnosticCreate,db:Session=Depends(get_db),gid:str=Depends
     require_confirmed_engine(db,vehicle)
     row=DiagnosticSession(garage_id=gid,technician_id=uid,vehicle_profile_id=data.vehicle_id,status="draft",mileage=data.mileage,customer_complaint=data.symptoms,observed_symptoms=data.symptoms,appearance_circumstances=data.circumstances);db.add(row);db.flush();track(db,"diagnostic_started",gid,uid,row.id);db.commit();return serialize(row)
 
+@router.get("")
+def list_cases(page:int=Query(1,ge=1),page_size:int=Query(50,ge=1,le=100),db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
+    """The garage's cases, most recently active first, so any device can pick one up.
+
+    Everything a device needs to rebuild the case locally (vehicle, symptoms, codes,
+    readings) plus `last_activity`, so it knows when its copy of the report is stale.
+    """
+    # ponytail: sorts every case of the garage in memory; move last_activity to a column if a garage passes ~10k cases.
+    cases=db.scalars(select(DiagnosticSession).where(DiagnosticSession.garage_id==gid).order_by(DiagnosticSession.updated_at.desc())).all()
+    ids=[c.id for c in cases]
+    latest={}
+    for model,column in ((AICall,AICall.created_at),(DiagnosticEvent,DiagnosticEvent.created_at),(DiagnosticStep,DiagnosticStep.completed_at)):
+        for sid,at in db.execute(select(model.session_id,func.max(column)).where(model.session_id.in_(ids)).group_by(model.session_id)) if ids else []:
+            if at:latest[sid]=max(latest.get(sid,at),at,key=_aware)
+    def activity(c):return max([c.updated_at,latest.get(c.id,c.updated_at)],key=_aware)
+    cases.sort(key=lambda c:_aware(activity(c)),reverse=True)
+    window=cases[(page-1)*page_size:page*page_size]
+    observations={}
+    for row in db.scalars(select(DiagnosticObservation).where(DiagnosticObservation.session_id.in_([c.id for c in window]),DiagnosticObservation.observation_type.in_(("DTC","measurement")))).all() if window else []:
+        observations.setdefault(row.session_id,[]).append(row)
+    def item(c):
+        rows=observations.get(c.id,[])
+        at=_aware(activity(c))
+        return {"case":serialize(c),"vehicle":serialize(c.vehicle),"last_activity":at.isoformat(),"last_activity_ts":at.timestamp(),
+                "fault_codes":[{"code":o.key,"technician_verification":(o.value or {}).get("technician_verification")} for o in rows if o.observation_type=="DTC"],
+                "measurements":[{"name":o.key,"value":(o.value or {}).get("value"),"unit":o.unit,"conditions":(o.value or {}).get("conditions","")} for o in rows if o.observation_type=="measurement"]}
+    return {"items":[item(c) for c in window],"page":page,"page_size":page_size,"total":len(cases)}
+def _aware(value):
+    return value.replace(tzinfo=timezone.utc) if value and value.tzinfo is None else value
+
 @router.post("/launch")
 def launch(data:LaunchInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
     """Create or update a case in one call: vehicle, symptoms, fault codes, measurements.
