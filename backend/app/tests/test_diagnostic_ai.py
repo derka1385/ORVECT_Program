@@ -308,3 +308,65 @@ def test_site_language_reaches_the_model_and_keys_the_cache(client, monkeypatch)
     assert client.post(f"/api/diagnostics/{case_id}/analyze?language=sv").status_code == 200  # cached
     assert client.post(f"/api/diagnostics/{case_id}/analyze?language=xx").status_code == 200  # unknown → fr, cached
     assert seen == ["fr", "sv"]
+
+
+def test_safety_notice_reaches_progress_with_a_stop_code(client, monkeypatch):
+    from app.modules.diagnostic_ai import progress
+    case_id = create_case(client, codes=("P0524",))
+    notices = []
+    original = progress.set_stage
+    monkeypatch.setattr(progress, "set_stage", lambda cid, stage, detail="": (notices.append((stage, detail)), original(cid, stage, detail)))
+    response = client.post(f"/api/diagnostics/{case_id}/analyze")
+    assert response.status_code == 200 and response.json()["safetyAssessment"]["status"] != "UNKNOWN"
+    stages = [s for s, _ in notices]
+    assert stages.index("safety") < stages.index("reasoning")
+    assert dict(notices)["safety"].startswith(("Ne pas rouler", "S’arrêter"))
+
+
+LAUNCH_VEHICLE = {"make": "Volkswagen", "model": "Golf", "year": 2016, "engine_name": "1.4 TSI", "engine_code": "CZCA",
+                  "fuel_type": "gasoline", "transmission": "manual", "notes": "", "is_demo_vehicle": True}
+
+
+def test_launch_creates_then_updates_the_same_case(client):
+    """One request launches a case; re-launching an edited record never duplicates it."""
+    first = client.post("/api/diagnostics/launch", json={
+        "vehicle": LAUNCH_VEHICLE, "mileage": 98000, "symptoms": "Ratés à froid",
+        "fault_codes": [{"code": "P0301", "status": "active", "technician_verification": "confirmed"}],
+        "measurements": [{"name": "Compression cyl. 1", "value": 9.5, "unit": "bar"}]})
+    assert first.status_code == 200 and first.json()["created"] is True
+    case_id = first.json()["case"]["id"]
+    again = client.post("/api/diagnostics/launch", json={
+        "case_id": case_id, "vehicle": {**LAUNCH_VEHICLE, "engine_code": "CZEA"}, "symptoms": "Ratés à froid et à chaud",
+        "fault_codes": [{"code": "P0302", "status": "active", "technician_verification": "confirmed"}]})
+    assert again.status_code == 200 and again.json()["created"] is False
+    assert again.json()["case"]["id"] == case_id and again.json()["vehicle"]["engine_code"] == "CZEA"
+    detail = client.get(f"/api/diagnostics/{case_id}").json()
+    codes = [o["key"] for o in detail["observations"] if o["observation_type"] == "DTC"]
+    assert codes == ["P0302"], "codes are replaced, not accumulated"
+    assert not [o for o in detail["observations"] if o["observation_type"] == "measurement"]
+    assert detail["case"]["observed_symptoms"] == "Ratés à froid et à chaud"
+
+
+def test_launch_needs_a_code_or_symptoms(client):
+    response = client.post("/api/diagnostics/launch", json={"vehicle": LAUNCH_VEHICLE})
+    assert response.status_code == 422
+
+
+def test_a_case_without_fault_code_is_analysed_from_symptoms(client, monkeypatch):
+    from app.modules.diagnostic_ai import progress
+    launched = client.post("/api/diagnostics/launch", json={
+        "vehicle": LAUNCH_VEHICLE, "symptoms": "Bruit de claquement à froid côté distribution pendant 3 secondes"})
+    case_id = launched.json()["case"]["id"]
+    seen = {}
+
+    class Spy:
+        async def analyze_initial_case(self, context, images):
+            seen.update(progress.read(case_id) or {})
+            assert context["fault_codes"] == []
+            return ProviderResult(_mock_analysis(context), "mock", "deterministic-explanation-v2", 1)
+
+    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda: Spy())
+    response = client.post(f"/api/diagnostics/{case_id}/analyze")
+    assert response.status_code == 200, response.text
+    preview = seen["preview"]
+    assert preview["definitions"] == [] and "reportedIssues" in preview, "the preview is ready before the model call"

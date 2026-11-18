@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schemas import VehicleCreate
+
 
 class Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -298,6 +300,23 @@ class MeasurementInput(Strict):
     unit: str | None = Field(default=None, max_length=30)
     conditions: str = Field(default="", max_length=500)
     source: Literal["manual", "obd", "image"] = "manual"
+
+
+class LaunchInput(Strict):
+    """Everything a launch needs, in one request. `case_id` updates that case."""
+    case_id: str | None = None
+    vehicle: VehicleCreate
+    mileage: int | None = Field(default=None, ge=0)
+    symptoms: str = Field(default="", max_length=5000)
+    circumstances: str = Field(default="", max_length=3000)
+    fault_codes: list[FaultCodeInput] = Field(default_factory=list, max_length=30)
+    measurements: list[MeasurementInput] = Field(default_factory=list, max_length=100)
+
+    @model_validator(mode="after")
+    def codes_or_symptoms(self):
+        if not self.fault_codes and not self.symptoms.strip():
+            raise ValueError("Ajoutez au moins un code défaut ou décrivez les symptômes")
+        return self
 
 
 ResultState = Literal["positive", "negative", "inconclusive", "unavailable", "invalid", "refused"]

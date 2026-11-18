@@ -16,6 +16,10 @@ from pydantic import ValidationError
 from app.core.config import settings
 from app.core.logging import logger
 
+# Whole-analysis budget for the provider, repair call included. The apps stop
+# waiting at 240 s; research and persistence need the rest.
+NEBIUS_BUDGET_SECONDS = 200
+
 from .providers import (
     AIInvalidResponse,
     AIProviderUnavailable,
@@ -151,22 +155,27 @@ class NebiusAutomotiveAIProvider(AutomotiveAIProvider):
     def __init__(self, client: httpx.AsyncClient | None = None):
         self._client = client
 
-    async def _post(self, body: dict) -> dict:
+    async def _post(self, body: dict, timeout: float) -> dict:
         headers = {"Authorization": f"Bearer {settings.nebius_api_key}"}
         if self._client is not None:
-            response = await self._client.post("/chat/completions", json=body, headers=headers)
+            response = await self._client.post("/chat/completions", json=body, headers=headers, timeout=timeout)
             response.raise_for_status()
             return response.json()
         async with httpx.AsyncClient(
             base_url=settings.nebius_base_url.rstrip("/"),
-            timeout=settings.nebius_timeout_seconds,
+            timeout=timeout,
         ) as client:
             response = await client.post("/chat/completions", json=body, headers=headers)
             response.raise_for_status()
             return response.json()
 
-    async def _request(self, context: dict, model: str) -> dict:
-        """One completion, with structured-output and model fallbacks."""
+    async def _request(self, context: dict, model: str, deadline: float | None = None) -> dict:
+        """One completion, with structured-output and model fallbacks, inside a time budget.
+
+        A model that times out is not asked again: the next attempt goes to the
+        fallback model, so a slow provider costs one timeout, not three.
+        """
+        deadline = deadline or time.monotonic() + NEBIUS_BUDGET_SECONDS
         if not settings.nebius_api_key and self._client is None:
             raise AIProviderUnavailable("Nebius n’est pas configuré")
         attempts = [(model, True)]
@@ -175,8 +184,11 @@ class NebiusAutomotiveAIProvider(AutomotiveAIProvider):
         last: Exception | None = None
         for candidate, structured in attempts:
             for retry in range(3):
+                remaining = deadline - time.monotonic()
+                if remaining < 5:
+                    raise AIProviderUnavailable("Nebius n’a pas répondu dans le délai imparti") from last
                 try:
-                    return await self._post(_payload(context, candidate, structured))
+                    return await self._post(_payload(context, candidate, structured), min(settings.nebius_timeout_seconds, remaining))
                 except httpx.HTTPStatusError as exc:
                     last = exc
                     status = exc.response.status_code
@@ -191,7 +203,10 @@ class NebiusAutomotiveAIProvider(AutomotiveAIProvider):
                     if status in {401, 403}:
                         raise AIProviderUnavailable("Nebius a refusé la clé d’API configurée") from exc
                     break
-                except (httpx.TimeoutException, httpx.TransportError) as exc:
+                except httpx.TimeoutException as exc:
+                    last = exc
+                    break  # straight to the fallback model
+                except httpx.TransportError as exc:
                     last = exc
                     if retry < 2:
                         await asyncio.sleep(0.4 * (2**retry))
@@ -206,7 +221,8 @@ class NebiusAutomotiveAIProvider(AutomotiveAIProvider):
 
     async def _analyze(self, context: dict, model: str) -> ProviderResult:
         started = time.perf_counter()
-        body = await self._request(context, model)
+        deadline = time.monotonic() + NEBIUS_BUDGET_SECONDS  # shared by the repair call
+        body = await self._request(context, model, deadline)
         repaired = False
         try:
             # Expanding {source_id} citations into canonical sources is the
@@ -233,7 +249,7 @@ class NebiusAutomotiveAIProvider(AutomotiveAIProvider):
                     "Cite uniquement des source_id présents dans le contexte ; zéro hypothèse reste acceptable."
                 ),
             }
-            body = await self._request(repair_context, model)
+            body = await self._request(repair_context, model, deadline)
             try:
                 payload, _ = _normalize_provider_payload(_parse(body), context)
                 analysis = LLMDiagnosticAnalysis.model_validate(payload)

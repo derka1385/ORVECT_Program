@@ -71,15 +71,19 @@ def public_metrics(response:Response,db:Session=Depends(get_db)):
         "diagnostics_analyzed":diagnostics_analyzed,
         "counting_rule":"one_per_diagnostic_after_first_successful_analysis",
     }
+def apply_vehicle(v:VehicleProfile,data:VehicleCreate)->VehicleProfile:
+    """Copy the editable fields; a VIN is only ever stored encrypted."""
+    for k,val in data.model_dump(exclude={"vin"}).items(): setattr(v,k,val)
+    if data.vin:
+        validation=vin_validator.validate(data.vin)
+        if not validation.is_valid_format:raise HTTPException(422,{"code":"invalid_vin","errors":validation.errors})
+        v.vin=None;v.vin_encrypted=protector.encrypt(validation.normalized_vin);v.vin_fingerprint=protector.fingerprint(validation.normalized_vin);v.vin_last_six=validation.normalized_vin[-6:]
+    return v
 @router.get("/vehicles")
 def vehicles(page:int=Query(1,ge=1),page_size:int=Query(settings.default_page_size,ge=1,le=settings.max_page_size),db:Session=Depends(get_db),gid:str=Depends(active_garage_id)): return paginated(db,select(VehicleProfile).where(VehicleProfile.garage_id==gid).order_by(VehicleProfile.created_at.desc()),page,page_size)
 @router.post("/vehicles",status_code=201)
 def create_vehicle(data:VehicleCreate,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
-    payload=data.model_dump(exclude={"vin"});v=VehicleProfile(garage_id=gid,vin=None,**payload)
-    if data.vin:
-        validation=vin_validator.validate(data.vin)
-        if not validation.is_valid_format:raise HTTPException(422,{"code":"invalid_vin","errors":validation.errors})
-        v.vin_encrypted=protector.encrypt(validation.normalized_vin);v.vin_fingerprint=protector.fingerprint(validation.normalized_vin);v.vin_last_six=validation.normalized_vin[-6:]
+    v=apply_vehicle(VehicleProfile(garage_id=gid,vin=None),data)
     db.add(v); db.commit(); return serialize(v)
 @router.get("/vehicles/{vehicle_id}")
 def vehicle(vehicle_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
@@ -90,11 +94,7 @@ def vehicle(vehicle_id:str,db:Session=Depends(get_db),gid:str=Depends(active_gar
 def update_vehicle(vehicle_id:str,data:VehicleCreate,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
     v=db.scalar(select(VehicleProfile).where(VehicleProfile.id==vehicle_id,VehicleProfile.garage_id==gid))
     if not v: raise HTTPException(404,"Véhicule introuvable")
-    for k,val in data.model_dump(exclude={"vin"}).items(): setattr(v,k,val)
-    if data.vin:
-        validation=vin_validator.validate(data.vin)
-        if not validation.is_valid_format:raise HTTPException(422,{"code":"invalid_vin","errors":validation.errors})
-        v.vin=None;v.vin_encrypted=protector.encrypt(validation.normalized_vin);v.vin_fingerprint=protector.fingerprint(validation.normalized_vin);v.vin_last_six=validation.normalized_vin[-6:]
+    apply_vehicle(v,data)
     db.commit(); return serialize(v)
 
 @router.delete("/vehicles/{vehicle_id}",status_code=204)

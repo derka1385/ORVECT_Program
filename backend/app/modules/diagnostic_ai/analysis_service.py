@@ -1,6 +1,7 @@
 import hashlib
 import json
 import uuid
+from datetime import timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -25,6 +26,42 @@ from .schemas import CARRIED_OUT_STEP_STATES, DiagnosticAnalysis, LLMDiagnosticA
 
 class AnalysisInProgress(Exception):
     pass
+
+
+# The pipeline never waits this long (provider budget + research timeouts), so an
+# older "analyzing" state can only be a run the process lost (restart, deploy).
+STALE_ANALYSIS_AFTER = timedelta(minutes=10)
+SAFETY_NOTICE = {"DO_NOT_DRIVE": "Ne pas rouler : ", "STOP_AS_SOON_AS_SAFE": "S’arrêter dès que possible : "}
+
+
+def _preview(context: dict, safety) -> dict:
+    """What Orvect already knows before any model call, shown while the analysis runs."""
+    reference = context.get("vehicle_reference") or {}
+    return {
+        "vehicle": reference.get("label"),
+        "engine": (reference.get("engine_variant") or {}).get("engine_code"),
+        "definitions": [
+            {"code": item.get("code"), "description": item.get("description"), "documented": bool(item.get("documented"))}
+            for item in context.get("technical_definitions", [])
+        ],
+        "reportedIssues": [
+            {"title": item.get("title"), "url": (item.get("source") or {}).get("url")}
+            for item in (context.get("reported_vehicle_issues") or [])[:3]
+        ],
+        "safety": {"status": safety.status, "explanation": safety.explanation} if safety.status in SAFETY_NOTICE else None,
+    }
+
+
+def analysis_running(case: DiagnosticSession) -> bool:
+    """True only while an analysis can genuinely still be running for this case."""
+    if case.status != "analyzing":
+        return False
+    started = case.analysis_started_at
+    if started is None:
+        return False  # every run records its start; without one the state is stale
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    return now() - started < STALE_ANALYSIS_AFTER
 
 
 def _evidence_sections(excerpts: list[dict]) -> dict:
@@ -311,17 +348,25 @@ async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False, la
     gate, then one strong Nebius reasoning call over internal + external
     evidence. Stages are published as they actually happen.
     """
-    if case.status == "analyzing":
+    if analysis_running(case):
         raise AnalysisInProgress("Une analyse est déjà en cours")
     progress.start(case.id)
     progress.set_stage(case.id, "context")
     context, images = DiagnosticContextBuilder().build(db, case)
-    if not context["fault_codes"]:
+    symptoms = str(context.get("untrusted_user_data", {}).get("symptoms") or "").strip()
+    if not context["fault_codes"] and not symptoms:
         progress.clear(case.id)
-        raise ValueError("Ajoutez au moins un code défaut")
+        raise ValueError("Ajoutez au moins un code défaut ou décrivez les symptômes")
     progress.set_stage(
-        case.id, "codes", f"{len(context['fault_codes'])} code(s) défaut"
+        case.id, "codes",
+        f"{len(context['fault_codes'])} code(s) défaut" if context["fault_codes"] else "Sans code défaut : analyse des symptômes",
     )
+    # Deterministic and instant (codes + technician input only): a stop-driving
+    # condition is published before any paid call, not after the model answers.
+    safety = SafetyEngine().assess(context)
+    notice = SAFETY_NOTICE.get(safety.status)
+    progress.set_stage(case.id, "safety", f"{notice}{safety.explanation}" if notice else "")
+    progress.set_preview(case.id, _preview(context, safety))
     context["exploration_mode"] = settings.diagnostic_exploration_enabled and settings.llm_provider in {"gemini", "nebius"}
     context["diagnostic_engine"] = DiagnosticEngine().evaluate(context).as_dict()
 
@@ -405,7 +450,6 @@ async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False, la
             else provider.analyze_initial_case(context, images)
         )
         progress.set_stage(case.id, "test_plan", f"{len(result.analysis.nextChecks)} contrôle(s)")
-        safety = SafetyEngine().assess(context)
         payload = _persist(db, case, result, safety, context, context_hash, operation, research)
         progress.finish(case.id)
         return payload

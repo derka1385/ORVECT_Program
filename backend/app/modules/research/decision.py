@@ -61,13 +61,18 @@ def build_queries(context: dict) -> list[str]:
     vehicle = context.get("vehicle", {})
     label = _vehicle_label(vehicle)
     codes = [item.get("code") for item in context.get("fault_codes", []) if item.get("code")]
-    if not codes:
-        return []
-    primary = codes[0]
     engine = vehicle.get("engine_code") or vehicle.get("engine_family") or ""
     symptoms = " ".join(
         keywords(context.get("untrusted_user_data", {}).get("symptoms"), 5)
     )
+    if not codes:
+        # Symptom-only case: still vehicle-specific, never generic symptom words alone.
+        if not symptoms or not label:
+            return []
+        queries = [f"{label} {symptoms} common causes diagnosis",
+                   f"{vehicle.get('make') or ''} {engine} {symptoms} technical service bulletin"]
+        return [re.sub(r"\s+", " ", query).strip() for query in queries][: settings.tavily_max_queries]
+    primary = codes[0]
     queries = [f"{label} {' '.join(codes[:3])} common causes diagnosis".strip()]
     if engine:
         queries.append(
@@ -109,19 +114,24 @@ def decide_research(context: dict) -> ResearchPlan:
     fault_codes = context.get("fault_codes", [])
     internal = context.get("internal_excerpts", context.get("technical_excerpts", []))
     vehicle = context.get("vehicle", {})
+    # Real-world issues already matched to these exact codes on this vehicle are
+    # vehicle-specific evidence: they count before paying for a web search. They
+    # never lift a blocking reason (missing or manufacturer-specific definition).
+    reported = [item for item in context.get("reported_vehicle_issues") or [] if item.get("matched_dtc_codes")]
     reasons: list[str] = []
 
     if any(item.get("definition_type") == "manufacturer_specific" for item in definitions):
         reasons.append("manufacturer_specific_code")
     if any(not item.get("documented") for item in definitions):
         reasons.append("internal_definition_missing")
-    if len(fault_codes) > 1:
+    # One reported issue citing two of the case's codes is shared-cause evidence.
+    if len(fault_codes) > 1 and not any(len(set(item["matched_dtc_codes"])) > 1 for item in reported):
         reasons.append("multiple_codes_need_shared_cause_evidence")
-    if len(internal) < INTERNAL_SUFFICIENCY_THRESHOLD:
+    if len(internal) + len(reported) < INTERNAL_SUFFICIENCY_THRESHOLD:
         reasons.append("internal_evidence_insufficient")
-    if vehicle.get("engine_code") and not internal:
+    if vehicle.get("engine_code") and not internal and not reported:
         reasons.append("engine_specific_failure_pattern_relevant")
-    if str(context.get("untrusted_user_data", {}).get("symptoms") or "").strip() and not internal:
+    if str(context.get("untrusted_user_data", {}).get("symptoms") or "").strip() and not internal and not reported:
         reasons.append("symptoms_need_vehicle_specific_evidence")
 
     field = context.get("field_evidence_summary") or {}
@@ -133,7 +143,7 @@ def decide_research(context: dict) -> ResearchPlan:
         reasons.append("field_evidence_diverges_on_root_cause")
 
     if not reasons:
-        return ResearchPlan(False, ["internal_knowledge_sufficient"], [])
+        return ResearchPlan(False, ["internal_knowledge_sufficient"] + (["reported_issues_counted"] if reported else []), [])
 
     # Experience can only suppress the weaker triggers. A manufacturer-specific
     # code or a missing definition still needs authoritative confirmation:

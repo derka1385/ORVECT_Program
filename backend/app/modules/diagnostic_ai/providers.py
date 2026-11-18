@@ -12,7 +12,7 @@ from app.modules.dtc.service import UNAVAILABLE_DEFINITION
 from .schemas import LLMDiagnosticAnalysis
 
 
-PROMPT_VERSION = "automotive-v4.8-reported"
+PROMPT_VERSION = "automotive-v4.9-symptoms"
 SYSTEM_INSTRUCTION = Path(__file__).with_name("prompts").joinpath("automotive_v1.txt").read_text()
 PROHIBITED_EXPLANATION_PHRASES = (
     "safe to drive",
@@ -93,7 +93,7 @@ def selected_model(context: dict, follow_up: bool = False) -> str:
     if settings.llm_provider == "nebius":
         return settings.nebius_model
     if settings.llm_provider == "gemini":
-        return settings.gemini_model_reasoning if follow_up or context.get("exploration_mode") or len(context.get("fault_codes", [])) > 1 else settings.gemini_model_fast
+        return settings.gemini_model_reasoning if follow_up or context.get("exploration_mode") or len(context.get("fault_codes", [])) != 1 else settings.gemini_model_fast
     return "deterministic-explanation-v2" if settings.llm_provider == "mock" else "unavailable"
 
 

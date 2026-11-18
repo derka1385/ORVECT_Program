@@ -571,3 +571,70 @@ async def test_schema_failures_report_fields_never_values():
     class Fake(Exception):
         pass
     assert _failure_reason(Fake("boundary crossed")) == "boundary crossed"
+
+
+# --- Launch optimisations ----------------------------------------------
+
+def test_matched_reported_issues_spare_a_web_search(monkeypatch):
+    """Real-world issues already matched to the case's codes count before Tavily."""
+    monkeypatch.setattr(settings, "tavily_api_key", "test-key")
+    context = _context(fault_codes=[{"code": "P0016"}, {"code": "P0017"}])
+    context["internal_excerpts"] = [{"id": "k1"}]
+    context["reported_vehicle_issues"] = [
+        {"id": "reported:a", "matched_dtc_codes": ["P0016", "P0017"]},
+        {"id": "reported:b", "matched_dtc_codes": ["P0016"]},
+        {"id": "reported:c", "matched_dtc_codes": []},  # matched on words only: does not count
+    ]
+    plan = decide_research(context)
+    assert plan.needed is False and "reported_issues_counted" in plan.reasons
+    # a missing definition still forces authoritative research
+    context["technical_definitions"][0]["documented"] = False
+    assert decide_research(context).needed is True
+
+
+@pytest.mark.anyio
+async def test_nebius_timeout_goes_straight_to_the_fallback(monkeypatch):
+    monkeypatch.setattr(settings, "nebius_api_key", "k")
+    monkeypatch.setattr(settings, "nebius_fallback_model", "fallback-model")
+    seen = []
+
+    def handler(request):
+        model = json.loads(request.content)["model"]
+        seen.append(model)
+        if model != "fallback-model":
+            raise httpx.ReadTimeout("slow", request=request)
+        return _completion(_valid_payload())
+
+    result = await NebiusAutomotiveAIProvider(_nebius_client(handler)).analyze_initial_case(_context(), [])
+    assert seen == [settings.nebius_model, "fallback-model"], "a timed-out model is not retried"
+    assert result.analysis.hypotheses
+
+
+@pytest.mark.anyio
+async def test_nebius_stops_when_the_budget_is_spent(monkeypatch):
+    from app.modules.diagnostic_ai import nebius
+    monkeypatch.setattr(settings, "nebius_api_key", "k")
+    monkeypatch.setattr(nebius, "NEBIUS_BUDGET_SECONDS", 0)
+    calls = []
+    provider = NebiusAutomotiveAIProvider(_nebius_client(lambda r: calls.append(r) or _completion(_valid_payload())))
+    with pytest.raises(AIProviderUnavailable, match="délai"):
+        await provider.analyze_initial_case(_context(), [])
+    assert not calls
+
+
+def test_a_lost_analysis_does_not_lock_the_case_forever():
+    from datetime import timedelta
+    from types import SimpleNamespace
+    from app.database.models import now
+    from app.modules.diagnostic_ai.analysis_service import analysis_running
+    assert analysis_running(SimpleNamespace(status="analyzing", analysis_started_at=now()))
+    assert not analysis_running(SimpleNamespace(status="analyzing", analysis_started_at=now() - timedelta(minutes=11)))
+    assert not analysis_running(SimpleNamespace(status="analyzing", analysis_started_at=None))
+    assert not analysis_running(SimpleNamespace(status="draft", analysis_started_at=now()))
+
+
+def test_symptom_only_queries_stay_vehicle_specific():
+    context = _context(fault_codes=[], untrusted_user_data={"symptoms": "claquement distribution à froid"})
+    queries = build_queries(context)
+    assert queries and all("Volkswagen" in q or "CZCA" in q for q in queries)
+    assert build_queries(_context(fault_codes=[], untrusted_user_data={"symptoms": ""})) == []

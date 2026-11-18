@@ -13,6 +13,7 @@ from time import monotonic
 STAGES = (
     ("context", "Lecture du contexte véhicule"),
     ("codes", "Interprétation des codes défaut"),
+    ("safety", "Contrôle de sécurité"),
     ("knowledge", "Consultation de la base Orvect"),
     ("research_decision", "Évaluation du besoin de recherche externe"),
     ("research", "Recherche de preuves techniques externes"),
@@ -30,6 +31,7 @@ class Progress:
     detail: str = ""
     started: float = field(default_factory=monotonic)
     failed: bool = False
+    preview: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {
@@ -41,6 +43,7 @@ class Progress:
             "elapsedMs": int((monotonic() - self.started) * 1000),
             "failed": self.failed,
             "stages": [{"key": key, "label": label} for key, label in STAGES],
+            "preview": self.preview,
         }
 
 
@@ -56,6 +59,12 @@ def set_stage(case_id: str, stage: str, detail: str = "") -> None:
     if current:
         current.stage = stage
         current.detail = detail
+
+
+def set_preview(case_id: str, preview: dict) -> None:
+    current = _active.get(case_id)
+    if current:
+        current.preview = preview
 
 
 def fail(case_id: str, detail: str) -> None:

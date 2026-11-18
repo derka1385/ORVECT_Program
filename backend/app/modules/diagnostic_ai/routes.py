@@ -7,16 +7,17 @@ from pydantic import ValidationError
 from sqlalchemy import func,select
 from sqlalchemy.orm import Session
 from app.core.config import settings
+from app.api import apply_vehicle
 from app.modules.experience import next_check
 from app.auth import active_garage_id,authenticated_user_id
 from app.database.models import AICall,DiagnosticDataConsent,DiagnosticEvent,DiagnosticHypothesis,DiagnosticImage,DiagnosticObservation,DiagnosticSession,DiagnosticStep,HypothesisStateEvent,ProductAnalyticsEvent,VehicleConfiguration,VehicleProfile,now
 from app.database.session import get_db
 from app.modules.diagnostic_data.resolver import DiagnosticDataResolver,build_vehicle_context
 from . import progress as progress_store
-from .analysis_service import AnalysisInProgress,analyze_case
+from .analysis_service import AnalysisInProgress,analysis_running,analyze_case
 from .image_service import InvalidImage,cleanup_expired_images,process_image,safe_unlink
 from .providers import AIInvalidResponse,AIProviderUnavailable
-from .schemas import CARRIED_OUT_STEP_STATES,DEAD_HYPOTHESIS_STATES,DTCPreviewInput,DiagnosticAnalysis,DiagnosticCreate,FaultCodesInput,MeasurementInput,StepResultInput,NON_INFORMATIVE_RESULT_STATES
+from .schemas import LaunchInput,CARRIED_OUT_STEP_STATES,DEAD_HYPOTHESIS_STATES,DTCPreviewInput,DiagnosticAnalysis,DiagnosticCreate,FaultCodesInput,MeasurementInput,StepResultInput,NON_INFORMATIVE_RESULT_STATES
 
 router=APIRouter(prefix="/api/diagnostics",tags=["diagnostic-ai"]);calls=defaultdict(deque);diagnostic_data_resolver=DiagnosticDataResolver()
 def serialize(o):
@@ -34,14 +35,51 @@ def rate_limit(gid):
 def track(db,name,gid,uid,case_id=None,metadata=None):
     db.add(ProductAnalyticsEvent(garage_id=gid,user_id=uid,session_id=case_id,event_name=name,event_metadata=metadata or {}))
 
+def require_confirmed_engine(db,vehicle):
+    config=db.scalar(select(VehicleConfiguration).where(VehicleConfiguration.vehicle_id==vehicle.id))
+    effective_engine=config.engine_code_confirmed_by_user or config.engine_code if config else vehicle.engine_code
+    if not effective_engine or effective_engine=="UNKNOWN" or (config and not config.confirmed_by_user):raise HTTPException(409,"Confirmez une motorisation avant de lancer le diagnostic")
+def code_rows(db,case,items):
+    """DTC observations with their resolved definition, as stored for the analysis."""
+    rows=[]
+    for item in items:
+        context=build_vehicle_context(db,case.vehicle,item.ecu,item.ecu_identifiers)
+        resolution=diagnostic_data_resolver.resolve(db,item.namespace,item.code,context)
+        rows.append(DiagnosticObservation(session_id=case.id,observation_type="DTC",key=item.code,value={"raw_code":item.code,"normalized_code":item.code,"namespace":item.namespace,"category":resolution["definition_type"],"ecu":item.ecu,"ecu_identifiers":item.ecu_identifiers,"sub_code":None,"status":item.status,"freeze_frame":item.freeze_frame,"resolution_status":resolution["status"],"description":resolution["description"],"description_source_id":resolution["source"]["source_id"] if resolution["source"] else None,"description_source":resolution["source"],"missing_information":resolution["missing_information"],"technician_verification":item.technician_verification,"technician_note":item.technician_note},source="manual_entry"))
+    return rows
+def measurement_row(case,data):
+    return DiagnosticObservation(session_id=case.id,observation_type="measurement",key=data.name,value={"value":data.value,"conditions":data.conditions},unit=data.unit,source=data.source)
+
 @router.post("",status_code=201)
 def create_case(data:DiagnosticCreate,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
     vehicle=db.scalar(select(VehicleProfile).where(VehicleProfile.id==data.vehicle_id,VehicleProfile.garage_id==gid))
     if not vehicle:raise HTTPException(404,"Véhicule introuvable")
-    config=db.scalar(select(VehicleConfiguration).where(VehicleConfiguration.vehicle_id==vehicle.id))
-    effective_engine=config.engine_code_confirmed_by_user or config.engine_code if config else vehicle.engine_code
-    if not effective_engine or effective_engine=="UNKNOWN" or (config and not config.confirmed_by_user):raise HTTPException(409,"Confirmez une motorisation avant de lancer le diagnostic")
+    require_confirmed_engine(db,vehicle)
     row=DiagnosticSession(garage_id=gid,technician_id=uid,vehicle_profile_id=data.vehicle_id,status="draft",mileage=data.mileage,customer_complaint=data.symptoms,observed_symptoms=data.symptoms,appearance_circumstances=data.circumstances);db.add(row);db.flush();track(db,"diagnostic_started",gid,uid,row.id);db.commit();return serialize(row)
+
+@router.post("/launch")
+def launch(data:LaunchInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
+    """Create or update a case in one call: vehicle, symptoms, fault codes, measurements.
+
+    Re-launching an edited record updates the same case instead of creating a
+    duplicate, so its test history, verdicts and learning signal stay attached.
+    The analysis itself still runs through /analyze, so the app can poll progress.
+    """
+    case=owned_case(db,data.case_id,gid) if data.case_id else None
+    if case and analysis_running(case):raise HTTPException(409,"Analyse en cours")
+    if case and case.status=="completed":raise HTTPException(409,"Un diagnostic terminé reste dans l’historique. Créez un nouveau dossier.")
+    vehicle=apply_vehicle(case.vehicle if case else VehicleProfile(garage_id=gid,vin=None),data.vehicle)
+    if not case:db.add(vehicle);db.flush()
+    require_confirmed_engine(db,vehicle)
+    if case:
+        case.mileage=data.mileage;case.customer_complaint=data.symptoms;case.observed_symptoms=data.symptoms;case.appearance_circumstances=data.circumstances
+        # Codes and readings are replaced by what the technician now confirms; test results stay.
+        for row in db.scalars(select(DiagnosticObservation).where(DiagnosticObservation.session_id==case.id,DiagnosticObservation.observation_type.in_(("DTC","measurement")))).all():db.delete(row)
+    else:
+        case=DiagnosticSession(garage_id=gid,technician_id=uid,vehicle_profile_id=vehicle.id,status="draft",mileage=data.mileage,customer_complaint=data.symptoms,observed_symptoms=data.symptoms,appearance_circumstances=data.circumstances);db.add(case);db.flush();track(db,"diagnostic_started",gid,uid,case.id)
+    db.add_all(code_rows(db,case,data.fault_codes)+[measurement_row(case,m) for m in data.measurements])
+    db.commit()
+    return {"case":serialize(case),"vehicle":serialize(vehicle),"created":data.case_id is None}
 
 @router.post("/dtc-preview")
 def preview_fault_codes(data:DTCPreviewInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
@@ -94,24 +132,20 @@ def delete_case(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_ga
 @router.post("/{case_id}/fault-codes",status_code=201)
 def fault_codes(case_id:str,data:FaultCodesInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
     case=owned_case(db,case_id,gid)
-    if case.status=="analyzing":raise HTTPException(409,"Analyse en cours")
+    if analysis_running(case):raise HTTPException(409,"Analyse en cours")
     existing=db.scalar(select(func.count()).select_from(DiagnosticObservation).where(DiagnosticObservation.session_id==case.id,DiagnosticObservation.observation_type=="DTC")) or 0
     if existing+len(data.fault_codes)>settings.max_diagnostic_fault_codes:raise HTTPException(413,"Limite de codes défaut atteinte pour ce diagnostic")
-    rows=[]
-    for item in data.fault_codes:
-        context=build_vehicle_context(db,case.vehicle,item.ecu,item.ecu_identifiers)
-        resolution=diagnostic_data_resolver.resolve(db,item.namespace,item.code,context)
-        row=DiagnosticObservation(session_id=case.id,observation_type="DTC",key=item.code,value={"raw_code":item.code,"normalized_code":item.code,"namespace":item.namespace,"category":resolution["definition_type"],"ecu":item.ecu,"ecu_identifiers":item.ecu_identifiers,"sub_code":None,"status":item.status,"freeze_frame":item.freeze_frame,"resolution_status":resolution["status"],"description":resolution["description"],"description_source_id":resolution["source"]["source_id"] if resolution["source"] else None,"description_source":resolution["source"],"missing_information":resolution["missing_information"],"technician_verification":item.technician_verification,"technician_note":item.technician_note},source="manual_entry");db.add(row);rows.append(row)
+    rows=code_rows(db,case,data.fault_codes);db.add_all(rows)
     track(db,"dtc_added",gid,uid,case.id,{"count":len(rows)});db.commit();return [serialize(x) for x in rows]
 @router.post("/{case_id}/measurements",status_code=201)
 def measurement(case_id:str,data:MeasurementInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
     case=owned_case(db,case_id,gid);count=db.scalar(select(func.count()).select_from(DiagnosticObservation).where(DiagnosticObservation.session_id==case.id,DiagnosticObservation.observation_type=="measurement")) or 0
     if count>=settings.max_diagnostic_measurements:raise HTTPException(413,"Limite de mesures atteinte pour ce diagnostic")
-    row=DiagnosticObservation(session_id=case.id,observation_type="measurement",key=data.name,value={"value":data.value,"conditions":data.conditions},unit=data.unit,source=data.source);db.add(row);db.commit();return serialize(row)
+    row=measurement_row(case,data);db.add(row);db.commit();return serialize(row)
 @router.post("/{case_id}/images",status_code=201)
 async def images(case_id:str,files:list[UploadFile]=File(...),category:str=Form("other"),description:str=Form(""),db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
     cleanup_expired_images(db);case=owned_case(db,case_id,gid);count=len(db.scalars(select(DiagnosticImage).where(DiagnosticImage.session_id==case.id)).all())
-    if case.status=="analyzing":raise HTTPException(409,"Analyse en cours")
+    if analysis_running(case):raise HTTPException(409,"Analyse en cours")
     if count+len(files)>settings.max_diagnostic_images:raise HTTPException(413,f"Maximum {settings.max_diagnostic_images} images par dossier")
     blobs=[];total=0
     for file in files:
@@ -147,7 +181,7 @@ async def analyze(case_id:str,language:str=Query("fr"),db:Session=Depends(get_db
 @router.post("/{case_id}/steps/{step_id}/result")
 def step_result(case_id:str,step_id:str,data:StepResultInput,db:Session=Depends(get_db),gid:str=Depends(active_garage_id),uid:str=Depends(authenticated_user_id)):
     case=owned_case(db,case_id,gid);step=db.scalar(select(DiagnosticStep).where(DiagnosticStep.id==step_id,DiagnosticStep.session_id==case.id))
-    if case.status=="analyzing":raise HTTPException(409,"Analyse en cours")
+    if analysis_running(case):raise HTTPException(409,"Analyse en cours")
     if not step:raise HTTPException(404,"Étape introuvable")
     if step.status!="current":raise HTTPException(409,"Seule l’étape courante non terminée peut recevoir un résultat")
     step.status="completed" if data.state in {"positive","negative"} else "blocked"
@@ -304,5 +338,5 @@ def analysis_progress(case_id:str,db:Session=Depends(get_db),gid:str=Depends(act
     case=owned_case(db,case_id,gid)
     state=progress_store.read(case.id)
     if not state:
-        return {"stage":"complete" if case.status!="analyzing" else "context","label":"","detail":"","index":0,"total":len(progress_store.STAGE_ORDER),"elapsedMs":0,"failed":False,"stages":[{"key":key,"label":label} for key,label in progress_store.STAGES],"running":case.status=="analyzing"}
-    return {**state,"running":case.status=="analyzing"}
+        return {"stage":"context" if analysis_running(case) else "complete","label":"","detail":"","index":0,"total":len(progress_store.STAGE_ORDER),"elapsedMs":0,"failed":False,"stages":[{"key":key,"label":label} for key,label in progress_store.STAGES],"running":analysis_running(case)}
+    return {**state,"running":analysis_running(case)}

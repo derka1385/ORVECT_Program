@@ -294,6 +294,7 @@ def as_excerpt(item: dict, generation_id: str | None) -> dict:
         "id": "reported:" + item["id"],
         "title": item["title"],
         "excerpt": " ".join(x for x in lines if x)[:1200],
+        "matched_dtc_codes": item.get("matched_dtc_codes", []),  # lets the research gate count it
         "origin": "orvect_reported_issues",
         "trust_class": item["trust_class"],
         "vehicle_scope": {"scope": SCOPE, "generation": generation_id},
