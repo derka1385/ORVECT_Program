@@ -17,6 +17,8 @@ from app.database.models import (
 from app.modules.diagnostic_data.resolver import DiagnosticDataResolver, build_vehicle_context
 from app.modules.experience import retrieval as field_retrieval, trust
 from app.modules.dtc.service import source_reference
+from app.modules.vehicle_knowledge import service as vehicle_knowledge
+from app.modules.vehicle_resolution.services.security import protector
 
 
 class TechnicalKnowledgeRetriever(Protocol):
@@ -76,6 +78,14 @@ class LocalKnowledgeRetriever:
                 }
             )
         return results[:20]
+
+
+def _vin_prefix(vehicle) -> str | None:
+    """First 11 VIN characters (model identification only), decrypted server-side."""
+    try:
+        return protector.decrypt(vehicle.vin_encrypted)[:11] if vehicle.vin_encrypted else None
+    except Exception:
+        return None
 
 
 def _text(value, limit):
@@ -237,6 +247,12 @@ class DiagnosticContextBuilder:
             ),
         }
         context["field_evidence_summary"] = field_retrieval.summarize(context["orvect_field_evidence"])
+        # Homologated generation/engine variant and problems already reported on them
+        # (recalls, bulletins, press, forums). Kept out of `technical_excerpts` here so
+        # they never satisfy the research gate; analysis_service appends them afterwards.
+        knowledge = vehicle_knowledge.for_case(db, normalized, codes, case.observed_symptoms, _vin_prefix(vehicle))
+        context["vehicle_reference"] = knowledge["vehicle_reference"]
+        context["reported_vehicle_issues"] = knowledge["reported_issues"]
         return context, images
 
     @staticmethod

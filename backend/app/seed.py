@@ -7,6 +7,7 @@ from app.database.models import Base, DiagnosticNamespace, DiagnosticRule, Diagn
 from app.database.session import SessionLocal, engine
 from app.database.models import DiagnosticSourceAssessment
 from app.modules.vehicle_resolution.services.security import protector
+from app.modules.vehicle_knowledge import service as vehicle_knowledge
 
 GARAGE_ID="00000000-0000-0000-0000-000000000001"
 USER_ID="00000000-0000-0000-0000-000000000002"
@@ -146,6 +147,9 @@ def seed(db=None):
         if not db.scalar(select(DiagnosticRule).where(DiagnosticRule.name=="P0301 initial coil swap")):
             db.add(DiagnosticRule(vehicle_profile_id=VEHICLE_ID,dtc_id=p0301.id,name="P0301 initial coil swap",conditions={"dtc":"P0301","prior_results":[]},action={"step":"swap_coils_1_2","branches":{"fault_moved_to_cylinder_2":"confirm_coil","fault_stayed_on_cylinder_1":"inspect_spark_plug"}},priority=100,enabled=True,source_ids=[SOURCE_ID],human_verified=True))
         import_dtc_catalog(db)
+        # Reference data (~750 generations): skipped in tests, which load it explicitly.
+        if settings.app_environment != "test":
+            vehicle_knowledge.load_reference_data(db)
         db.commit()
     finally:
         if owns: db.close()

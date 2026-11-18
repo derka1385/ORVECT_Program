@@ -373,6 +373,9 @@ async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False, la
         progress.set_stage(case.id, "knowledge", f"{len(context['technical_excerpts'])} élément(s) interne(s)")
         progress.set_stage(case.id, "research_decision")
         excerpts, research = await build_evidence(db, context, context["technical_excerpts"])
+        # Reported real-world issues join the citable excerpts after the research gate,
+        # labelled with their own origin and trust class.
+        excerpts = excerpts + list(context.get("reported_vehicle_issues") or [])
         if research["researchTriggered"]:
             progress.set_stage(
                 case.id,

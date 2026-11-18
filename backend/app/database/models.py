@@ -505,3 +505,92 @@ class ExperiencePatternCase(Base):
     garage_id: Mapped[str] = mapped_column(ForeignKey("garages.id"), index=True)
     outcome_class: Mapped[str] = mapped_column(String(30), index=True)
     contributed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class VehicleGeneration(Base):
+    """A model generation as homologated (Swiss type approvals ASTRA, open data).
+
+    Reference data, shared by every garage. One row per type code × VIN model code
+    × wheelbase group, so two real generations sharing one type code stay apart.
+    """
+    __tablename__ = "vehicle_generations"
+    __table_args__ = (Index("ix_vehicle_generations_make_family", "make", "family"),)
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    make: Mapped[str] = mapped_column(String(60), index=True)
+    family: Mapped[str] = mapped_column(String(80))
+    label: Mapped[str] = mapped_column(String(120))
+    generation_code: Mapped[str] = mapped_column(String(60))
+    type_code: Mapped[str] = mapped_column(String(40))
+    vin_code: Mapped[str | None] = mapped_column(String(8))
+    year_from: Mapped[int | None] = mapped_column(Integer)
+    year_to: Mapped[int | None] = mapped_column(Integer)
+    core_year_from: Mapped[int | None] = mapped_column(Integer)
+    core_year_to: Mapped[int | None] = mapped_column(Integer)
+    fleet_reference: Mapped[int] = mapped_column(Integer, default=0)
+    vin_prefixes: Mapped[list] = mapped_column(JSON, default=list)
+    specs: Mapped[dict] = mapped_column(JSON, default=dict)
+    source: Mapped[str] = mapped_column(String(120), default="ASTRA type approvals (opendata.astra.admin.ch)")
+
+
+class EngineVariant(Base):
+    """One homologated engine variant of a generation (engine code as stamped)."""
+    __tablename__ = "engine_variants"
+    __table_args__ = (UniqueConstraint("generation_id", "engine_code", name="uq_engine_variant"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    generation_id: Mapped[str] = mapped_column(ForeignKey("vehicle_generations.id"), index=True)
+    engine_code: Mapped[str] = mapped_column(String(60), index=True)
+    engine_types: Mapped[list] = mapped_column(JSON, default=list)
+    fuel: Mapped[str | None] = mapped_column(String(40))
+    displacement_cc: Mapped[int | None] = mapped_column(Integer)
+    power_kw_min: Mapped[float | None] = mapped_column(Float)
+    power_kw_max: Mapped[float | None] = mapped_column(Float)
+    torque_nm: Mapped[float | None] = mapped_column(Float)
+    cylinders: Mapped[int | None] = mapped_column(Integer)
+    layout: Mapped[str | None] = mapped_column(String(80))
+    drive: Mapped[list] = mapped_column(JSON, default=list)
+    gearboxes: Mapped[list] = mapped_column(JSON, default=list)
+    code_location: Mapped[str | None] = mapped_column(String(200))
+    example_name: Mapped[str | None] = mapped_column(String(120))
+    fleet_reference: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class ReportedVehicleIssue(Base):
+    """A problem already reported in the real world for vehicles matching `scope`.
+
+    Kept apart from workshop experience on purpose: these are external reports
+    (official recalls, manufacturer bulletins, press, forums). They may help rank
+    hypotheses and pick checks; they never prove anything about a given car.
+    """
+    __tablename__ = "reported_vehicle_issues"
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    origin: Mapped[str] = mapped_column(String(40), index=True)
+    market: Mapped[str] = mapped_column(String(10), default="EU")
+    title: Mapped[str] = mapped_column(String(300))
+    family: Mapped[str] = mapped_column(String(200), default="")
+    scope: Mapped[dict] = mapped_column(JSON, default=dict)
+    generation_ids: Mapped[list] = mapped_column(JSON, default=list)
+    system: Mapped[str] = mapped_column(String(120), default="")
+    component: Mapped[str] = mapped_column(String(200), default="")
+    failure_mode: Mapped[str] = mapped_column(String(120), default="")
+    symptoms: Mapped[list] = mapped_column(JSON, default=list)
+    dtc_codes: Mapped[list] = mapped_column(JSON, default=list)
+    cause: Mapped[str] = mapped_column(Text, default="")
+    remedy: Mapped[str] = mapped_column(Text, default="")
+    checks: Mapped[list] = mapped_column(JSON, default=list)
+    applicability_note: Mapped[str] = mapped_column(Text, default="")
+    evidence_level: Mapped[str] = mapped_column(String(40))
+    source_type: Mapped[str] = mapped_column(String(40))
+    sources: Mapped[list] = mapped_column(JSON, default=list)
+    year_from: Mapped[int | None] = mapped_column(Integer)
+    year_to: Mapped[int | None] = mapped_column(Integer)
+    reported_at: Mapped[str | None] = mapped_column(String(10))
+    review_state: Mapped[str] = mapped_column(String(30), default="unreviewed")
+
+
+class ReportedIssueGeneration(Base):
+    """Indexed link reported issue -> generation (official cases are pre-linked at build time)."""
+    __tablename__ = "reported_issue_generations"
+    __table_args__ = (UniqueConstraint("issue_id", "generation_id", name="uq_reported_issue_generation"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    issue_id: Mapped[str] = mapped_column(ForeignKey("reported_vehicle_issues.id"), index=True)
+    generation_id: Mapped[str] = mapped_column(ForeignKey("vehicle_generations.id"), index=True)
