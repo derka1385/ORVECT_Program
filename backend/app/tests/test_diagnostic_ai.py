@@ -389,3 +389,17 @@ def test_a_case_can_be_picked_up_from_another_device(client):
     after = next(i for i in client.get("/api/diagnostics").json()["items"] if i["case"]["id"] == case_id)["last_activity"]
     assert after > before, "an analysis on one device marks the case as updated for the others"
     assert listed["items"][0]["last_activity"] >= listed["items"][-1]["last_activity"]
+
+
+def test_a_case_launched_from_the_apps_may_receive_hypotheses(client):
+    """The launch is the technician's confirmation: the evidence gate must not block it."""
+    from app.modules.diagnostic_ai.context_builder import DiagnosticContextBuilder
+    from app.modules.diagnostic_ai.diagnostic_engine import DiagnosticEngine
+    from app.database.models import DiagnosticSession
+    launched = client.post("/api/diagnostics/launch", json={
+        "vehicle": {**LAUNCH_VEHICLE, "is_demo_vehicle": False}, "symptoms": "Ratés à froid",
+        "fault_codes": [{"code": "P0301", "status": "active", "technician_verification": "confirmed"}]}).json()
+    with SessionLocal() as db:
+        context, _ = DiagnosticContextBuilder().build(db, db.get(DiagnosticSession, launched["case"]["id"]))
+    assert context["vehicle"]["configuration_confirmed"] is True
+    assert DiagnosticEngine().evaluate(context).hypotheses_allowed is True

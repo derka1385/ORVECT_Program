@@ -39,6 +39,21 @@ def require_confirmed_engine(db,vehicle):
     config=db.scalar(select(VehicleConfiguration).where(VehicleConfiguration.vehicle_id==vehicle.id))
     effective_engine=config.engine_code_confirmed_by_user or config.engine_code if config else vehicle.engine_code
     if not effective_engine or effective_engine=="UNKNOWN" or (config and not config.confirmed_by_user):raise HTTPException(409,"Confirmez une motorisation avant de lancer le diagnostic")
+def confirm_configuration(db,vehicle,uid):
+    """Launching from the apps is the technician confirming make, model, year, fuel and engine code.
+
+    Without this record the evidence gate treats the vehicle as unidentified and allows
+    no hypothesis. Fields already resolved from a VIN are kept; only the confirmation and
+    the engine code the technician entered are written.
+    """
+    config=db.scalar(select(VehicleConfiguration).where(VehicleConfiguration.vehicle_id==vehicle.id))
+    if not config:
+        config=VehicleConfiguration(vehicle_id=vehicle.id,make=vehicle.make,model=vehicle.model,model_year=vehicle.year,fuel_type=vehicle.fuel_type,
+                                    engine_name=vehicle.engine_name,engine_code=vehicle.engine_code,transmission_type=vehicle.transmission,
+                                    providers_used=[],field_provenance={"engine_code":"technician_confirmation"},precision_level="engine_specific",confidence_score=0.5)
+        db.add(config)
+    config.engine_code_confirmed_by_user=vehicle.engine_code
+    config.confirmed_by_user=True;config.confirmed_by_user_id=uid;config.confirmed_at=now()
 def code_rows(db,case,items):
     """DTC observations with their resolved definition, as stored for the analysis."""
     rows=[]
@@ -100,6 +115,7 @@ def launch(data:LaunchInput,db:Session=Depends(get_db),gid:str=Depends(active_ga
     if case and case.status=="completed":raise HTTPException(409,"Un diagnostic terminé reste dans l’historique. Créez un nouveau dossier.")
     vehicle=apply_vehicle(case.vehicle if case else VehicleProfile(garage_id=gid,vin=None),data.vehicle)
     if not case:db.add(vehicle);db.flush()
+    confirm_configuration(db,vehicle,uid)
     require_confirmed_engine(db,vehicle)
     if case:
         case.mileage=data.mileage;case.customer_complaint=data.symptoms;case.observed_symptoms=data.symptoms;case.appearance_circumstances=data.circumstances
