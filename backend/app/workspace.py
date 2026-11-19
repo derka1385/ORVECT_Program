@@ -49,7 +49,10 @@ class ConsentInput(Strict):
 
 
 class CompletionInput(Strict):
-    resolution_status: Literal["problem_repaired", "repair_pending", "no_repair_required", "inconclusive", "referred_elsewhere", "other"]
+    # not_reproduced: the fault could not be made to appear in the workshop;
+    # multiple_causes: several faults contributed, so no single cause is learned.
+    resolution_status: Literal["problem_repaired", "repair_pending", "no_repair_required", "inconclusive", "not_reproduced",
+                               "multiple_causes", "referred_elsewhere", "other"]
     confirmed_cause: str = Field(default="", max_length=5000)
     selected_hypothesis_id: str | None = None
     repair_action_type: Literal["component_replaced", "wiring_repaired", "cleaning", "software_update", "coding_adaptation", "no_repair", "other"]

@@ -638,3 +638,14 @@ def test_symptom_only_queries_stay_vehicle_specific():
     queries = build_queries(context)
     assert queries and all("Volkswagen" in q or "CZCA" in q for q in queries)
     assert build_queries(_context(fault_codes=[], untrusted_user_data={"symptoms": ""})) == []
+
+
+def test_a_case_with_photos_goes_to_the_model_that_can_see_them(monkeypatch):
+    from app.modules.diagnostic_ai.providers import effective_provider, selected_model
+    monkeypatch.setattr(settings, "llm_provider", "nebius")
+    monkeypatch.setattr(settings, "gemini_api_key", "")
+    assert effective_provider(["photo"]) == "nebius", "without a Gemini key nothing changes"
+    monkeypatch.setattr(settings, "gemini_api_key", "g-test")
+    assert effective_provider([]) == "nebius"
+    assert effective_provider(["photo"]) == "gemini"
+    assert selected_model(_context(), provider="gemini").startswith("gemini")

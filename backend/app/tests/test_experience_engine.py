@@ -828,7 +828,7 @@ def _rich_provider(monkeypatch):
         async def analyze_follow_up(self, context, images):
             return await self.analyze_initial_case(context, images)
 
-    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda: RichProvider())
+    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda *_: RichProvider())
 
 
 def _analysed_case(client, monkeypatch=None, checks=1):
@@ -1068,7 +1068,7 @@ def _adaptive_provider(monkeypatch):
         async def analyze_follow_up(self, context, images):
             return await self.analyze_initial_case(context, images)
 
-    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda: AdaptiveProvider())
+    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda *_: AdaptiveProvider())
 
 
 def _adaptive_case(client, monkeypatch):
@@ -1452,3 +1452,41 @@ def test_aggregation_is_reproducible_after_revocation(client):
         }
         assert again == snapshot
         assert all(counts[2] == 3 for counts in again.values())
+
+
+def test_a_check_needing_a_tool_the_garage_lacks_is_ranked_down():
+    """A test reported impossible for lack of a tool demotes other tests needing that tool."""
+    from types import SimpleNamespace
+    from app.modules.experience import next_check
+    hypotheses = [{"label": "Bobine d'allumage", "component": "bobine"}, {"label": "Injecteur", "component": "injecteur"}]
+    scope = {"id": "a", "order": 1, "title": "Signal bobine et injecteur à l'oscilloscope", "objective": "bobine injecteur",
+             "requiredTools": ["Oscilloscope"], "estimatedDifficulty": "easy"}
+    swap = {"id": "b", "order": 2, "title": "Permuter bobine et injecteur entre cylindres", "objective": "bobine injecteur",
+            "requiredTools": ["Outillage à main"], "estimatedDifficulty": "intermediate"}
+    assert next_check.best([scope, swap], hypotheses, set())["check"]["id"] == "a"
+    blocked = [SimpleNamespace(result={"state": "unavailable"}, required_tools=["Oscilloscope", "Outillage à main"])]
+    missing = next_check.unavailable_tools(blocked)
+    assert missing == {"oscilloscope"}, "generic hand tools are never treated as missing"
+    ranked = next_check.rank([scope, swap], hypotheses, set(), None, missing)
+    assert ranked[0]["check"]["id"] == "b"
+    assert any("indisponible" in r for r in ranked[1]["rationale"])
+
+
+def test_handoff_brief_and_a_fault_that_could_not_be_reproduced(client, monkeypatch):
+    """A colleague or specialist gets the facts; a non-reproduced fault never teaches a cause."""
+    case_id = _analysed_case(client, monkeypatch, checks=2)
+    detail = client.get(f"/api/diagnostics/{case_id}").json()
+    current = next(item for item in detail["steps"] if item["status"] == "current")
+    client.post(f"/api/diagnostics/{case_id}/steps/{current['id']}/result",
+                json={"state": "unavailable", "outcome": "Pas d'oscilloscope", "comment": "à faire chez le spécialiste"})
+    brief = client.get(f"/api/diagnostics/{case_id}/handoff").json()
+    text = brief["text"]
+    assert "Codes défaut : P0301" in text and "impossible sur place" in text and "Question ouverte" in text
+    assert brief["checks_done"] == 1 and brief["open_causes"]
+    response = client.post(f"/api/diagnostics/{case_id}/complete", json={
+        "resolution_status": "not_reproduced", "confirmed_cause": "", "selected_hypothesis_id": None,
+        "repair_action_type": "no_repair", "repair_action_details": "", "components_involved": [],
+        "root_cause_confidence": "not_confirmed", "post_repair_result": "unknown_not_tested",
+        "dtc_after_repair": "not_checked", "technician_notes": "Panne non reproduite en essai routier"})
+    assert response.status_code == 201, response.text
+    assert response.json()["experience"]["outcome_class"] in (None, capture.UNRESOLVED)

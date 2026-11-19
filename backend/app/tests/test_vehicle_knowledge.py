@@ -80,3 +80,16 @@ def test_lookup_route(client):
     assert body["vehicle_reference"]["generation"] == "vw-golf-au"
     assert body["vehicle_reference"]["engine_variant"]["engine_code"] == "CZC"
     assert any(i["id"] == "vag-ea211-boitier-pompe-thermostat" for i in body["reported_issues"])
+
+
+def test_engine_variants_offered_for_a_vehicle(client):
+    with SessionLocal() as session:
+        service.load_reference_data(session)
+        session.commit()
+    body = client.post("/api/vehicle-knowledge/variants", json={"make": "Volkswagen", "model": "Golf", "model_year": 2015}).json()
+    assert body["generation"] == "vw-golf-au"
+    codes = [v["engine_code"] for v in body["variants"]]
+    assert "CZC" in codes and len(codes) > 5
+    assert body["variants"][0]["example"], "each variant carries an example name to recognise it"
+    unknown = client.post("/api/vehicle-knowledge/variants", json={"make": "Volkswagen", "model": "Inconnue", "model_year": 2015}).json()
+    assert unknown["variants"] == [] and "code moteur" in unknown["notice"]

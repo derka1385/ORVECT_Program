@@ -38,7 +38,7 @@ def test_analysis_cache_is_scoped_to_provider_model_and_prompt(client, monkeypat
         async def analyze_initial_case(self, context, images):
             return ProviderResult(_mock_analysis(context), "gemini", settings.gemini_model_fast, 1)
     monkeypatch.setattr(settings, "llm_provider", "gemini")
-    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda:FakeGemini())
+    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda *_:FakeGemini())
     assert client.post(path).status_code == 200
     assert len(runs()) == 2
     assert client.post(path).status_code == 200
@@ -227,7 +227,7 @@ def test_noninformative_result_is_ignored_but_new_measurement_triggers_reanalysi
         async def analyze_follow_up(self,context,images):
             calls.append("follow_up")
             return ProviderResult(_mock_analysis(context),"test","counting",1)
-    monkeypatch.setattr(analysis_service,"get_ai_provider",lambda:CountingProvider())
+    monkeypatch.setattr(analysis_service,"get_ai_provider",lambda *_:CountingProvider())
     case_id=create_case(client,("P0301",))
     assert client.post(f"/api/diagnostics/{case_id}/analyze").status_code==200
     step=client.get(f"/api/diagnostics/{case_id}").json()["steps"][0]
@@ -301,7 +301,7 @@ def test_site_language_reaches_the_model_and_keys_the_cache(client, monkeypatch)
         async def analyze_initial_case(self, context, images):
             seen.append(context["response_language"])
             return ProviderResult(_mock_analysis(context), settings.llm_provider, analysis_service.selected_model(context, False), 1)
-    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda: RecordingProvider())
+    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda *_: RecordingProvider())
     case_id = create_case(client, ("P0301",))
     assert client.post(f"/api/diagnostics/{case_id}/analyze").status_code == 200
     assert client.post(f"/api/diagnostics/{case_id}/analyze?language=sv").status_code == 200
@@ -365,7 +365,7 @@ def test_a_case_without_fault_code_is_analysed_from_symptoms(client, monkeypatch
             assert context["fault_codes"] == []
             return ProviderResult(_mock_analysis(context), "mock", "deterministic-explanation-v2", 1)
 
-    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda: Spy())
+    monkeypatch.setattr(analysis_service, "get_ai_provider", lambda *_: Spy())
     response = client.post(f"/api/diagnostics/{case_id}/analyze")
     assert response.status_code == 200, response.text
     preview = seen["preview"]

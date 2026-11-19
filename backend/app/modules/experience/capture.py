@@ -61,7 +61,7 @@ def classify_outcome(completion: DiagnosticCompletion) -> str:
     """
     if completion.post_repair_result == "not_resolved" or completion.dtc_after_repair == "returned":
         return CONTRADICTED
-    if completion.resolution_status == "inconclusive":
+    if completion.resolution_status in {"inconclusive", "not_reproduced"}:
         return UNRESOLVED
     if completion.post_repair_result == "unknown_not_tested":
         return UNKNOWN

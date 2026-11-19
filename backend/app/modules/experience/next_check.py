@@ -26,6 +26,11 @@ FIELD_EVIDENCE_WEIGHT = 3
 # that still discriminates, so rejecting a hypothesis really does re-order the
 # work rather than leaving a now-pointless test recommended.
 IRRELEVANT_PENALTY = 20
+# A check that needs a tool the workshop already reported missing is unlikely to
+# be done either: it sinks below checks the garage can actually carry out.
+UNAVAILABLE_TOOL_PENALTY = 12
+# Tools every workshop has; one blocked check never means they are missing.
+GENERIC_TOOLS = ("outillage a main", "outillage standard", "hand tools", "lampe", "torch")
 
 # Matches the duration the reasoning layer puts at the head of `objective`,
 # in any of the four report languages.
@@ -99,7 +104,20 @@ def _field_support(check: dict, evidence: list[dict]) -> int:
     return 0
 
 
-def rank(checks: list[dict], hypotheses: list[dict], completed_titles: set[str], evidence: list[dict] | None = None) -> list[dict]:
+def unavailable_tools(steps) -> set[str]:
+    """Specific tools of checks the workshop reported it could not carry out ("unavailable")."""
+    tools = set()
+    for step in steps:
+        if (getattr(step, "result", None) or {}).get("state") == "unavailable":
+            for tool in getattr(step, "required_tools", None) or []:
+                name = signature.normalize(tool)
+                if name and not any(generic in name for generic in GENERIC_TOOLS):
+                    tools.add(name)
+    return tools
+
+
+def rank(checks: list[dict], hypotheses: list[dict], completed_titles: set[str], evidence: list[dict] | None = None,
+         missing_tools: set[str] | None = None) -> list[dict]:
     """Score every outstanding check, best first, with its reasoning attached.
 
     `hypotheses` must be the LIVE ones only. Feeding rejected hypotheses back in
@@ -132,6 +150,10 @@ def rank(checks: list[dict], hypotheses: list[dict], completed_titles: set[str],
         ]
         if field:
             rationale.append("contrôle discriminant déjà observé en atelier")
+        missing = sorted(t for t in (signature.normalize(x) for x in check.get("requiredTools") or []) if t in (missing_tools or set()))
+        if missing:
+            score -= UNAVAILABLE_TOOL_PENALTY
+            rationale.append(f"outil signalé indisponible à l'atelier : {', '.join(missing)}")
         if hypotheses and not discrimination:
             score -= IRRELEVANT_PENALTY
             rationale.append("ne départage plus aucune hypothèse restante")
@@ -150,6 +172,7 @@ def rank(checks: list[dict], hypotheses: list[dict], completed_titles: set[str],
     return scored
 
 
-def best(checks: list[dict], hypotheses: list[dict], completed_titles: set[str], evidence: list[dict] | None = None) -> dict | None:
-    ranked = rank(checks, hypotheses, completed_titles, evidence)
+def best(checks: list[dict], hypotheses: list[dict], completed_titles: set[str], evidence: list[dict] | None = None,
+         missing_tools: set[str] | None = None) -> dict | None:
+    ranked = rank(checks, hypotheses, completed_titles, evidence, missing_tools)
     return ranked[0] if ranked else None

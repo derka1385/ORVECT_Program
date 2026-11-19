@@ -354,9 +354,10 @@ def _promote_next_step(db,case):
     ).order_by(DiagnosticStep.step_order)).all()
     if not pending:
         return None
-    done={row.title for row in db.scalars(select(DiagnosticStep).where(
+    carried_out=db.scalars(select(DiagnosticStep).where(
         DiagnosticStep.session_id==case.id,DiagnosticStep.status.in_(CARRIED_OUT_STEP_STATES),
-    )).all()}
+    )).all()
+    done={row.title for row in carried_out}
     # Only live hypotheses steer the choice: a test whose whole purpose was to
     # eliminate a hypothesis the technician just rejected is no longer the next
     # best action.
@@ -365,7 +366,7 @@ def _promote_next_step(db,case):
         DiagnosticHypothesis.status.notin_(DEAD_HYPOTHESIS_STATES),
     ).order_by(DiagnosticHypothesis.probability_score.desc())).all()
     hypotheses=[{"label":row.title,"component":row.suspected_component} for row in latest]
-    ranked=next_check.rank([_step_as_check(row) for row in pending],hypotheses,done)
+    ranked=next_check.rank([_step_as_check(row) for row in pending],hypotheses,done,None,next_check.unavailable_tools(carried_out))
     chosen=next(( row for row in pending if ranked and row.id==ranked[0]["check"]["id"]),pending[0])
     chosen.status="current"
     return chosen
@@ -377,6 +378,36 @@ async def reanalyze(case_id:str,language:str=Query("fr"),db:Session=Depends(get_
     except ValueError as exc:raise HTTPException(422,str(exc))
     except AIProviderUnavailable as exc:raise HTTPException(503,str(exc))
     except AIInvalidResponse as exc:raise HTTPException(502,str(exc))
+
+@router.get("/{case_id}/handoff")
+def handoff(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):
+    """Plain-text brief for a specialist or a colleague taking over: vehicle, complaint, scans,
+    readings, every check done with its result, causes still open and those ruled out.
+
+    Built from stored rows only, never by a model, so it states exactly what was observed.
+    """
+    case=owned_case(db,case_id,gid);v=case.vehicle
+    obs=db.scalars(select(DiagnosticObservation).where(DiagnosticObservation.session_id==case.id)).all()
+    steps=db.scalars(select(DiagnosticStep).where(DiagnosticStep.session_id==case.id,DiagnosticStep.status.in_(CARRIED_OUT_STEP_STATES)).order_by(DiagnosticStep.completed_at)).all()
+    hyps=db.scalars(select(DiagnosticHypothesis).where(DiagnosticHypothesis.session_id==case.id).order_by(DiagnosticHypothesis.probability_score.desc())).all()
+    live=[h for h in hyps if h.status not in DEAD_HYPOTHESIS_STATES];dead=[h for h in hyps if h.status in DEAD_HYPOTHESIS_STATES]
+    lines=[f"Véhicule : {v.make} {v.model} {v.year} · moteur {v.engine_code} · {v.fuel_type}"+(f" · {case.mileage} km" if case.mileage else ""),
+           f"Plainte : {case.observed_symptoms or 'non renseignée'}"]
+    if case.appearance_circumstances:lines.append(f"Conditions d’apparition : {case.appearance_circumstances}")
+    codes=[o for o in obs if o.observation_type=="DTC"]
+    lines.append("Codes défaut : "+("; ".join(f"{o.key} ({(o.value or {}).get('status') or 'statut inconnu'}) {(o.value or {}).get('description') or ''}".strip() for o in codes) if codes else "aucun"))
+    readings=[o for o in obs if o.observation_type=="measurement"]
+    if readings:lines.append("Mesures : "+"; ".join(f"{o.key} = {(o.value or {}).get('value')}{' '+o.unit if o.unit else ''}" for o in readings))
+    lines.append("Contrôles réalisés :" if steps else "Contrôles réalisés : aucun")
+    for s in steps:
+        r=s.result or {};value=f" · {r.get('measurement')}{' '+r['unit'] if r.get('unit') else ''}" if r.get("measurement") is not None else ""
+        lines.append(f"  - {s.title} → {RESULT_LABEL.get(r.get('state'),r.get('state') or '?')}{value}"+(f" · {r.get('outcome')}" if r.get("outcome") else "")+(f" · {s.technician_comment}" if s.technician_comment else ""))
+    lines.append("Causes encore ouvertes : "+("; ".join(f"{h.title} ({round(h.probability_score or 0)} %)" for h in live) if live else "aucune"))
+    if dead:lines.append("Causes écartées : "+"; ".join(h.title for h in dead))
+    question=f"Départager : {' / '.join(h.title for h in live[:2])}" if len(live)>1 else (f"Confirmer : {live[0].title}" if live else "Aucune piste restante : reprendre l’analyse des symptômes.")
+    lines.append(f"Question ouverte : {question}")
+    return {"text":"\n".join(lines),"open_causes":[h.title for h in live],"ruled_out":[h.title for h in dead],"checks_done":len(steps)}
+RESULT_LABEL={"positive":"positif","negative":"négatif","inconclusive":"non concluant","unavailable":"impossible sur place","invalid":"invalide","refused":"refusé"}
 
 @router.get("/{case_id}/progress")
 def analysis_progress(case_id:str,db:Session=Depends(get_db),gid:str=Depends(active_garage_id)):

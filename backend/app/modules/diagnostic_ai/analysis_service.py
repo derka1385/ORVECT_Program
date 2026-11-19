@@ -19,7 +19,7 @@ from . import progress
 from .confidence import assess as assess_confidence
 from .context_builder import DiagnosticContextBuilder
 from .diagnostic_engine import DiagnosticEngine
-from .providers import AIInvalidResponse, AIProviderUnavailable, EXPLORATORY_MEANING_PREFIX, PROMPT_VERSION, canonical_source, get_ai_provider, selected_model, validate_provider_sources
+from .providers import AIInvalidResponse, AIProviderUnavailable, EXPLORATORY_MEANING_PREFIX, PROMPT_VERSION, canonical_source, effective_provider, get_ai_provider, selected_model, validate_provider_sources
 from .safety_engine import SafetyEngine
 from .schemas import CARRIED_OUT_STEP_STATES, DiagnosticAnalysis, LLMDiagnosticAnalysis, NON_INFORMATIVE_RESULT_STATES, NextBestCheck, ResearchMetadata
 
@@ -226,18 +226,17 @@ def _persist(db, case, result, safety, context, context_hash, operation, researc
         .order_by(DiagnosticStep.step_order.desc())
     ) or 0
     plan = [item.model_dump(mode="json") for item in analysis.nextChecks]
+    carried_out = db.scalars(
+        select(DiagnosticStep).where(
+            DiagnosticStep.session_id == case.id, DiagnosticStep.status.in_(CARRIED_OUT_STEP_STATES)
+        )
+    ).all()
     ranked = next_check.rank(
         plan,
         [item.model_dump(mode="json") for item in analysis.hypotheses],
-        {
-            row.title
-            for row in db.scalars(
-                select(DiagnosticStep).where(
-                    DiagnosticStep.session_id == case.id, DiagnosticStep.status.in_(CARRIED_OUT_STEP_STATES)
-                )
-            ).all()
-        },
+        {row.title for row in carried_out},
         context.get("orvect_field_evidence") or [],
+        next_check.unavailable_tools(carried_out),
     )
     # The report keeps the reasoning layer's full plan; ORVECT decides on its own
     # which of those checks the workshop should actually do next.
@@ -399,8 +398,8 @@ async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False, la
             AICall.operation_type == operation,
             AICall.status == "completed",
             AICall.schema_version == "2.0",
-            AICall.provider == settings.llm_provider,
-            AICall.model == selected_model(context, follow_up),
+            AICall.provider == effective_provider(images),
+            AICall.model == selected_model(context, follow_up, effective_provider(images)),
             AICall.prompt_version == PROMPT_VERSION,
             AICall.output_payload.is_not(None),
         )
@@ -443,7 +442,7 @@ async def analyze_case(db: Session, case: DiagnosticSession, follow_up=False, la
         }
 
         progress.set_stage(case.id, "reasoning")
-        provider = get_ai_provider()
+        provider = get_ai_provider(images)
         result = await (
             provider.analyze_follow_up(context, images)
             if follow_up

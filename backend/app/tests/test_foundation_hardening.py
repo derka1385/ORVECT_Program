@@ -207,7 +207,7 @@ def test_ai_hypothesis_persistence_keeps_complete_source_references(client,monke
     case=client.post("/api/diagnostics",json={"vehicle_id":VEHICLE_ID}).json()
     client.post(f"/api/diagnostics/{case['id']}/fault-codes",json={"fault_codes":[{"code":"P0301","technician_verification":"confirmed"}]})
     client.post(f"/api/diagnostics/{case['id']}/measurements",json={"name":"test evidence","value":12.4,"unit":"V"})
-    monkeypatch.setattr(analysis_service,"get_ai_provider",lambda:SourcedProvider())
+    monkeypatch.setattr(analysis_service,"get_ai_provider",lambda *_:SourcedProvider())
     assert client.post(f"/api/diagnostics/{case['id']}/analyze").status_code==200
     db=SessionLocal()
     try:

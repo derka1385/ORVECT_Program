@@ -89,12 +89,24 @@ class AIInvalidResponse(Exception):
     pass
 
 
-def selected_model(context: dict, follow_up: bool = False) -> str:
-    if settings.llm_provider == "nebius":
+def effective_provider(images=None) -> str:
+    """The provider that will actually answer this case.
+
+    The Nebius model reads text only: a case with photos goes to Gemini, which can
+    see them, whenever a Gemini key is configured. Otherwise the configured provider.
+    """
+    if settings.llm_provider == "nebius" and images and settings.gemini_api_key:
+        return "gemini"
+    return settings.llm_provider
+
+
+def selected_model(context: dict, follow_up: bool = False, provider: str | None = None) -> str:
+    provider = provider or settings.llm_provider
+    if provider == "nebius":
         return settings.nebius_model
-    if settings.llm_provider == "gemini":
+    if provider == "gemini":
         return settings.gemini_model_reasoning if follow_up or context.get("exploration_mode") or len(context.get("fault_codes", [])) != 1 else settings.gemini_model_fast
-    return "deterministic-explanation-v2" if settings.llm_provider == "mock" else "unavailable"
+    return "deterministic-explanation-v2" if provider == "mock" else "unavailable"
 
 
 @dataclass
@@ -592,21 +604,22 @@ class GeminiAutomotiveAIProvider(AutomotiveAIProvider):
         )
 
     async def analyze_initial_case(self, context, images):
-        model = selected_model(context)
+        model = selected_model(context, provider="gemini")
         return await self._analyze(context, images, model)
 
     async def analyze_follow_up(self, context, images):
         return await self._analyze(context, images, settings.gemini_model_reasoning)
 
 
-def get_ai_provider():
-    if settings.llm_provider == "nebius":
+def get_ai_provider(images=None):
+    provider = effective_provider(images)
+    if provider == "nebius":
         # Imported here: nebius imports this module for the shared validators.
         from .nebius import NebiusAutomotiveAIProvider
 
         return NebiusAutomotiveAIProvider()
-    if settings.llm_provider == "gemini":
+    if provider == "gemini":
         return GeminiAutomotiveAIProvider()
-    if settings.llm_provider == "mock":
+    if provider == "mock":
         return MockAutomotiveAIProvider()
     raise AIProviderUnavailable("Assistant IA désactivé")

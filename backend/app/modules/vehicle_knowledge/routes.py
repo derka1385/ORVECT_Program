@@ -33,3 +33,18 @@ def lookup(data: LookupInput, db: Session = Depends(get_db), gid: str = Depends(
         reference["match_basis"] = basis
     return {"vehicle_reference": reference, "reported_issues": issues,
             "notice": "Pannes signalées dans le monde réel (rappels, bulletins, presse, forums) : à vérifier sur le véhicule, jamais une preuve."}
+
+
+class VariantsInput(BaseModel):
+    vin: str | None = Field(default=None, max_length=24)
+    make: str | None = Field(default=None, max_length=60)
+    model: str | None = Field(default=None, max_length=120)
+    model_year: int | None = Field(default=None, ge=1886, le=2100)
+
+
+@router.post("/variants")
+def variants(data: VariantsInput, db: Session = Depends(get_db), gid: str = Depends(active_garage_id)):
+    """Engines homologated for this vehicle, to choose from. POST so the VIN stays out of URLs."""
+    found = service.variants_for(db, data.make, data.model, data.model_year, data.vin)
+    return found or {"generation": None, "variants": [],
+                     "notice": "Génération non reconnue : saisissez le code moteur relevé sur le véhicule."}

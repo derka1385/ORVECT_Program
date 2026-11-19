@@ -329,6 +329,23 @@ def vehicle_reference(generation, variant) -> dict | None:
     return ref
 
 
+def variants_for(db: Session, make=None, model=None, model_year=None, vin=None) -> dict | None:
+    """Homologated engine variants of the vehicle's generation, most common first.
+
+    Lets the technician pick the engine instead of typing a code: the choice is then
+    an exact homologated code, which the reported issues and the reference rely on.
+    """
+    generation, _, basis = resolve(db, make, model, model_year, None, vin)
+    if not generation:
+        return None
+    rows = db.scalars(select(EngineVariant).where(EngineVariant.generation_id == generation.id)).all()
+    rows = sorted(rows, key=lambda v: -(v.fleet_reference or 0))
+    return {"generation": generation.id, "label": f"{generation.label} ({generation.generation_code})", "match_basis": basis,
+            "variants": [{"engine_code": v.engine_code, "types": v.engine_types, "fuel": v.fuel, "displacement_cc": v.displacement_cc,
+                          "power_kw": [v.power_kw_min, v.power_kw_max], "gearboxes": v.gearboxes, "example": v.example_name,
+                          "code_location": v.code_location} for v in rows]}
+
+
 def for_case(db: Session, vehicle: dict, dtc_codes, symptoms: str, vin: str | None = None) -> dict:
     """Context block for a diagnosis: homologated reference + reported issues as excerpts."""
     generation, variant, basis = resolve(db, vehicle.get("make"), vehicle.get("model"), vehicle.get("model_year"),
